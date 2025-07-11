@@ -69,6 +69,34 @@ pnpm lint            # Linting
 - **mcp__context7__get-library-docs** - Fetch library documentation
 - **mcp__github__*** - GitHub operations (create/update files, PRs, issues, etc.)
 
+## Code Review Process
+
+### Pull Request Workflow
+1. **Create feature branch** from main
+2. **Implement changes** with tests
+3. **Create PR** with descriptive title and body
+4. **Wait for CodeRabbit review** - Automated AI code review
+5. **Address CodeRabbit feedback** before requesting human review
+6. **Merge after approvals**
+
+### CodeRabbit Integration
+This repository uses CodeRabbit for automated code reviews. When creating PRs:
+- CodeRabbit will automatically review within minutes
+- Check CodeRabbit's comments for:
+  - Security vulnerabilities
+  - Performance issues
+  - Code quality suggestions
+  - Best practice violations
+- Address all critical issues before merging
+- Use `@coderabbitai` in PR comments to ask questions
+
+### PR Best Practices
+- Keep PRs small and focused (< 400 lines when possible)
+- Write descriptive PR titles: `feat: add Square POS connector`
+- Include test coverage for new features
+- Update documentation alongside code changes
+- Link related issues in PR description
+
 ## Implementation Guidelines
 
 - All API responses validated with Zod before storage
@@ -77,3 +105,4 @@ pnpm lint            # Linting
 - Store rollback info for every action
 - All secrets in Vercel environment variables
 - Mock external APIs in tests using MSW
+- Every PR must pass CodeRabbit review before merge
