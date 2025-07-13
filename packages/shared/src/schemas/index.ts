@@ -1,6 +1,4 @@
-// Zod schemas will be added here as we create them
-// Example exports:
-// export * from './eventbrite';
-// export * from './common';
+// Zod schemas for API connectors
 
 export * from './toast';
+export * from './eventbrite';
