@@ -6,6 +6,8 @@ export * from './connectors/types';
 export { BaseConnector } from './connectors/base-connector';
 export * from './connectors/toast';
 export * from './connectors/eventbrite';
+export * from './connectors/wisk';
+export * from './connectors/opendate';
 
 // Export schemas
 export * from './schemas';

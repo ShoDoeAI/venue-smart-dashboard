@@ -1,5 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import { ToastConnector } from '@venuesync/shared/connectors/toast/toast-connector';
+import { EventbriteConnector } from '@venuesync/shared/connectors/eventbrite/eventbrite-connector';
+import { OpenDateConnector } from '@venuesync/shared/connectors/opendate/opendate-connector';
 import type { Database } from '@venuesync/shared/types/database.generated';
 import { SnapshotService } from './snapshot-service';
 
@@ -60,8 +62,8 @@ export class DataOrchestrator {
         start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
       };
 
-      // Determine which APIs to fetch from
-      const apisToFetch = config.apis || ['toast']; // Default to Toast only for now
+      // Determine which APIs to fetch from (MVP: 3 core APIs)
+      const apisToFetch = config.apis || ['toast', 'eventbrite', 'opendate'];
 
       // Fetch data from each API in parallel
       const fetchPromises = apisToFetch.map(api => 
@@ -100,7 +102,9 @@ export class DataOrchestrator {
         apiResults: {
           toast: results.toast?.success || false,
           eventbrite: results.eventbrite?.success || false,
-          wisk: results.wisk?.success || false,
+          opendate: results.opendate?.success || false,
+          wisk: false, // Placeholder - no public API docs
+          resy: false, // Not used - replaced with OpenDate.io
         },
       });
 
@@ -158,17 +162,36 @@ export class DataOrchestrator {
           }));
 
       case 'eventbrite':
-        // TODO: Implement Eventbrite fetching
-        return {
-          success: false,
-          error: 'Eventbrite connector not implemented yet',
-        };
+        return this.fetchEventbriteData(venueId, dateRange)
+          .then(result => ({
+            success: true,
+            recordCount: result.recordCount,
+            duration: Date.now() - apiStartTime,
+          }))
+          .catch(error => ({
+            success: false,
+            error: error.message,
+            duration: Date.now() - apiStartTime,
+          }));
+
+      case 'opendate':
+        return this.fetchOpenDateData(venueId, dateRange)
+          .then(result => ({
+            success: true,
+            recordCount: result.recordCount,
+            duration: Date.now() - apiStartTime,
+          }))
+          .catch(error => ({
+            success: false,
+            error: error.message,
+            duration: Date.now() - apiStartTime,
+          }));
 
       case 'wisk':
-        // TODO: Implement WISK fetching
+        // Placeholder - No public API documentation available
         return {
           success: false,
-          error: 'WISK connector not implemented yet',
+          error: 'WISK API integration pending - no public documentation',
         };
 
       default:
@@ -250,37 +273,176 @@ export class DataOrchestrator {
   }
 
   /**
+   * Fetch Eventbrite data
+   */
+  private async fetchEventbriteData(
+    venueId: string,
+    dateRange?: { start: Date; end: Date }
+  ) {
+    // Get Eventbrite credentials
+    const { data: credentials, error } = await this.supabase
+      .from('api_credentials')
+      .select('*')
+      .eq('venue_id', venueId)
+      .eq('service', 'eventbrite')
+      .single();
+
+    if (error || !credentials) {
+      throw new Error('Eventbrite credentials not found');
+    }
+
+    // Initialize connector
+    const connector = new EventbriteConnector(
+      credentials,
+      {
+        timeout: 30000,
+        maxRetries: 3,
+        retryDelay: 1000,
+      },
+      this.supabase
+    );
+
+    // Fetch events and attendees as transactions
+    const result = await connector.fetchAllTransactions(
+      undefined, // Will fetch all organizations
+      dateRange?.start || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      dateRange?.end || new Date()
+    );
+
+    if (!result.success) {
+      throw new Error(result.error?.message || 'Failed to fetch Eventbrite data');
+    }
+
+    const transactions = result.data || [];
+
+    // Save transactions
+    if (transactions.length > 0) {
+      const saveResult = await connector.saveTransactions(
+        transactions,
+        new Date().toISOString()
+      );
+
+      if (!saveResult.success) {
+        throw new Error('Failed to save Eventbrite transactions');
+      }
+    }
+
+    return {
+      recordCount: transactions.length,
+    };
+  }
+
+  /**
+   * Fetch OpenDate.io data
+   */
+  private async fetchOpenDateData(
+    venueId: string,
+    dateRange?: { start: Date; end: Date }
+  ) {
+    // Get OpenDate credentials
+    const { data: credentials, error } = await this.supabase
+      .from('api_credentials')
+      .select('*')
+      .eq('venue_id', venueId)
+      .eq('service', 'opendate')
+      .single();
+
+    if (error || !credentials) {
+      throw new Error('OpenDate.io credentials not found');
+    }
+
+    // Initialize connector
+    const connector = new OpenDateConnector(
+      credentials,
+      {
+        timeout: 30000,
+        maxRetries: 3,
+        retryDelay: 1000,
+      },
+      this.supabase
+    );
+
+    // Fetch all transactions (orders and tickets)
+    const result = await connector.fetchAllTransactions(
+      undefined, // Will fetch all venues
+      dateRange?.start?.toISOString() || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+      dateRange?.end?.toISOString() || new Date().toISOString()
+    );
+
+    if (!result.success) {
+      throw new Error(result.error?.message || 'Failed to fetch OpenDate.io data');
+    }
+
+    const transactions = result.data || [];
+
+    // Save transactions
+    if (transactions.length > 0) {
+      const saveResult = await connector.saveTransactions(
+        transactions,
+        new Date().toISOString()
+      );
+
+      if (!saveResult.success) {
+        throw new Error('Failed to save OpenDate.io transactions');
+      }
+    }
+
+    return {
+      recordCount: transactions.length,
+    };
+  }
+
+  /**
    * Calculate aggregate metrics from fetched data
    */
   private async calculateAggregateMetrics(
     venueId: string,
     snapshotTimestamp: string
   ) {
-    // Get Toast transactions for this snapshot
-    const { data: transactions, error } = await this.supabase
-      .from('toast_transactions')
-      .select('*')
-      .eq('snapshot_timestamp', snapshotTimestamp);
+    // Get transactions from all sources for this snapshot
+    const [toastResult, eventbriteResult, opendateResult] = await Promise.allSettled([
+      this.supabase
+        .from('toast_transactions')
+        .select('*')
+        .eq('snapshot_timestamp', snapshotTimestamp),
+      this.supabase
+        .from('eventbrite_transactions')
+        .select('*')
+        .eq('snapshot_timestamp', snapshotTimestamp),
+      this.supabase
+        .from('opendate_transactions')
+        .select('*')
+        .eq('snapshot_timestamp', snapshotTimestamp),
+    ]);
 
-    if (error) {
-      console.error('Failed to fetch transactions for metrics:', error);
-      return {
-        totalRevenue: 0,
-        transactionCount: 0,
-        averageTransaction: 0,
-        uniqueCustomers: 0,
-      };
+    // Combine all transactions
+    let allTransactions: any[] = [];
+    
+    if (toastResult.status === 'fulfilled' && !toastResult.value.error) {
+      allTransactions = allTransactions.concat(toastResult.value.data || []);
+    }
+    
+    if (eventbriteResult.status === 'fulfilled' && !eventbriteResult.value.error) {
+      allTransactions = allTransactions.concat(eventbriteResult.value.data || []);
+    }
+    
+    if (opendateResult.status === 'fulfilled' && !opendateResult.value.error) {
+      allTransactions = allTransactions.concat(opendateResult.value.data || []);
     }
 
-    const transactionCount = transactions?.length || 0;
-    const totalRevenue = transactions?.reduce((sum, tx) => sum + (tx.total_amount || 0), 0) || 0;
+    const transactionCount = allTransactions.length;
+    const totalRevenue = allTransactions.reduce((sum, tx) => {
+      // Handle different amount fields across APIs
+      const amount = tx.total_amount || tx.amount || 0;
+      return sum + amount;
+    }, 0);
     const averageTransaction = transactionCount > 0 ? totalRevenue / transactionCount : 0;
     
-    // Count unique customers
+    // Count unique customers across all platforms
     const uniqueCustomers = new Set(
-      transactions
-        ?.map(tx => tx.customer_id)
-        .filter(id => id !== null)
+      allTransactions
+        .map(tx => tx.customer_id || tx.customer_email)
+        .filter(id => id !== null && id !== undefined)
     ).size;
 
     return {
@@ -317,9 +479,13 @@ export class DataOrchestrator {
         needsUpdate: timeSinceSnapshot > threeHours || !latestSnapshot.eventbrite_fetched,
         lastFetch: latestSnapshot.eventbrite_fetched ? latestSnapshot.created_at : null,
       },
+      opendate: {
+        needsUpdate: timeSinceSnapshot > threeHours || !latestSnapshot.opendate_fetched,
+        lastFetch: latestSnapshot.opendate_fetched ? latestSnapshot.created_at : null,
+      },
       wisk: {
-        needsUpdate: timeSinceSnapshot > threeHours || !latestSnapshot.wisk_fetched,
-        lastFetch: latestSnapshot.wisk_fetched ? latestSnapshot.created_at : null,
+        needsUpdate: false, // Placeholder - no public API
+        lastFetch: null,
       },
     };
   }

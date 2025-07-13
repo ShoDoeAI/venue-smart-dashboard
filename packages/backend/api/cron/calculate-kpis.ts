@@ -1,24 +1,24 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { DataOrchestrator } from '../../src/services/data-orchestrator';
+import { KPICalculator } from '../../src/services/kpi-calculator';
 import type { Database } from '@venuesync/shared/types/database.generated';
 
 /**
- * Vercel Cron job to fetch data from all integrated APIs
- * Runs every 3 hours: "0 */3 * * *"
+ * Vercel Cron job to calculate KPIs and generate analytics
+ * Runs daily at 1 AM: "0 1 * * *"
  */
 export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
-  // Verify this is being called by Vercel Cron
+  // Verify cron secret
   const authHeader = req.headers.authorization;
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
   const startTime = Date.now();
-  console.log(`[CRON] Starting data fetch at ${new Date().toISOString()}`);
+  console.log(`[CRON] Starting KPI calculation at ${new Date().toISOString()}`);
 
   try {
     // Initialize Supabase client
@@ -26,6 +26,7 @@ export default async function handler(
       process.env.SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_KEY!
     );
+
     // Get all active venues
     const { data: venues, error: venuesError } = await supabase
       .from('venues')
@@ -44,50 +45,69 @@ export default async function handler(
       });
     }
 
-    console.log(`[CRON] Found ${venues.length} active venue(s)`);
+    // Initialize KPI calculator
+    const kpiCalculator = new KPICalculator(supabase);
 
-    // Initialize orchestrator
-    const orchestrator = new DataOrchestrator(supabase);
+    // Calculate date range (yesterday)
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
 
-    // Process each venue in parallel
+    const endOfYesterday = new Date(yesterday);
+    endOfYesterday.setHours(23, 59, 59, 999);
+
+    // Process each venue
     const results = await Promise.allSettled(
       venues.map(async (venue) => {
-        console.log(`[CRON] Processing venue: ${venue.name} (${venue.id})`);
+        console.log(`[CRON] Calculating KPIs for venue: ${venue.name} (${venue.id})`);
 
         try {
-          // Get API statuses
-          const apiStatuses = await orchestrator.getApiStatuses(venue.id);
-          
-          // Determine which APIs need updates
-          const apisToFetch = [];
-          if (apiStatuses.toast.needsUpdate) apisToFetch.push('toast');
-          if (apiStatuses.eventbrite.needsUpdate) apisToFetch.push('eventbrite');
-          if (apiStatuses.opendate.needsUpdate) apisToFetch.push('opendate');
-          
-          if (apisToFetch.length === 0) {
-            console.log(`[CRON] Skipping ${venue.name} - all APIs recently updated`);
-            return {
-              venueId: venue.id,
-              venueName: venue.name,
-              skipped: true,
-              reason: 'All APIs recently updated',
-            };
+          // Calculate daily KPIs
+          const dailyKPIs = await kpiCalculator.calculateDailyKPIs(
+            venue.id,
+            yesterday
+          );
+
+          // Calculate weekly KPIs (if it's Monday)
+          let weeklyKPIs = null;
+          if (yesterday.getDay() === 0) { // Sunday
+            const weekStart = new Date(yesterday);
+            weekStart.setDate(weekStart.getDate() - 6);
+            weeklyKPIs = await kpiCalculator.calculateWeeklyKPIs(
+              venue.id,
+              weekStart,
+              yesterday
+            );
           }
 
-          // Fetch data from APIs that need updates
-          const result = await orchestrator.fetchAllData({
-            venueId: venue.id,
-            apis: apisToFetch,
-            dateRange: {
-              start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
-              end: new Date(),
-            },
-          });
+          // Calculate monthly KPIs (if it's the last day of the month)
+          let monthlyKPIs = null;
+          const tomorrow = new Date(yesterday);
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          if (tomorrow.getDate() === 1) {
+            const monthStart = new Date(yesterday.getFullYear(), yesterday.getMonth(), 1);
+            monthlyKPIs = await kpiCalculator.calculateMonthlyKPIs(
+              venue.id,
+              monthStart,
+              yesterday
+            );
+          }
+
+          // Calculate real-time metrics
+          const realtimeMetrics = await kpiCalculator.calculateRealtimeMetrics(
+            venue.id
+          );
 
           return {
             venueId: venue.id,
             venueName: venue.name,
-            ...result,
+            success: true,
+            kpis: {
+              daily: dailyKPIs,
+              weekly: weeklyKPIs,
+              monthly: monthlyKPIs,
+              realtime: realtimeMetrics,
+            },
           };
         } catch (error) {
           throw error;
@@ -98,38 +118,33 @@ export default async function handler(
     // Summarize results
     const summary = {
       totalVenues: venues.length,
-      processed: 0,
-      skipped: 0,
+      successful: 0,
       failed: 0,
       results: [] as any[],
     };
 
     results.forEach((result, index) => {
       if (result.status === 'fulfilled') {
-        const data = result.value;
-        if (data.skipped) {
-          summary.skipped++;
-        } else {
-          summary.processed++;
-        }
-        summary.results.push(data);
+        summary.successful++;
+        summary.results.push(result.value);
       } else {
         summary.failed++;
         summary.results.push({
           venueId: venues[index].id,
           venueName: venues[index].name,
+          success: false,
           error: result.reason.message || 'Unknown error',
         });
       }
     });
 
     const duration = Date.now() - startTime;
-    console.log(`[CRON] Data fetch completed in ${duration}ms`);
-    console.log(`[CRON] Summary: ${summary.processed} processed, ${summary.skipped} skipped, ${summary.failed} failed`);
+    console.log(`[CRON] KPI calculation completed in ${duration}ms`);
+    console.log(`[CRON] Summary: ${summary.successful} successful, ${summary.failed} failed`);
 
     // Log to cron_logs table
     await supabase.from('cron_logs').insert({
-      job_name: 'fetch-data',
+      job_name: 'calculate-kpis',
       status: summary.failed > 0 ? 'partial_success' : 'success',
       duration_ms: duration,
       metadata: summary,
@@ -144,7 +159,7 @@ export default async function handler(
 
   } catch (error) {
     const duration = Date.now() - startTime;
-    console.error('[CRON] Data fetch failed:', error);
+    console.error('[CRON] KPI calculation failed:', error);
 
     // Log error to cron_logs table
     try {
@@ -154,7 +169,7 @@ export default async function handler(
       );
       
       await supabase.from('cron_logs').insert({
-        job_name: 'fetch-data',
+        job_name: 'calculate-kpis',
         status: 'failed',
         duration_ms: duration,
         error_message: error instanceof Error ? error.message : 'Unknown error',

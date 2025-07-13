@@ -23,6 +23,7 @@ export interface UpdateSnapshotOptions {
   apiResults?: {
     toast?: boolean;
     eventbrite?: boolean;
+    opendate?: boolean;
     wisk?: boolean;
     resy?: boolean;
     audienceRepublic?: boolean;

@@ -1,0 +1,43 @@
+{
+  "functions": {
+    "packages/backend/api/*.ts": {
+      "maxDuration": 60
+    },
+    "packages/backend/api/cron/*.ts": {
+      "maxDuration": 300
+    }
+  },
+  "crons": [
+    {
+      "path": "/api/cron/fetch-data",
+      "schedule": "0 */3 * * *"
+    },
+    {
+      "path": "/api/cron/calculate-kpis",
+      "schedule": "0 1 * * *"
+    },
+    {
+      "path": "/api/cron/cleanup-snapshots",
+      "schedule": "0 3 * * 0"
+    }
+  ],
+  "env": {
+    "SUPABASE_URL": "@supabase-url",
+    "SUPABASE_SERVICE_KEY": "@supabase-service-key",
+    "TOAST_CLIENT_ID": "@toast-client-id",
+    "TOAST_CLIENT_SECRET": "@toast-client-secret",
+    "EVENTBRITE_OAUTH_TOKEN": "@eventbrite-oauth-token",
+    "OPENDATE_CLIENT_ID": "@opendate-client-id",
+    "OPENDATE_CLIENT_SECRET": "@opendate-client-secret"
+  },
+  "buildCommand": "pnpm build",
+  "installCommand": "pnpm install",
+  "framework": null,
+  "outputDirectory": "packages/backend/dist",
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/packages/backend/api/$1"
+    }
+  ]
+}
