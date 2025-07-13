@@ -1,4 +1,7 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+export PNPM_HOME="/Users/sho/Library/pnpm"
+export PATH="$PNPM_HOME:$PATH"
+
 pnpm lint-staged

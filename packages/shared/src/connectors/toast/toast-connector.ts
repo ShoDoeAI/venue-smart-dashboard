@@ -364,4 +364,74 @@ export class ToastConnector extends BaseConnector {
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}${month}${day}`;
   }
+
+  /**
+   * Update menu item price
+   */
+  async updateMenuItemPrice(itemGuid: string, newPrice: number): Promise<any> {
+    try {
+      const response = await this.makeRequest<any>(
+        'PUT',
+        `/menuItems/${itemGuid}`,
+        { price: newPrice }
+      );
+      return response;
+    } catch (error) {
+      throw this.handleError(error, 'update-menu-item-price');
+    }
+  }
+
+  /**
+   * Update menu item availability
+   */
+  async updateMenuItemAvailability(itemGuid: string, available: boolean): Promise<any> {
+    try {
+      const response = await this.makeRequest<any>(
+        'PUT',
+        `/menuItems/${itemGuid}`,
+        { available }
+      );
+      return response;
+    } catch (error) {
+      throw this.handleError(error, 'update-menu-item-availability');
+    }
+  }
+
+  /**
+   * Create discount
+   */
+  async createDiscount(discount: {
+    name: string;
+    type: 'percent' | 'fixed';
+    amount: number;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<any> {
+    try {
+      const response = await this.makeRequest<any>(
+        'POST',
+        '/discounts',
+        discount
+      );
+      return response;
+    } catch (error) {
+      throw this.handleError(error, 'create-discount');
+    }
+  }
+
+  /**
+   * Update modifier price
+   */
+  async updateModifierPrice(modifierGuid: string, newPrice: number): Promise<any> {
+    try {
+      const response = await this.makeRequest<any>(
+        'PUT',
+        `/modifiers/${modifierGuid}`,
+        { price: newPrice }
+      );
+      return response;
+    } catch (error) {
+      throw this.handleError(error, 'update-modifier-price');
+    }
+  }
 }

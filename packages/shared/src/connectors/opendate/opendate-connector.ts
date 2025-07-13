@@ -606,4 +606,86 @@ export class OpenDateConnector extends BaseConnector {
 
     return super.handleError(error, operation);
   }
+
+  /**
+   * Update show capacity
+   */
+  async updateShowCapacity(confirmId: string, newCapacity: number): Promise<any> {
+    try {
+      const response = await this.client.patch(
+        `/confirms/${confirmId}`,
+        { capacity: newCapacity }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error, 'update-show-capacity');
+    }
+  }
+
+  /**
+   * Update ticket tier
+   */
+  async updateTicketTier(
+    confirmId: string,
+    tierId: string,
+    updates: { price?: number; quantity?: number }
+  ): Promise<any> {
+    try {
+      const response = await this.client.patch(
+        `/confirms/${confirmId}/ticket-tiers/${tierId}`,
+        updates
+      );
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error, 'update-ticket-tier');
+    }
+  }
+
+  /**
+   * Send fan message
+   */
+  async sendFanMessage(params: {
+    segment: string;
+    criteria?: any;
+    subject: string;
+    message: string;
+    promoCode?: string;
+  }): Promise<any> {
+    try {
+      const response = await this.client.post(
+        '/marketing/campaigns',
+        {
+          segment: params.segment,
+          criteria: params.criteria,
+          subject: params.subject,
+          message: params.message,
+          promo_code: params.promoCode,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error, 'send-fan-message');
+    }
+  }
+
+  /**
+   * Update artist payout terms
+   */
+  async updateArtistPayout(
+    confirmId: string,
+    terms: { guarantee?: number; doorSplit?: number }
+  ): Promise<any> {
+    try {
+      const response = await this.client.patch(
+        `/confirms/${confirmId}/payout-terms`,
+        {
+          artist_guarantee: terms.guarantee,
+          door_split_percentage: terms.doorSplit,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error, 'update-artist-payout');
+    }
+  }
 }

@@ -424,4 +424,105 @@ export class EventbriteConnector extends BaseConnector {
       'delete-webhook'
     );
   }
+
+  /**
+   * Update event capacity
+   */
+  async updateEventCapacity(eventId: string, newCapacity: number, ticketClassId?: string): Promise<any> {
+    try {
+      if (ticketClassId) {
+        // Update specific ticket class capacity
+        const response = await this.client.post(
+          `/events/${eventId}/ticket_classes/${ticketClassId}/`,
+          { quantity_total: newCapacity }
+        );
+        return response.data;
+      } else {
+        // Update overall event capacity
+        const response = await this.client.post(
+          `/events/${eventId}/`,
+          { capacity: newCapacity }
+        );
+        return response.data;
+      }
+    } catch (error) {
+      throw this.handleError(error, 'update-event-capacity');
+    }
+  }
+
+  /**
+   * Update ticket price
+   */
+  async updateTicketPrice(
+    eventId: string,
+    ticketClassId: string,
+    newPrice: number,
+    includeFees: boolean
+  ): Promise<any> {
+    try {
+      const response = await this.client.post(
+        `/events/${eventId}/ticket_classes/${ticketClassId}/`,
+        {
+          cost: {
+            currency: 'USD',
+            value: Math.round(newPrice * 100), // Convert to cents
+            display: `$${newPrice.toFixed(2)}`,
+          },
+          fee_setting: includeFees ? 'pass' : 'absorb',
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error, 'update-ticket-price');
+    }
+  }
+
+  /**
+   * Create promo code
+   */
+  async createPromoCode(params: {
+    eventId: string;
+    code: string;
+    discountType: 'percent' | 'fixed';
+    discountAmount: number;
+    endDate?: string;
+  }): Promise<any> {
+    try {
+      const response = await this.client.post(
+        `/events/${params.eventId}/discounts/`,
+        {
+          discount: {
+            code: params.code,
+            type: params.discountType === 'percent' ? 'percentage' : 'amount',
+            value: params.discountAmount,
+            end_date: params.endDate,
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error, 'create-promo-code');
+    }
+  }
+
+  /**
+   * Extend ticket sales period
+   */
+  async extendTicketSales(
+    eventId: string,
+    ticketClassId: string,
+    newEndDate: string
+  ): Promise<any> {
+    try {
+      const response = await this.client.post(
+        `/events/${eventId}/ticket_classes/${ticketClassId}/`,
+        {
+          sales_end: newEndDate,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw this.handleError(error, 'extend-ticket-sales');
+    }
+  }
 }

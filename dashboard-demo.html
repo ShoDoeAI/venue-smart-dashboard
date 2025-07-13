@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VenueSync Dashboard Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="flex h-screen">
+        <!-- Sidebar -->
+        <div class="hidden md:flex md:w-64 md:flex-col">
+            <div class="flex flex-col flex-grow border-r border-gray-200 bg-white">
+                <!-- Logo -->
+                <div class="flex items-center justify-between px-4 py-5 border-b border-gray-200">
+                    <div class="flex items-center">
+                        <div class="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600">
+                            <i data-lucide="bar-chart-3" class="w-6 h-6 text-white"></i>
+                        </div>
+                        <h1 class="ml-3 text-xl font-bold text-gray-900">VenueSync</h1>
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="flex-1 px-2 py-4 space-y-1">
+                    <a href="#" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md bg-blue-50 text-blue-700">
+                        <i data-lucide="layout-dashboard" class="mr-3 h-5 w-5 text-blue-600"></i>
+                        Dashboard
+                    </a>
+                    <a href="#" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50">
+                        <i data-lucide="bar-chart-3" class="mr-3 h-5 w-5 text-gray-400"></i>
+                        Analytics
+                    </a>
+                    <a href="#" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50">
+                        <i data-lucide="message-square" class="mr-3 h-5 w-5 text-gray-400"></i>
+                        AI Assistant
+                    </a>
+                    <a href="#" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50">
+                        <i data-lucide="zap" class="mr-3 h-5 w-5 text-gray-400"></i>
+                        Actions
+                    </a>
+                    <a href="#" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50">
+                        <i data-lucide="calendar" class="mr-3 h-5 w-5 text-gray-400"></i>
+                        Events
+                    </a>
+                    <a href="#" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50">
+                        <i data-lucide="users" class="mr-3 h-5 w-5 text-gray-400"></i>
+                        Customers
+                    </a>
+                    <a href="#" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50">
+                        <i data-lucide="activity" class="mr-3 h-5 w-5 text-gray-400"></i>
+                        Activity
+                    </a>
+                    <a href="#" class="group flex items-center px-2 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50">
+                        <i data-lucide="settings" class="mr-3 h-5 w-5 text-gray-400"></i>
+                        Settings
+                    </a>
+                </nav>
+
+                <!-- User Menu -->
+                <div class="flex-shrink-0 flex border-t border-gray-200 p-4">
+                    <div class="flex items-center">
+                        <div class="w-8 h-8 rounded-full bg-gradient-to-br from-gray-600 to-gray-700 flex items-center justify-center text-white text-sm font-medium">
+                            JD
+                        </div>
+                        <div class="ml-3">
+                            <p class="text-sm font-medium text-gray-900">John Doe</p>
+                            <p class="text-xs text-gray-500">Venue Manager</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="flex flex-col flex-1 overflow-hidden">
+            <!-- Top Bar -->
+            <div class="bg-white shadow-sm border-b border-gray-200">
+                <div class="px-4 sm:px-6 lg:px-8">
+                    <div class="flex justify-between items-center py-4">
+                        <h2 class="text-lg font-semibold text-gray-900">Dashboard</h2>
+                        <div class="flex items-center space-x-4">
+                            <span class="text-sm text-gray-500">Last sync: 3:45 PM</span>
+                            <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Page Content -->
+            <main class="flex-1 overflow-y-auto p-8">
+                <div class="mb-8">
+                    <h1 class="text-2xl font-bold text-gray-900">Welcome back!</h1>
+                    <p class="text-gray-600 mt-1">Here's what's happening with your venue today.</p>
+                </div>
+
+                <!-- Metric Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+                    <!-- Today's Revenue -->
+                    <div class="bg-white rounded-lg border border-gray-200 p-6">
+                        <div class="flex items-center justify-between">
+                            <div class="p-2 rounded-lg bg-green-50">
+                                <i data-lucide="dollar-sign" class="h-6 w-6 text-green-600"></i>
+                            </div>
+                            <div class="flex items-center text-sm text-green-600">
+                                <i data-lucide="arrow-up-right" class="h-4 w-4 mr-1"></i>
+                                12.5%
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h3 class="text-sm font-medium text-gray-500">Today's Revenue</h3>
+                            <p class="mt-2 text-3xl font-semibold text-gray-900">$12,543</p>
+                        </div>
+                    </div>
+
+                    <!-- Tickets Sold -->
+                    <div class="bg-white rounded-lg border border-gray-200 p-6">
+                        <div class="flex items-center justify-between">
+                            <div class="p-2 rounded-lg bg-green-50">
+                                <i data-lucide="ticket" class="h-6 w-6 text-green-600"></i>
+                            </div>
+                            <div class="flex items-center text-sm text-green-600">
+                                <i data-lucide="arrow-up-right" class="h-4 w-4 mr-1"></i>
+                                8.3%
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h3 class="text-sm font-medium text-gray-500">Tickets Sold</h3>
+                            <p class="mt-2 text-3xl font-semibold text-gray-900">245</p>
+                        </div>
+                    </div>
+
+                    <!-- Transactions -->
+                    <div class="bg-white rounded-lg border border-gray-200 p-6">
+                        <div class="flex items-center justify-between">
+                            <div class="p-2 rounded-lg bg-green-50">
+                                <i data-lucide="shopping-cart" class="h-6 w-6 text-green-600"></i>
+                            </div>
+                            <div class="flex items-center text-sm text-green-600">
+                                <i data-lucide="arrow-up-right" class="h-4 w-4 mr-1"></i>
+                                5.2%
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h3 class="text-sm font-medium text-gray-500">Transactions</h3>
+                            <p class="mt-2 text-3xl font-semibold text-gray-900">189</p>
+                        </div>
+                    </div>
+
+                    <!-- Average Ticket -->
+                    <div class="bg-white rounded-lg border border-gray-200 p-6">
+                        <div class="flex items-center justify-between">
+                            <div class="p-2 rounded-lg bg-green-50">
+                                <i data-lucide="trending-up" class="h-6 w-6 text-green-600"></i>
+                            </div>
+                            <div class="flex items-center text-sm text-green-600">
+                                <i data-lucide="arrow-up-right" class="h-4 w-4 mr-1"></i>
+                                3.1%
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h3 class="text-sm font-medium text-gray-500">Average Ticket</h3>
+                            <p class="mt-2 text-3xl font-semibold text-gray-900">$66.35</p>
+                        </div>
+                    </div>
+
+                    <!-- Customers Today -->
+                    <div class="bg-white rounded-lg border border-gray-200 p-6">
+                        <div class="flex items-center justify-between">
+                            <div class="p-2 rounded-lg bg-green-50">
+                                <i data-lucide="users" class="h-6 w-6 text-green-600"></i>
+                            </div>
+                            <div class="flex items-center text-sm text-green-600">
+                                <i data-lucide="arrow-up-right" class="h-4 w-4 mr-1"></i>
+                                12.5%
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <h3 class="text-sm font-medium text-gray-500">Customers Today</h3>
+                            <p class="mt-2 text-3xl font-semibold text-gray-900">156</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Revenue Trend -->
+                    <div class="bg-white rounded-lg border border-gray-200 p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Revenue Trend</h3>
+                        <div class="h-64 flex items-end justify-between space-x-2">
+                            <div class="w-full h-40 bg-blue-100 rounded"></div>
+                            <div class="w-full h-48 bg-blue-100 rounded"></div>
+                            <div class="w-full h-44 bg-blue-100 rounded"></div>
+                            <div class="w-full h-52 bg-blue-100 rounded"></div>
+                            <div class="w-full h-56 bg-blue-100 rounded"></div>
+                            <div class="w-full h-48 bg-blue-100 rounded"></div>
+                            <div class="w-full h-60 bg-blue-100 rounded"></div>
+                            <div class="w-full h-52 bg-blue-100 rounded"></div>
+                            <div class="w-full h-56 bg-blue-100 rounded"></div>
+                            <div class="w-full h-64 bg-blue-100 rounded"></div>
+                            <div class="w-full h-60 bg-blue-100 rounded"></div>
+                            <div class="w-full h-56 bg-blue-100 rounded"></div>
+                            <div class="w-full h-64 bg-blue-500 rounded"></div>
+                            <div class="w-full h-60 bg-blue-500 rounded"></div>
+                        </div>
+                        <div class="flex justify-between mt-2 text-xs text-gray-500">
+                            <span>Dec 1</span>
+                            <span>Dec 7</span>
+                            <span>Dec 14</span>
+                        </div>
+                    </div>
+
+                    <!-- Hourly Performance -->
+                    <div class="bg-white rounded-lg border border-gray-200 p-6">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Today's Hourly Performance</h3>
+                        <div class="h-64 flex items-end justify-between space-x-1">
+                            <div class="w-full h-16 bg-green-400 rounded"></div>
+                            <div class="w-full h-20 bg-green-400 rounded"></div>
+                            <div class="w-full h-24 bg-green-400 rounded"></div>
+                            <div class="w-full h-32 bg-green-400 rounded"></div>
+                            <div class="w-full h-40 bg-green-400 rounded"></div>
+                            <div class="w-full h-48 bg-green-400 rounded"></div>
+                            <div class="w-full h-64 bg-green-400 rounded"></div>
+                            <div class="w-full h-60 bg-green-400 rounded"></div>
+                            <div class="w-full h-56 bg-green-400 rounded"></div>
+                            <div class="w-full h-52 bg-green-400 rounded"></div>
+                            <div class="w-full h-48 bg-green-400 rounded"></div>
+                            <div class="w-full h-40 bg-green-400 rounded"></div>
+                            <div class="w-full h-32 bg-green-400 rounded"></div>
+                            <div class="w-full h-24 bg-green-400 rounded"></div>
+                            <div class="w-full h-20 bg-green-400 rounded"></div>
+                            <div class="w-full h-16 bg-green-400 rounded"></div>
+                        </div>
+                        <div class="flex justify-between mt-2 text-xs text-gray-500">
+                            <span>9AM</span>
+                            <span>12PM</span>
+                            <span>3PM</span>
+                            <span>6PM</span>
+                            <span>9PM</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="mt-8 bg-white rounded-lg border border-gray-200 p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between py-3 border-b border-gray-100">
+                            <div class="flex items-center">
+                                <div class="w-2 h-2 bg-green-400 rounded-full mr-3"></div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">New reservation for 6 people</p>
+                                    <p class="text-xs text-gray-500">2 minutes ago</p>
+                                </div>
+                            </div>
+                            <span class="text-sm text-gray-600">Table 12</span>
+                        </div>
+                        <div class="flex items-center justify-between py-3 border-b border-gray-100">
+                            <div class="flex items-center">
+                                <div class="w-2 h-2 bg-blue-400 rounded-full mr-3"></div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">Payment processed</p>
+                                    <p class="text-xs text-gray-500">5 minutes ago</p>
+                                </div>
+                            </div>
+                            <span class="text-sm font-medium text-gray-900">$142.50</span>
+                        </div>
+                        <div class="flex items-center justify-between py-3 border-b border-gray-100">
+                            <div class="flex items-center">
+                                <div class="w-2 h-2 bg-purple-400 rounded-full mr-3"></div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">New event booking confirmed</p>
+                                    <p class="text-xs text-gray-500">15 minutes ago</p>
+                                </div>
+                            </div>
+                            <span class="text-sm text-gray-600">Dec 28</span>
+                        </div>
+                        <div class="flex items-center justify-between py-3 border-b border-gray-100">
+                            <div class="flex items-center">
+                                <div class="w-2 h-2 bg-yellow-400 rounded-full mr-3"></div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">Low stock alert: House Wine</p>
+                                    <p class="text-xs text-gray-500">30 minutes ago</p>
+                                </div>
+                            </div>
+                            <span class="text-sm text-orange-600">12 units left</span>
+                        </div>
+                        <div class="flex items-center justify-between py-3">
+                            <div class="flex items-center">
+                                <div class="w-2 h-2 bg-green-400 rounded-full mr-3"></div>
+                                <div>
+                                    <p class="text-sm font-medium text-gray-900">VIP table booked</p>
+                                    <p class="text-xs text-gray-500">45 minutes ago</p>
+                                </div>
+                            </div>
+                            <span class="text-sm text-gray-600">8 guests</span>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>
