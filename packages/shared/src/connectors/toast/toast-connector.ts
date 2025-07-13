@@ -254,27 +254,27 @@ export class ToastConnector extends BaseConnector {
       service_charge_amount: Math.round(
         (check.appliedServiceCharges?.reduce((sum, sc) => sum + sc.amount, 0) || 0) * 100
       ),
-      source_type: payment.type || null,
+      source_type: payment.type || undefined,
       status: payment.refundStatus || 'COMPLETED',
       receipt_number: order.guid,
-      receipt_url: null,
-      customer_id: check.customer?.guid || null,
+      receipt_url: undefined,
+      customer_id: check.customer?.guid || undefined,
       customer_name: check.customer 
         ? `${check.customer.firstName || ''} ${check.customer.lastName || ''}`.trim() 
-        : null,
-      customer_email: check.customer?.email || null,
-      team_member_id: order.server?.guid || null,
-      device_id: null,
+        : undefined,
+      customer_email: check.customer?.email || undefined,
+      team_member_id: order.server?.guid || undefined,
+      device_id: undefined,
       item_count: itemizations.reduce((sum, item) => sum + item.quantity, 0),
       unique_item_count: itemizations.length,
-      itemizations: itemizations.length > 0 ? itemizations : null,
+      itemizations: itemizations.length > 0 ? itemizations : undefined,
       payment_details: {
         payment_guid: payment.guid,
         type: payment.type,
         card_type: payment.cardType,
         last_4: payment.last4Digits,
       },
-      refunds: null,
+      refunds: undefined,
     };
   }
 
@@ -303,7 +303,13 @@ export class ToastConnector extends BaseConnector {
         duration: 0,
       };
     } catch (error) {
-      return this.handleError(error, 'save-transactions');
+      const connectorError = this.handleError(error, 'save-transactions');
+      return {
+        success: false,
+        error: connectorError,
+        timestamp: new Date(),
+        duration: 0,
+      };
     }
   }
 
