@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-VenueSync - Unified venue operations platform aggregating data from 7 service APIs (Eventbrite, Square POS, WISK, Resy, Audience Republic, Meta Business Suite, OpenTable) with AI-powered insights via Claude.
+VenueSync - Unified venue operations platform aggregating data from 7 service APIs (Eventbrite, Toast POS, WISK, Resy, Audience Republic, Meta Business Suite, OpenTable) with AI-powered insights via Claude.
 
 ## Technology Stack
 
@@ -92,7 +92,7 @@ This repository uses CodeRabbit for automated code reviews. When creating PRs:
 
 ### PR Best Practices
 - Keep PRs small and focused (< 400 lines when possible)
-- Write descriptive PR titles: `feat: add Square POS connector`
+- Write descriptive PR titles: `feat: add Toast POS connector`
 - Include test coverage for new features
 - Update documentation alongside code changes
 - Link related issues in PR description

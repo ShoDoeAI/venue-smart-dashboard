@@ -1,0 +1,22 @@
+{
+  "functions": {
+    "api/*.ts": {
+      "maxDuration": 60
+    },
+    "api/cron/*.ts": {
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "/api/:path*"
+    }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/fetch-data",
+      "schedule": "0 */3 * * *"
+    }
+  ]
+}

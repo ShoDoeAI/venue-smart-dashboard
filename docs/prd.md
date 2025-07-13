@@ -33,7 +33,7 @@ VenueSync is a unified venue operations platform that aggregates data from 7 dif
 
 ### External APIs
 1. **Eventbrite** - Event ticketing and attendance
-2. **Square POS** - Point of sale and payments
+2. **Toast POS** - Point of sale and payments
 3. **WISK** - Inventory management
 4. **Resy** - Restaurant reservations
 5. **Audience Republic** - Marketing automation
@@ -186,7 +186,7 @@ Example interactions:
 ### 3. Action Execution
 
 **Confirmation-based system** that can:
-- Update prices in Square POS
+- Update prices in Toast POS
 - Adjust event capacity in Eventbrite
 - Send marketing campaigns via Audience Republic
 - Create purchase orders in WISK
@@ -208,7 +208,7 @@ Example interactions:
 The complete database schema is defined in a separate document. Key tables include:
 - `venue_snapshots` - Master snapshot coordination
 - `eventbrite_events` - Event and ticketing data
-- `square_transactions` - POS and payment data
+- `toast_transactions` - POS and payment data
 - `wisk_inventory` - Inventory levels and variance
 - `resy_reservations` - Reservation details
 - `audience_republic_campaigns` - Marketing performance
@@ -316,7 +316,7 @@ Consistent error types across all connectors:
 **Day 3-4: First API Connectors**
 - Implement BaseConnector abstract class
 - Build Eventbrite connector with full testing
-- Build Square connector with full testing
+- Build Toast connector with full testing
 - Ensure type safety and error handling
 
 **Day 5: Remaining Connectors**
@@ -497,7 +497,7 @@ ANTHROPIC_API_KEY=
 
 # API Credentials (stored in Supabase, but needed for initial setup)
 EVENTBRITE_API_KEY=
-SQUARE_ACCESS_TOKEN=
+TOAST_ACCESS_TOKEN=
 WISK_API_KEY=
 RESY_API_KEY=
 RESY_AUTH_TOKEN=

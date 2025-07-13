@@ -1,0 +1,9 @@
+dist
+build
+.vercel
+node_modules
+coverage
+.next
+out
+*.js
+!.eslintrc.js

@@ -38,7 +38,7 @@ CREATE TABLE api_credentials (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW(),
     CONSTRAINT valid_service CHECK (service IN (
-        'eventbrite', 'square', 'wisk', 'resy', 
+        'eventbrite', 'toast', 'wisk', 'resy', 
         'audience_republic', 'meta', 'opentable'
     ))
 );
@@ -143,11 +143,11 @@ CREATE TABLE eventbrite_attendees (
 );
 ```
 
-### 3. Square POS Data
+### 3. Toast POS Data
 
 ```sql
--- Square transactions (historical)
-CREATE TABLE square_transactions (
+-- Toast transactions (historical)
+CREATE TABLE toast_transactions (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     snapshot_timestamp TIMESTAMPTZ NOT NULL,
     transaction_id TEXT NOT NULL,
@@ -647,7 +647,7 @@ CREATE TABLE venue_snapshots (
     
     -- Quick reference to know which APIs were successfully fetched
     eventbrite_fetched BOOLEAN DEFAULT false,
-    square_fetched BOOLEAN DEFAULT false,
+    toast_fetched BOOLEAN DEFAULT false,
     wisk_fetched BOOLEAN DEFAULT false,
     resy_fetched BOOLEAN DEFAULT false,
     audience_republic_fetched BOOLEAN DEFAULT false,
@@ -849,7 +849,7 @@ BEGIN
         )
     ) INTO metrics
     FROM venue_snapshots vs
-    LEFT JOIN square_transactions s ON s.snapshot_timestamp = vs.snapshot_timestamp
+    LEFT JOIN toast_transactions s ON s.snapshot_timestamp = vs.snapshot_timestamp
     LEFT JOIN eventbrite_events e ON e.snapshot_timestamp = vs.snapshot_timestamp
     LEFT JOIN wisk_inventory w ON w.snapshot_timestamp = vs.snapshot_timestamp
     LEFT JOIN audience_republic_campaigns ar ON ar.snapshot_timestamp = vs.snapshot_timestamp
@@ -864,7 +864,7 @@ $$ LANGUAGE 'plpgsql';
 
 ```sql
 -- Additional performance indexes
-CREATE INDEX idx_square_daily ON square_transactions(date_trunc('day', created_at), location_id);
+CREATE INDEX idx_square_daily ON toast_transactions(date_trunc('day', created_at), location_id);
 CREATE INDEX idx_eventbrite_upcoming ON eventbrite_events(start_time) WHERE start_time > NOW();
 CREATE INDEX idx_wisk_reorder ON wisk_inventory(is_critical, is_below_par) WHERE snapshot_timestamp = (SELECT MAX(snapshot_timestamp) FROM wisk_inventory);
 CREATE INDEX idx_resy_today ON resy_reservations(date, status) WHERE date = CURRENT_DATE;
@@ -872,7 +872,7 @@ CREATE INDEX idx_meta_recent ON meta_insights(platform, snapshot_timestamp) WHER
 
 -- Composite indexes for common queries
 CREATE INDEX idx_venue_snapshot_complete ON venue_snapshots(snapshot_timestamp DESC) 
-    WHERE eventbrite_fetched AND square_fetched AND wisk_fetched;
+    WHERE eventbrite_fetched AND toast_fetched AND wisk_fetched;
 
 -- Full text search on guest names
 CREATE INDEX idx_guest_search ON resy_reservations USING gin(to_tsvector('english', guest_name));
@@ -885,7 +885,7 @@ CREATE INDEX idx_opentable_guest_search ON opentable_guests USING gin(to_tsvecto
 -- Enable RLS on all tables
 ALTER TABLE venue_config ENABLE ROW LEVEL SECURITY;
 ALTER TABLE eventbrite_events ENABLE ROW LEVEL SECURITY;
-ALTER TABLE square_transactions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE toast_transactions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE wisk_inventory ENABLE ROW LEVEL SECURITY;
 ALTER TABLE resy_reservations ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audience_republic_campaigns ENABLE ROW LEVEL SECURITY;
@@ -901,7 +901,7 @@ CREATE POLICY "Users can view all venue data" ON venue_config
 CREATE POLICY "Users can view all events" ON eventbrite_events
     FOR SELECT USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Users can view all transactions" ON square_transactions
+CREATE POLICY "Users can view all transactions" ON toast_transactions
     FOR SELECT USING (auth.role() = 'authenticated');
 
 -- Add similar policies for all tables
@@ -932,7 +932,7 @@ WITH daily_revenue AS (
         SUM(total_amount) / 100.0 as revenue,
         COUNT(*) as transactions,
         AVG(total_amount) / 100.0 as avg_transaction
-    FROM square_transactions
+    FROM toast_transactions
     WHERE created_at >= NOW() - INTERVAL '30 days'
     GROUP BY 1
 )
