@@ -1,14 +1,22 @@
-# VenueSync
+# VenueSync - AI-Powered Venue Management Dashboard
 
-Unified venue operations platform aggregating data from 7 service APIs with AI-powered insights via Claude.
+Unified venue operations platform aggregating data from multiple service APIs with AI-powered insights via Claude.
+
+## 🚀 Quick Links
+
+- [**Quick Start Guide**](QUICKSTART.md) - Get running in 15 minutes
+- [**Testing Guide**](TESTING.md) - Complete testing documentation
+- [**Deployment Guide**](DEPLOYMENT.md) - Deploy to production with Vercel
+- [**Dashboard Demo**](dashboard-demo.html) - See it in action
 
 ## Overview
 
 VenueSync provides real-time visibility into all aspects of venue operations by:
-- Aggregating data from Eventbrite, Toast POS, WISK, Resy, Audience Republic, Meta Business Suite, and OpenTable
+- Aggregating data from Toast POS, Eventbrite, OpenDate.io, and more
 - Calculating key performance indicators and generating alerts
 - Providing natural language insights through Claude AI integration
 - Enabling action execution across platforms with confirmation
+- Beautiful React dashboard with real-time updates
 
 ## Tech Stack
 
