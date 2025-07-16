@@ -20,7 +20,11 @@
     "clean": "pnpm -r clean && rm -rf node_modules",
     "prepare": "husky install",
     "db:setup": "./scripts/setup-database.sh",
-    "generate:types": "tsx scripts/generate-types.ts"
+    "generate:types": "tsx scripts/generate-types.ts",
+    "deploy": "./deploy.sh",
+    "deploy:prod": "./deploy.sh production",
+    "vercel": "vercel",
+    "vercel:prod": "vercel --prod"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
@@ -39,6 +43,7 @@
     "supabase": "^2.30.4",
     "tsx": "^4.20.3",
     "typescript": "^5.3.3",
+    "vercel": "^33.7.1",
     "vitest": "^1.2.1"
   },
   "lint-staged": {
