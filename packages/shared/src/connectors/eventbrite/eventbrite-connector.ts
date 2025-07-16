@@ -33,7 +33,7 @@ export class EventbriteConnector extends BaseConnector {
   ) {
     super(credentials, config, supabase);
     
-    this.eventbriteCredentials = credentials.credentials as EventbriteCredentials;
+    this.eventbriteCredentials = credentials.credentials as unknown as EventbriteCredentials;
     
     this.client = axios.create({
       baseURL: API_ENDPOINTS.EVENTBRITE.BASE,
@@ -95,7 +95,7 @@ export class EventbriteConnector extends BaseConnector {
         const response = await this.client.get<EventbriteApiResponse<EventbriteOrganization>>(
           '/users/me/organizations/'
         );
-        return response.data.organizations || [];
+        return (response.data as any).organizations || [];
       },
       'fetch-organizations'
     );
@@ -264,7 +264,12 @@ export class EventbriteConnector extends BaseConnector {
     // First, get event details for context
     const eventResult = await this.fetchEventDetails(eventId);
     if (!eventResult.success) {
-      return eventResult as FetchResult<TransformedEventbriteTransaction[]>;
+      return {
+        success: false,
+        error: eventResult.error,
+        timestamp: eventResult.timestamp,
+        duration: eventResult.duration
+      };
     }
 
     const event = eventResult.data!;
@@ -273,11 +278,16 @@ export class EventbriteConnector extends BaseConnector {
     do {
       const attendeesResult = await this.fetchEventAttendees(eventId, undefined, cursor);
       if (!attendeesResult.success) {
-        return attendeesResult as FetchResult<TransformedEventbriteTransaction[]>;
+        return {
+          success: false,
+          error: attendeesResult.error,
+          timestamp: attendeesResult.timestamp,
+          duration: attendeesResult.duration
+        };
       }
 
       const attendees = attendeesResult.data?.data || [];
-      cursor = attendeesResult.data?.nextCursor;
+      cursor = attendeesResult.data?.nextCursor?.toString();
 
       // Transform attendees to transactions
       for (const attendee of attendees) {

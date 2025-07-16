@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { KPICalculator } from '../../src/services/kpi-calculator';
-import type { Database } from '@venuesync/shared/types/database.generated';
+import type { Database } from '@venuesync/shared';
 
 /**
  * Vercel Cron job to calculate KPIs and generate analytics

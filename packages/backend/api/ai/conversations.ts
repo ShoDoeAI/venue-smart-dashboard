@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { ClaudeAI } from '../../src/services/claude-ai';
-import type { Database } from '@venuesync/shared/types/database.generated';
+import type { Database } from '@venuesync/shared';
 
 /**
  * AI Conversations endpoint

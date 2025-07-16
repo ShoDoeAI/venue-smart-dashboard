@@ -10,7 +10,7 @@ export interface ConnectorConfig {
 }
 
 export interface ConnectorCredentials {
-  service: 'eventbrite' | 'toast' | 'wisk' | 'resy' | 'audience_republic' | 'meta' | 'opentable';
+  service: 'eventbrite' | 'toast' | 'wisk' | 'resy' | 'audience_republic' | 'meta' | 'opentable' | 'opendate';
   credentials: Record<string, unknown>;
   isActive: boolean;
 }

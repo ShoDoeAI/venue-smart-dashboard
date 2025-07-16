@@ -94,10 +94,10 @@ export class AIPromptTemplates {
       template: `Analyze the revenue performance for {{venue.name}}:
 
 Current Performance:
-- Today's Revenue: ${{revenue.today}} ({{transactions.today}} transactions)
-- Last Hour: ${{revenue.lastHour}}
+- Today's Revenue: \${{revenue.today}} ({{transactions.today}} transactions)
+- Last Hour: \${{revenue.lastHour}}
 - Revenue Growth: {{trends.revenueGrowth}}%
-- Average Transaction: ${{trends.avgTicket}}
+- Average Transaction: \${{trends.avgTicket}}
 
 Please provide:
 1. Assessment of current revenue performance
@@ -118,8 +118,8 @@ Focus on actionable insights that can be implemented today.`,
       template: `Based on current performance and historical patterns for {{venue.name}}:
 
 Current Status:
-- Last Hour Revenue: ${{revenue.lastHour}}
-- Today's Total: ${{revenue.today}}
+- Last Hour Revenue: \${{revenue.lastHour}}
+- Today's Total: \${{revenue.today}}
 - Peak Hours: {{trends.peakHours}}
 
 Please forecast:
@@ -141,7 +141,7 @@ Please forecast:
 Customer Metrics:
 - Today's Customers: {{customers.today}}
 - Customer Growth: {{trends.customerGrowth}}%
-- Average Spend: ${{trends.avgTicket}}
+- Average Spend: \${{trends.avgTicket}}
 - Peak Hours: {{trends.peakHours}}
 
 Please analyze:
@@ -205,7 +205,7 @@ Please provide:
       template: `Diagnose performance for {{venue.name}}:
 
 Current Metrics:
-- Revenue: ${{revenue.today}} (Growth: {{trends.revenueGrowth}}%)
+- Revenue: \${{revenue.today}} (Growth: {{trends.revenueGrowth}}%)
 - Customers: {{customers.today}} (Growth: {{trends.customerGrowth}}%)
 - Transactions: {{transactions.today}}
 
@@ -230,7 +230,7 @@ Please diagnose:
       template: `Create a daily action plan for {{venue.name}}:
 
 Current Status:
-- Revenue: ${{revenue.today}}
+- Revenue: \${{revenue.today}}
 - Active Alerts: {{alerts.count}}
 
 Available Actions:
@@ -283,7 +283,7 @@ Analyze:
 
 Context:
 - Type: {{venue.type}}
-- Today's Performance: ${{revenue.today}} revenue, {{customers.today}} customers
+- Today's Performance: \${{revenue.today}} revenue, {{customers.today}} customers
 - Recent Trends: {{trends.revenueGrowth}}% revenue growth
 - Peak Activity: {{trends.peakHours}}
 

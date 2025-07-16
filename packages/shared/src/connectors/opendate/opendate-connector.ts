@@ -31,8 +31,8 @@ import type {
   OpenDateAnalytics,
   OpenDateConfirmFilters,
   OpenDateOrderFilters,
-  OpenDateFanFilters,
-  OpenDateApiResponse,
+  OpenDateFanFilters
+  // OpenDateApiResponse
 } from './types';
 
 import {
@@ -50,6 +50,9 @@ import {
 import { OPENDATE_API_ENDPOINTS } from './types';
 
 export class OpenDateConnector extends BaseConnector {
+  get serviceName(): string {
+    return 'opendate';
+  }
   private client: AxiosInstance;
   private openDateCredentials: OpenDateCredentials;
   private refreshToken?: string;
@@ -80,7 +83,7 @@ export class OpenDateConnector extends BaseConnector {
     // Set up request interceptor for logging
     this.client.interceptors.request.use(
       (config) => {
-        this.logger.debug('OpenDate API Request', {
+        this.log('debug', 'OpenDate API Request', {
           method: config.method?.toUpperCase(),
           url: config.url,
           params: config.params,
@@ -93,7 +96,7 @@ export class OpenDateConnector extends BaseConnector {
     // Set up response interceptor for token refresh and error handling
     this.client.interceptors.response.use(
       (response) => {
-        this.logger.debug('OpenDate API Response', {
+        this.log('debug', 'OpenDate API Response', {
           status: response.status,
           url: response.config.url,
           dataLength: Array.isArray(response.data?.data) ? response.data.data.length : 'single',
@@ -103,7 +106,7 @@ export class OpenDateConnector extends BaseConnector {
       async (error: AxiosError) => {
         // Handle 401 Unauthorized - attempt token refresh
         if (error.response?.status === 401 && this.refreshToken) {
-          this.logger.info('Access token expired, attempting refresh...');
+          this.log('info', 'Access token expired, attempting refresh...');
           
           try {
             const refreshResponse = await axios.post(
@@ -131,7 +134,7 @@ export class OpenDateConnector extends BaseConnector {
               return this.client.request(error.config);
             }
           } catch (refreshError) {
-            this.logger.error('Token refresh failed', { error: refreshError });
+            this.log('error', 'Token refresh failed', { error: refreshError });
             return Promise.reject(error);
           }
         }
@@ -139,7 +142,7 @@ export class OpenDateConnector extends BaseConnector {
         // Handle rate limiting
         if (error.response?.status === 429) {
           const retryAfter = parseInt(error.response.headers['retry-after'] || '60', 10);
-          this.logger.warn(`OpenDate API rate limited. Waiting ${retryAfter} seconds.`);
+          this.log('warn', `OpenDate API rate limited. Waiting ${retryAfter} seconds.`);
           await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
           return this.client.request(error.config!);
         }
@@ -155,7 +158,7 @@ export class OpenDateConnector extends BaseConnector {
   async testConnection(): Promise<FetchResult<any>> {
     return this.fetchWithRetry(
       async () => {
-        this.logger.info('Testing OpenDate API connection');
+        this.log('info', 'Testing OpenDate API connection');
         
         // Use the venues endpoint as a simple test
         const response = await this.client.get(OPENDATE_API_ENDPOINTS.VENUES.LIST);
@@ -174,7 +177,7 @@ export class OpenDateConnector extends BaseConnector {
       const result = await this.testConnection();
       return result.success;
     } catch (error) {
-      this.logger.error('Failed to validate OpenDate credentials', { error });
+      this.log('error', 'Failed to validate OpenDate credentials', { error });
       return false;
     }
   }
@@ -185,7 +188,7 @@ export class OpenDateConnector extends BaseConnector {
   async fetchArtists(): Promise<FetchResult<{ data: OpenDateArtist[]; hasMore: boolean; total: number }>> {
     return this.fetchWithRetry(
       async () => {
-        this.logger.info('Fetching OpenDate artists');
+        this.log('info', 'Fetching OpenDate artists');
 
         const response = await this.client.get(OPENDATE_API_ENDPOINTS.ARTISTS.LIST, {
           params: { per_page: 100 }
@@ -211,7 +214,7 @@ export class OpenDateConnector extends BaseConnector {
   ): Promise<FetchResult<{ data: OpenDateConfirm[]; hasMore: boolean; total: number }>> {
     return this.fetchWithRetry(
       async () => {
-        this.logger.info('Fetching OpenDate confirms (events/shows)', { filters });
+        this.log('info', 'Fetching OpenDate confirms (events/shows)', { filters });
 
         const params: any = {
           per_page: 100,
@@ -237,7 +240,7 @@ export class OpenDateConnector extends BaseConnector {
   async fetchConfirmDetails(confirmId: string): Promise<FetchResult<OpenDateConfirm>> {
     return this.fetchWithRetry(
       async () => {
-        this.logger.info('Fetching OpenDate confirm details', { confirmId });
+        this.log('info', 'Fetching OpenDate confirm details', { confirmId });
 
         const response = await this.client.get(
           OPENDATE_API_ENDPOINTS.CONFIRMS.DETAIL.replace(':id', confirmId)
@@ -261,7 +264,7 @@ export class OpenDateConnector extends BaseConnector {
   async fetchConfirmProfitLoss(confirmId: string): Promise<FetchResult<any>> {
     return this.fetchWithRetry(
       async () => {
-        this.logger.info('Fetching profit/loss for confirm', { confirmId });
+        this.log('info', 'Fetching profit/loss for confirm', { confirmId });
 
         const response = await this.client.get(
           OPENDATE_API_ENDPOINTS.CONFIRMS.PROFIT_LOSS.replace(':id', confirmId)
@@ -281,7 +284,7 @@ export class OpenDateConnector extends BaseConnector {
   ): Promise<FetchResult<{ data: OpenDateOrder[]; hasMore: boolean; total: number }>> {
     return this.fetchWithRetry(
       async () => {
-        this.logger.info('Fetching OpenDate orders', { filters });
+        this.log('info', 'Fetching OpenDate orders', { filters });
 
         const params: any = {
           per_page: 100,
@@ -309,7 +312,7 @@ export class OpenDateConnector extends BaseConnector {
   ): Promise<FetchResult<{ data: OpenDateFan[]; hasMore: boolean; total: number }>> {
     return this.fetchWithRetry(
       async () => {
-        this.logger.info('Fetching OpenDate fans', { filters });
+        this.log('info', 'Fetching OpenDate fans', { filters });
 
         const params: any = {
           per_page: 100,
@@ -335,7 +338,7 @@ export class OpenDateConnector extends BaseConnector {
   async fetchVenues(): Promise<FetchResult<{ data: OpenDateVenue[]; hasMore: boolean; total: number }>> {
     return this.fetchWithRetry(
       async () => {
-        this.logger.info('Fetching OpenDate venues');
+        this.log('info', 'Fetching OpenDate venues');
 
         const response = await this.client.get(OPENDATE_API_ENDPOINTS.VENUES.LIST, {
           params: { per_page: 100 }
@@ -363,7 +366,7 @@ export class OpenDateConnector extends BaseConnector {
   ): Promise<FetchResult<{ data: OpenDateSettlement[]; hasMore: boolean; total: number }>> {
     return this.fetchWithRetry(
       async () => {
-        this.logger.info('Fetching OpenDate settlements', { venueId, startDate, endDate });
+        this.log('info', 'Fetching OpenDate settlements', { venueId, startDate, endDate });
 
         const params: any = { per_page: 100 };
         if (venueId) params.venue_id = venueId;
@@ -393,7 +396,7 @@ export class OpenDateConnector extends BaseConnector {
   ): Promise<FetchResult<OpenDateAnalytics>> {
     return this.fetchWithRetry(
       async () => {
-        this.logger.info('Fetching OpenDate analytics', { venueId, startDate, endDate });
+        this.log('info', 'Fetching OpenDate analytics', { venueId, startDate, endDate });
 
         const params: any = {};
         if (venueId) params.venue_id = venueId;
@@ -423,7 +426,7 @@ export class OpenDateConnector extends BaseConnector {
   ): Promise<FetchResult<OpenDateTransaction[]>> {
     return this.fetchWithRetry(
       async () => {
-        this.logger.info('Fetching all OpenDate transactions (transformed from orders)', { 
+        this.log('info', 'Fetching all OpenDate transactions (transformed from orders)', { 
           venueId, startDate, endDate 
         });
 
@@ -511,7 +514,7 @@ export class OpenDateConnector extends BaseConnector {
           }
         }
 
-        this.logger.info(`Transformed ${ordersResult.data.data.length} orders to ${transactions.length} transactions`);
+        this.log('info', `Transformed ${ordersResult.data.data.length} orders to ${transactions.length} transactions`);
 
         return transactions;
       },
@@ -529,7 +532,7 @@ export class OpenDateConnector extends BaseConnector {
     const startTime = Date.now();
     
     try {
-      this.logger.info(`Saving ${transactions.length} OpenDate transactions to database`);
+      this.log('info', `Saving ${transactions.length} OpenDate transactions to database`);
 
       // Add snapshot timestamp to each transaction
       const transactionsWithSnapshot = transactions.map(transaction => ({
@@ -545,7 +548,7 @@ export class OpenDateConnector extends BaseConnector {
         throw error;
       }
 
-      this.logger.info(`Successfully saved ${transactions.length} OpenDate transactions`);
+      this.log('info', `Successfully saved ${transactions.length} OpenDate transactions`);
 
       return {
         success: true,
@@ -570,7 +573,7 @@ export class OpenDateConnector extends BaseConnector {
   async checkInTicket(ticketId: string): Promise<FetchResult<OpenDateTicket>> {
     return this.fetchWithRetry(
       async () => {
-        this.logger.info('Checking in ticket', { ticketId });
+        this.log('info', 'Checking in ticket', { ticketId });
 
         const response = await this.client.post(
           OPENDATE_API_ENDPOINTS.TICKETS.CHECKIN.replace(':id', ticketId)
@@ -596,8 +599,7 @@ export class OpenDateConnector extends BaseConnector {
         return {
           message: errorData.error || errorData.message || axiosError.message,
           code: `OPENDATE_${axiosError.response.status}`,
-          details: errorData,
-          operation,
+          details: { ...errorData, operation },
           timestamp: new Date(),
           retryable: axiosError.response.status >= 500 || axiosError.response.status === 429,
         };

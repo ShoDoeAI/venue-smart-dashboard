@@ -1,12 +1,12 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@venuesync/shared/types/database.generated';
+import type { Database } from '@venuesync/shared';
 import type {
   VenueSyncAction,
   ActionConfirmationRequest,
   ToastAction,
   EventbriteAction,
   OpenDateAction,
-} from '@venuesync/shared/types/actions';
+} from '@venuesync/shared';
 import { KPICalculator } from './kpi-calculator';
 
 export class ActionConfirmationService {

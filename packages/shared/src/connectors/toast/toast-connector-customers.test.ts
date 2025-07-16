@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import axios from 'axios';
 import { ToastConnector } from './toast-connector';
 import { createMockSupabaseClient } from '../test-utils';
-import type { ToastCustomer, ToastEmployee } from './types';
+import type { ToastEmployee } from './types';
 
 vi.mock('axios');
 
@@ -32,7 +32,6 @@ describe('ToastConnector - Customers and Team Members', () => {
     
     connector = new ToastConnector(
       {
-        id: 'test-id',
         service: 'toast',
         credentials: {
           clientId: 'test-client-id',
@@ -40,9 +39,7 @@ describe('ToastConnector - Customers and Team Members', () => {
           locationGuid: 'test-location-guid',
           environment: 'sandbox',
         },
-        metadata: {},
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        isActive: true,
       },
       {},
       mockSupabase
@@ -90,7 +87,6 @@ describe('ToastConnector - Customers and Team Members', () => {
       const mockTeamMembers: ToastEmployee[] = [
         {
           guid: 'TM123',
-          entityType: 'Employee',
           firstName: 'Alice',
           lastName: 'Johnson',
           email: 'alice@example.com',
@@ -98,7 +94,6 @@ describe('ToastConnector - Customers and Team Members', () => {
         },
         {
           guid: 'TM456',
-          entityType: 'Employee', 
           firstName: 'Bob',
           lastName: 'Owner',
           email: 'bob@example.com',

@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { ToastConnector } from '@venuesync/shared/connectors/toast/toast-connector';
-import type { Database } from '@venuesync/shared/types/database.generated';
+import { ToastConnector } from '@venuesync/shared';
+import type { Database } from '@venuesync/shared';
 
 // Validate environment variables
 const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];

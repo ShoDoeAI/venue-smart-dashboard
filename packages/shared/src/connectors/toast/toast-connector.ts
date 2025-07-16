@@ -36,7 +36,7 @@ export class ToastConnector extends BaseConnector {
   ) {
     super(credentials, config, supabase);
     
-    this.toastCredentials = credentials.credentials as ToastCredentials;
+    this.toastCredentials = credentials.credentials as unknown as ToastCredentials;
     
     const baseURL = this.toastCredentials.environment === 'sandbox'
       ? API_ENDPOINTS.TOAST.SANDBOX
@@ -210,11 +210,11 @@ export class ToastConnector extends BaseConnector {
     do {
       const ordersResult = await this.fetchOrders(locationId, startTime, endTime, cursor);
       if (!ordersResult.success) {
-        return ordersResult as FetchResult<TransformedToastTransaction[]>;
+        return ordersResult as unknown as FetchResult<TransformedToastTransaction[]>;
       }
 
       const orders = ordersResult.data?.data || [];
-      cursor = ordersResult.data?.nextCursor;
+      cursor = ordersResult.data?.nextCursor as string | undefined;
 
       // Transform orders to transactions
       for (const order of orders) {
@@ -314,8 +314,8 @@ export class ToastConnector extends BaseConnector {
   }
 
   async fetchCustomers(
-    cursor?: string,
-    createdAt?: { gte?: Date; lte?: Date }
+    _cursor?: string,
+    _createdAt?: { gte?: Date; lte?: Date }
   ): Promise<FetchResult<PaginatedResponse<ToastCustomer>>> {
     // Toast API doesn't have a direct customer endpoint
     // Customers are associated with orders/checks
@@ -331,7 +331,7 @@ export class ToastConnector extends BaseConnector {
   }
 
   async fetchTeamMembers(
-    locationIds: string[]
+    _locationIds: string[]
   ): Promise<FetchResult<PaginatedResponse<ToastEmployee>>> {
     return this.fetchWithRetry(
       async () => {
@@ -370,8 +370,7 @@ export class ToastConnector extends BaseConnector {
    */
   async updateMenuItemPrice(itemGuid: string, newPrice: number): Promise<any> {
     try {
-      const response = await this.makeRequest<any>(
-        'PUT',
+      const response = await this.client.put(
         `/menuItems/${itemGuid}`,
         { price: newPrice }
       );
@@ -386,8 +385,7 @@ export class ToastConnector extends BaseConnector {
    */
   async updateMenuItemAvailability(itemGuid: string, available: boolean): Promise<any> {
     try {
-      const response = await this.makeRequest<any>(
-        'PUT',
+      const response = await this.client.put(
         `/menuItems/${itemGuid}`,
         { available }
       );
@@ -408,8 +406,7 @@ export class ToastConnector extends BaseConnector {
     endDate?: string;
   }): Promise<any> {
     try {
-      const response = await this.makeRequest<any>(
-        'POST',
+      const response = await this.client.post(
         '/discounts',
         discount
       );
@@ -424,8 +421,7 @@ export class ToastConnector extends BaseConnector {
    */
   async updateModifierPrice(modifierGuid: string, newPrice: number): Promise<any> {
     try {
-      const response = await this.makeRequest<any>(
-        'PUT',
+      const response = await this.client.put(
         `/modifiers/${modifierGuid}`,
         { price: newPrice }
       );

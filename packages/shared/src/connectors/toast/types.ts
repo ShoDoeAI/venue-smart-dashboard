@@ -3,7 +3,7 @@
  * Based on Toast REST API
  */
 
-import type { Json } from '../../types/json';
+// import type { Json } from '../../types/json';
 
 // API Credentials
 export interface ToastCredentials {

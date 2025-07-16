@@ -12,8 +12,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { config } from 'dotenv';
 import { resolve } from 'path';
-import { ToastConnector } from '@venuesync/shared/connectors/toast/toast-connector';
-import type { Database } from '@venuesync/shared/types/database.generated';
+import { ToastConnector } from '@venuesync/shared';
+import type { Database } from '@venuesync/shared';
 
 // Load environment variables
 config({ path: resolve(process.cwd(), '.env.local') });

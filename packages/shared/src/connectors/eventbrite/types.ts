@@ -1,4 +1,4 @@
-import type { Json } from '../../types/json';
+// import type { Json } from '../../types/json';
 
 // Authentication types
 export interface EventbriteCredentials {

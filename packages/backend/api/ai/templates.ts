@@ -2,7 +2,7 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { AIPromptTemplates } from '../../src/services/ai-prompt-templates';
 import { AIContextAggregator } from '../../src/services/ai-context-aggregator';
-import type { Database } from '@venuesync/shared/types/database.generated';
+import type { Database } from '@venuesync/shared';
 
 /**
  * AI Templates endpoint

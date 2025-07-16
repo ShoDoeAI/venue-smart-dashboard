@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import { ClaudeAI } from '../../src/services/claude-ai';
 import { AIContextAggregator } from '../../src/services/ai-context-aggregator';
 import { AIPromptTemplates } from '../../src/services/ai-prompt-templates';
-import type { Database } from '@venuesync/shared/types/database.generated';
+import type { Database } from '@venuesync/shared';
 
 /**
  * AI Analysis endpoint - uses predefined templates

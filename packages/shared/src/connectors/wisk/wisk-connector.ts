@@ -38,7 +38,7 @@ import type {
 
 import {
   WiskCredentialsSchema,
-  WiskInventoryItemsResponseSchema,
+  // WiskInventoryItemsResponseSchema,
   WiskStockMovementsResponseSchema,
   WiskSuppliersResponseSchema,
   WiskPurchaseOrdersResponseSchema,
@@ -52,6 +52,9 @@ import {
 import { WISK_API_ENDPOINTS } from './types';
 
 export class WiskConnector extends BaseConnector {
+  get serviceName(): string {
+    return 'wisk';
+  }
   private client: AxiosInstance;
   private wiskCredentials: WiskCredentials;
 
@@ -80,7 +83,7 @@ export class WiskConnector extends BaseConnector {
     // Set up request interceptor for logging
     this.client.interceptors.request.use(
       (config) => {
-        this.logger.debug('WISK API Request', {
+        this.log('debug', 'WISK API Request', {
           method: config.method?.toUpperCase(),
           url: config.url,
           params: config.params,
@@ -93,7 +96,7 @@ export class WiskConnector extends BaseConnector {
     // Set up response interceptor for error handling and rate limiting
     this.client.interceptors.response.use(
       (response) => {
-        this.logger.debug('WISK API Response', {
+        this.log('debug', 'WISK API Response', {
           status: response.status,
           url: response.config.url,
           dataLength: Array.isArray(response.data?.data) ? response.data.data.length : 'single',
@@ -104,7 +107,7 @@ export class WiskConnector extends BaseConnector {
         if (error.response?.status === 429) {
           // Rate limiting - wait and retry
           const retryAfter = parseInt(error.response.headers['retry-after'] || '60', 10);
-          this.logger.warn(`WISK API rate limited. Waiting ${retryAfter} seconds.`);
+          this.log('warn', `WISK API rate limited. Waiting ${retryAfter} seconds.`);
           await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
           return this.client.request(error.config!);
         }
@@ -120,7 +123,7 @@ export class WiskConnector extends BaseConnector {
     const startTime = Date.now();
     
     try {
-      this.logger.info('Testing WISK API connection');
+      this.log('info', 'Testing WISK API connection');
       
       const response = await this.client.get(WISK_API_ENDPOINTS.AUTH.VALIDATE);
       
@@ -149,7 +152,7 @@ export class WiskConnector extends BaseConnector {
       const result = await this.testConnection();
       return result.success;
     } catch (error) {
-      this.logger.error('Failed to validate WISK credentials', { error });
+      this.log('error', 'Failed to validate WISK credentials', { error });
       return false;
     }
   }
@@ -163,7 +166,7 @@ export class WiskConnector extends BaseConnector {
   ): Promise<FetchResult<{ data: WiskInventoryItem[]; hasMore: boolean; total: number }>> {
     return this.fetchWithRetry(
       async () => {
-        this.logger.info('Fetching WISK inventory items', { locationId, filters });
+        this.log('info', 'Fetching WISK inventory items', { locationId, filters });
 
         const params: any = {
           page_size: 100,
@@ -200,7 +203,7 @@ export class WiskConnector extends BaseConnector {
     const startTime = Date.now();
     
     try {
-      this.logger.info('Fetching WISK stock movements', { filters });
+      this.log('info', 'Fetching WISK stock movements', { filters });
 
       const params: any = {
         page_size: 100,
@@ -242,7 +245,7 @@ export class WiskConnector extends BaseConnector {
     const startTime = Date.now();
     
     try {
-      this.logger.info('Fetching WISK suppliers');
+      this.log('info', 'Fetching WISK suppliers');
 
       const response = await this.client.get(WISK_API_ENDPOINTS.SUPPLIERS.LIST, {
         params: { page_size: 100 }
@@ -283,7 +286,7 @@ export class WiskConnector extends BaseConnector {
     const startTime = Date.now();
     
     try {
-      this.logger.info('Fetching WISK purchase orders', { locationId });
+      this.log('info', 'Fetching WISK purchase orders', { locationId });
 
       const params: any = { page_size: 100 };
       if (locationId) {
@@ -327,7 +330,7 @@ export class WiskConnector extends BaseConnector {
     const startTime = Date.now();
     
     try {
-      this.logger.info('Fetching WISK recipes', { locationId });
+      this.log('info', 'Fetching WISK recipes', { locationId });
 
       const params: any = { page_size: 100 };
       if (locationId) {
@@ -369,7 +372,7 @@ export class WiskConnector extends BaseConnector {
     const startTime = Date.now();
     
     try {
-      this.logger.info('Fetching WISK locations');
+      this.log('info', 'Fetching WISK locations');
 
       const response = await this.client.get(WISK_API_ENDPOINTS.LOCATIONS.LIST, {
         params: { page_size: 100 }
@@ -412,7 +415,7 @@ export class WiskConnector extends BaseConnector {
     const startTime = Date.now();
     
     try {
-      this.logger.info('Fetching WISK waste entries', { locationId, startDate, endDate });
+      this.log('info', 'Fetching WISK waste entries', { locationId, startDate, endDate });
 
       const params: any = { page_size: 100 };
       if (locationId) params.location_id = locationId;
@@ -458,7 +461,7 @@ export class WiskConnector extends BaseConnector {
     const startTime = Date.now();
     
     try {
-      this.logger.info('Fetching WISK inventory analytics', { locationId, startDate, endDate });
+      this.log('info', 'Fetching WISK inventory analytics', { locationId, startDate, endDate });
 
       const params: any = {};
       if (locationId) params.location_id = locationId;
@@ -500,7 +503,7 @@ export class WiskConnector extends BaseConnector {
     const startTime = Date.now();
     
     try {
-      this.logger.info('Fetching all WISK transactions (transformed from stock movements)', { 
+      this.log('info', 'Fetching all WISK transactions (transformed from stock movements)', { 
         locationId, startDate, endDate 
       });
 
@@ -543,7 +546,7 @@ export class WiskConnector extends BaseConnector {
         return WiskTransactionSchema.parse(transaction);
       });
 
-      this.logger.info(`Transformed ${transactions.length} stock movements to transactions`);
+      this.log('info', `Transformed ${transactions.length} stock movements to transactions`);
 
       return {
         success: true,
@@ -572,7 +575,7 @@ export class WiskConnector extends BaseConnector {
     const startTime = Date.now();
     
     try {
-      this.logger.info(`Saving ${transactions.length} WISK transactions to database`);
+      this.log('info', `Saving ${transactions.length} WISK transactions to database`);
 
       // Add snapshot timestamp to each transaction
       const transactionsWithSnapshot = transactions.map(transaction => ({
@@ -588,7 +591,7 @@ export class WiskConnector extends BaseConnector {
         throw error;
       }
 
-      this.logger.info(`Successfully saved ${transactions.length} WISK transactions`);
+      this.log('info', `Successfully saved ${transactions.length} WISK transactions`);
 
       return {
         success: true,
@@ -621,8 +624,7 @@ export class WiskConnector extends BaseConnector {
         return {
           message: errorData.message || errorData.error || axiosError.message,
           code: errorData.code || `WISK_${axiosError.response.status}`,
-          details: errorData,
-          operation,
+          details: { ...errorData, operation },
           timestamp: new Date(),
           retryable: axiosError.response.status >= 500 || axiosError.response.status === 429,
         };

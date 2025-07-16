@@ -820,7 +820,7 @@ describe('OpenDateConnector', () => {
         },
       });
 
-      const result = await connector.fetchArtists();
+      await connector.fetchArtists();
 
       expect(axios.post).toHaveBeenCalledWith(
         'https://api.opendate.io/v1/auth/refresh',

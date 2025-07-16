@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import axios from 'axios';
 import { ToastConnector } from './toast-connector';
 import { createMockSupabaseClient } from '../test-utils';
-import type { ToastPayment, ToastOrder, ToastCustomer } from './types';
+// import type { ToastPayment, ToastOrder, ToastCustomer } from './types';
 
 vi.mock('axios');
 
@@ -32,7 +32,6 @@ describe('ToastConnector - Performance Tests', () => {
     
     connector = new ToastConnector(
       {
-        id: 'test-id',
         service: 'toast',
         credentials: {
           clientId: 'test-client-id',
@@ -40,9 +39,7 @@ describe('ToastConnector - Performance Tests', () => {
           locationGuid: 'test-location-guid',
           environment: 'sandbox',
         },
-        metadata: {},
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
+        isActive: true,
       },
       {},
       mockSupabase
@@ -51,7 +48,6 @@ describe('ToastConnector - Performance Tests', () => {
 
   describe('Large Dataset Handling', () => {
     it('should handle fetching large transactions dataset', async () => {
-      const paymentsPerPage = 100;
       const totalPayments = 1000; // Reduced for reliability
       
       // Track memory usage

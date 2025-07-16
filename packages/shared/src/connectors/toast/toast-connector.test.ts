@@ -7,7 +7,7 @@ import {
   createMockConfig
 } from '../test-utils';
 import { ToastConnector } from './toast-connector';
-import type { ToastPayment, ToastOrder } from './types';
+import type { ToastOrder } from './types';
 
 vi.mock('axios', () => ({
   default: {
@@ -115,15 +115,14 @@ describe('ToastConnector', () => {
     it('should fetch orders with correct parameters', async () => {
       const mockOrders: ToastOrder[] = [{
         guid: 'order1',
-        entityType: 'Order',
-        externalId: null,
+        businessDate: 20240101,
         createdDate: '2024-01-01T00:00:00Z',
+        modifiedDate: '2024-01-01T00:00:00Z',
         checks: [{
           guid: 'check1',
-          entityType: 'Check',
+          amount: 10.00,
           payments: [{
             guid: 'payment1',
-            entityType: 'Payment',
             amount: 10.00,
             tipAmount: 1.50,
             type: 'CREDIT',
@@ -173,23 +172,23 @@ describe('ToastConnector', () => {
     it('should transform order and payment data correctly', async () => {
       const mockOrders: ToastOrder[] = [{
         guid: 'order1',
-        entityType: 'Order',
-        externalId: null,
+        businessDate: 20240101,
         createdDate: '2024-01-01T00:00:00Z',
+        modifiedDate: '2024-01-01T00:00:00Z',
         checks: [{
           guid: 'check1',
-          entityType: 'Check',
+          amount: 10.00,
           taxAmount: 0.80,
           appliedDiscountAmount: 0.50,
-          appliedServiceCharges: [{ amount: 0.20 }],
+          appliedServiceCharges: [{ guid: 'sc1', name: 'Service Charge', amount: 0.20 }],
           selections: [{
             guid: 'item1',
-            entityType: 'Selection',
+            itemGroup: { guid: 'group1', name: 'Food' },
+            item: { guid: 'item1', name: 'Burger' },
             quantity: 2,
           }],
           payments: [{
             guid: 'payment1',
-            entityType: 'Payment',
             amount: 11.00,
             tipAmount: 1.00,
             type: 'CREDIT',

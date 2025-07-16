@@ -1,11 +1,11 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { DataOrchestrator } from '../../src/services/data-orchestrator';
-import type { Database } from '@venuesync/shared/types/database.generated';
+import type { Database } from '@venuesync/shared';
 
 /**
  * Vercel Cron job to fetch data from all integrated APIs
- * Runs every 3 hours: "0 */3 * * *"
+ * Runs every 3 hours: 0 star/3 star star star
  */
 export default async function handler(
   req: VercelRequest,
