@@ -1,41 +1,54 @@
 # Dependencies
-node_modules/
-.pnpm-store/
+node_modules
+.pnpm-store
 
-# Testing
-coverage/
-.nyc_output/
-*.test.ts
-*.spec.ts
-__tests__/
-vitest.config.ts
+# Build outputs (except frontend dist)
+packages/*/dist
+!packages/frontend/dist
+.next
+out
 
 # Development files
-.env
-.env.local
-.env.*.local
 *.log
+.env
+.env*.local
 .DS_Store
 
-# Git
-.git/
-.gitignore
+# Testing
+coverage
+.nyc_output
+**/*.test.ts
+**/*.spec.ts
+**/test-*.ts
+test-*.ts
+vitest.config.ts
 
 # Documentation
-docs/
+docs
 *.md
 !README.md
 
-# IDE
-.vscode/
-.idea/
+# Scripts and configs
+scripts
+deploy.sh
+vercel-build.sh
 
-# Build outputs (we'll build on Vercel)
-dist/
-build/
-.turbo/
+# Git
+.git
+.gitignore
+.husky
 
-# Development configs
-.eslintrc*
-.prettierrc*
-tsconfig.tsbuildinfo
+# Editor
+.vscode
+.idea
+
+# Source files (we only need built files)
+packages/*/src
+!packages/frontend/src
+
+# Database
+supabase/migrations
+
+# Demo files
+dashboard-demo.html
+dashboard-preview.md

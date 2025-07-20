@@ -11,7 +11,10 @@
   },
   "scripts": {
     "dev": "pnpm -r --parallel dev",
-    "build": "pnpm -r build",
+    "build": "pnpm build:shared && pnpm build:backend && pnpm build:frontend",
+    "build:shared": "cd packages/shared && pnpm build",
+    "build:backend": "cd packages/backend && pnpm build",
+    "build:frontend": "cd packages/frontend && pnpm build",
     "test": "pnpm -r test",
     "test:watch": "pnpm -r test:watch",
     "lint": "pnpm -r lint",
@@ -54,5 +57,8 @@
     "*.{json,md,yml,yaml}": [
       "prettier --write"
     ]
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.52.0"
   }
 }

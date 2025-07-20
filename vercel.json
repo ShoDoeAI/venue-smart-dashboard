@@ -1,12 +1,10 @@
 {
   "functions": {
-    "packages/backend/api/**/*.ts": {
-      "maxDuration": 60,
-      "runtime": "@vercel/node@20"
+    "api/**/*.ts": {
+      "maxDuration": 60
     },
-    "packages/backend/api/cron/*.ts": {
-      "maxDuration": 300,
-      "runtime": "@vercel/node@20"
+    "api/cron/*.ts": {
+      "maxDuration": 300
     }
   },
   "crons": [
@@ -23,15 +21,11 @@
       "schedule": "0 3 * * 0"
     }
   ],
-  "buildCommand": "./vercel-build.sh",
-  "installCommand": "pnpm install",
-  "framework": null,
+  "buildCommand": "pnpm run build",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "framework": "vite",
   "outputDirectory": "packages/frontend/dist",
   "rewrites": [
-    {
-      "source": "/api/(.*)",
-      "destination": "/packages/backend/api/$1"
-    },
     {
       "source": "/(.*)",
       "destination": "/$1"
