@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Testing
+coverage/
+.nyc_output/
+*.test.ts
+*.spec.ts
+__tests__/
+vitest.config.ts
+
+# Development files
+.env
+.env.local
+.env.*.local
+*.log
+.DS_Store
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# IDE
+.vscode/
+.idea/
+
+# Build outputs (we'll build on Vercel)
+dist/
+build/
+.turbo/
+
+# Development configs
+.eslintrc*
+.prettierrc*
+tsconfig.tsbuildinfo

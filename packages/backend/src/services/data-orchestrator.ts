@@ -4,6 +4,7 @@ import { EventbriteConnector } from '@venuesync/shared';
 import { OpenDateConnector } from '@venuesync/shared';
 import type { Database } from '@venuesync/shared';
 import { SnapshotService } from './snapshot-service';
+import { ErrorIsolationService, ErrorSource } from './error-isolation';
 
 export interface OrchestratorConfig {
   venueId: string;
@@ -37,9 +38,11 @@ export interface OrchestratorResult {
 
 export class DataOrchestrator {
   private snapshotService: SnapshotService;
+  private errorIsolation: ErrorIsolationService;
 
   constructor(private supabase: SupabaseClient<Database>) {
     this.snapshotService = new SnapshotService(supabase);
+    this.errorIsolation = new ErrorIsolationService();
   }
 
   /**
@@ -155,11 +158,20 @@ export class DataOrchestrator {
             recordCount: result.recordCount,
             duration: Date.now() - apiStartTime,
           }))
-          .catch(error => ({
-            success: false,
-            error: error.message,
-            duration: Date.now() - apiStartTime,
-          }));
+          .catch(async error => {
+            const { fallbackData, errorId } = await this.errorIsolation.isolateError(
+              'toast',
+              error,
+              { venueId, locationId, dateRange }
+            );
+            return {
+              success: false,
+              error: error.message,
+              errorId,
+              fallbackData,
+              duration: Date.now() - apiStartTime,
+            };
+          });
 
       case 'eventbrite':
         return this.fetchEventbriteData(venueId, dateRange)
@@ -168,11 +180,20 @@ export class DataOrchestrator {
             recordCount: result.recordCount,
             duration: Date.now() - apiStartTime,
           }))
-          .catch(error => ({
-            success: false,
-            error: error.message,
-            duration: Date.now() - apiStartTime,
-          }));
+          .catch(async error => {
+            const { fallbackData, errorId } = await this.errorIsolation.isolateError(
+              'eventbrite',
+              error,
+              { venueId, dateRange }
+            );
+            return {
+              success: false,
+              error: error.message,
+              errorId,
+              fallbackData,
+              duration: Date.now() - apiStartTime,
+            };
+          });
 
       case 'opendate':
         return this.fetchOpenDateData(venueId, dateRange)
@@ -181,11 +202,20 @@ export class DataOrchestrator {
             recordCount: result.recordCount,
             duration: Date.now() - apiStartTime,
           }))
-          .catch(error => ({
-            success: false,
-            error: error.message,
-            duration: Date.now() - apiStartTime,
-          }));
+          .catch(async error => {
+            const { fallbackData, errorId } = await this.errorIsolation.isolateError(
+              'opendate',
+              error,
+              { venueId, dateRange }
+            );
+            return {
+              success: false,
+              error: error.message,
+              errorId,
+              fallbackData,
+              duration: Date.now() - apiStartTime,
+            };
+          });
 
       case 'wisk':
         // Placeholder - No public API documentation available

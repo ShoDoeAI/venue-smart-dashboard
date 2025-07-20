@@ -669,9 +669,65 @@ export class KPICalculator {
   }
 
   private aggregateMonthlyMetrics(weeklyKPIs: any[]) {
-    // Similar to aggregateWeeklyMetrics but for monthly data
-    // Implementation would follow the same pattern
-    return {} as any; // Placeholder
+    const metrics = {
+      totalRevenue: 0,
+      totalTransactions: 0,
+      uniqueCustomers: new Set<string>(),
+      avgRevenuePerWeek: 0,
+      weeklyTrends: [] as any[],
+      topSellingItems: new Map<string, { name: string; quantity: number; revenue: number }>(),
+    };
+
+    weeklyKPIs.forEach(week => {
+      metrics.totalRevenue += week.metrics?.revenue?.total || 0;
+      metrics.totalTransactions += week.metrics?.transactions?.count || 0;
+      
+      // Aggregate unique customers
+      if (week.metadata?.revenue?.uniqueCustomers) {
+        week.metadata.revenue.uniqueCustomers.forEach((id: string) => 
+          metrics.uniqueCustomers.add(id)
+        );
+      }
+
+      // Weekly trends
+      metrics.weeklyTrends.push({
+        week: week.period_date,
+        revenue: week.metrics?.revenue?.total || 0,
+        transactions: week.metrics?.transactions?.count || 0,
+      });
+
+      // Aggregate top selling items
+      if (week.metadata?.revenue?.topItems) {
+        week.metadata.revenue.topItems.forEach((item: any) => {
+          const existing = metrics.topSellingItems.get(item.id) || 
+            { name: item.name, quantity: 0, revenue: 0 };
+          existing.quantity += item.quantity;
+          existing.revenue += item.revenue;
+          metrics.topSellingItems.set(item.id, existing);
+        });
+      }
+    });
+
+    metrics.avgRevenuePerWeek = metrics.totalRevenue / Math.max(weeklyKPIs.length, 1);
+
+    return {
+      revenue: {
+        total: metrics.totalRevenue,
+        avgPerWeek: metrics.avgRevenuePerWeek,
+        trend: metrics.weeklyTrends,
+      },
+      transactions: {
+        count: metrics.totalTransactions,
+        avgPerWeek: metrics.totalTransactions / Math.max(weeklyKPIs.length, 1),
+      },
+      customers: {
+        unique: metrics.uniqueCustomers.size,
+      },
+      topItems: Array.from(metrics.topSellingItems.entries())
+        .map(([id, data]) => ({ id, ...data }))
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10),
+    };
   }
 
   private async calculateGrowthRates(
@@ -680,12 +736,70 @@ export class KPICalculator {
     previousEnd: Date,
     currentMetrics: any
   ) {
-    // Fetch previous period metrics and calculate growth rates
-    // Implementation would compare current vs previous period
+    // Fetch previous period metrics
+    const { data: previousKPIs, error } = await this.supabase
+      .from('kpis')
+      .select('*')
+      .eq('venue_id', venueId)
+      .gte('period_date', previousStart.toISOString())
+      .lte('period_date', previousEnd.toISOString())
+      .eq('period_type', 'daily');
+
+    if (error || !previousKPIs || previousKPIs.length === 0) {
+      return {
+        revenue: 0,
+        transactions: 0,
+        customers: 0,
+        averageTransaction: 0,
+      };
+    }
+
+    // Aggregate previous period metrics
+    const previousMetrics = {
+      totalRevenue: 0,
+      totalTransactions: 0,
+      uniqueCustomers: new Set<string>(),
+      avgTransaction: 0,
+    };
+
+    previousKPIs.forEach(kpi => {
+      previousMetrics.totalRevenue += kpi.metrics?.revenue?.total || 0;
+      previousMetrics.totalTransactions += kpi.metrics?.transactions?.count || 0;
+      
+      if (kpi.metadata?.revenue?.uniqueCustomers) {
+        kpi.metadata.revenue.uniqueCustomers.forEach((id: string) => 
+          previousMetrics.uniqueCustomers.add(id)
+        );
+      }
+    });
+
+    previousMetrics.avgTransaction = previousMetrics.totalTransactions > 0
+      ? previousMetrics.totalRevenue / previousMetrics.totalTransactions
+      : 0;
+
+    // Calculate growth rates
+    const calculateGrowth = (current: number, previous: number) => {
+      if (previous === 0) return current > 0 ? 100 : 0;
+      return ((current - previous) / previous) * 100;
+    };
+
     return {
-      revenue: 0,
-      transactions: 0,
-      customers: 0,
+      revenue: calculateGrowth(
+        currentMetrics.revenue?.total || 0,
+        previousMetrics.totalRevenue
+      ),
+      transactions: calculateGrowth(
+        currentMetrics.transactions?.count || 0,
+        previousMetrics.totalTransactions
+      ),
+      customers: calculateGrowth(
+        currentMetrics.customers?.unique || 0,
+        previousMetrics.uniqueCustomers.size
+      ),
+      averageTransaction: calculateGrowth(
+        currentMetrics.transactions?.avgAmount || 0,
+        previousMetrics.avgTransaction
+      ),
     };
   }
 
@@ -695,19 +809,155 @@ export class KPICalculator {
     lastYearEnd: Date,
     currentMetrics: any
   ) {
-    // Fetch last year's metrics and calculate YoY growth
-    // Implementation would compare current vs last year
+    // Fetch last year's metrics for the same period
+    const { data: lastYearKPIs, error } = await this.supabase
+      .from('kpis')
+      .select('*')
+      .eq('venue_id', venueId)
+      .gte('period_date', lastYearStart.toISOString())
+      .lte('period_date', lastYearEnd.toISOString())
+      .eq('period_type', 'daily');
+
+    if (error || !lastYearKPIs || lastYearKPIs.length === 0) {
+      return {
+        revenue: { growth: 0, lastYear: 0, current: currentMetrics.revenue?.total || 0 },
+        transactions: { growth: 0, lastYear: 0, current: currentMetrics.transactions?.count || 0 },
+        customers: { growth: 0, lastYear: 0, current: currentMetrics.customers?.unique || 0 },
+        avgTransaction: { growth: 0, lastYear: 0, current: currentMetrics.transactions?.avgAmount || 0 },
+        hasData: false,
+      };
+    }
+
+    // Aggregate last year's metrics
+    const lastYearMetrics = {
+      totalRevenue: 0,
+      totalTransactions: 0,
+      uniqueCustomers: new Set<string>(),
+      avgTransaction: 0,
+    };
+
+    lastYearKPIs.forEach(kpi => {
+      lastYearMetrics.totalRevenue += kpi.metrics?.revenue?.total || 0;
+      lastYearMetrics.totalTransactions += kpi.metrics?.transactions?.count || 0;
+      
+      if (kpi.metadata?.revenue?.uniqueCustomers) {
+        kpi.metadata.revenue.uniqueCustomers.forEach((id: string) => 
+          lastYearMetrics.uniqueCustomers.add(id)
+        );
+      }
+    });
+
+    lastYearMetrics.avgTransaction = lastYearMetrics.totalTransactions > 0
+      ? lastYearMetrics.totalRevenue / lastYearMetrics.totalTransactions
+      : 0;
+
+    // Calculate YoY growth
+    const calculateYoYGrowth = (current: number, lastYear: number) => {
+      if (lastYear === 0) return current > 0 ? 100 : 0;
+      return ((current - lastYear) / lastYear) * 100;
+    };
+
+    const currentRevenue = currentMetrics.revenue?.total || 0;
+    const currentTransactions = currentMetrics.transactions?.count || 0;
+    const currentCustomers = currentMetrics.customers?.unique || 0;
+    const currentAvgTransaction = currentMetrics.transactions?.avgAmount || 0;
+
     return {
-      revenue: 0,
-      transactions: 0,
-      customers: 0,
+      revenue: {
+        growth: calculateYoYGrowth(currentRevenue, lastYearMetrics.totalRevenue),
+        lastYear: lastYearMetrics.totalRevenue,
+        current: currentRevenue,
+      },
+      transactions: {
+        growth: calculateYoYGrowth(currentTransactions, lastYearMetrics.totalTransactions),
+        lastYear: lastYearMetrics.totalTransactions,
+        current: currentTransactions,
+      },
+      customers: {
+        growth: calculateYoYGrowth(currentCustomers, lastYearMetrics.uniqueCustomers.size),
+        lastYear: lastYearMetrics.uniqueCustomers.size,
+        current: currentCustomers,
+      },
+      avgTransaction: {
+        growth: calculateYoYGrowth(currentAvgTransaction, lastYearMetrics.avgTransaction),
+        lastYear: lastYearMetrics.avgTransaction,
+        current: currentAvgTransaction,
+      },
+      hasData: true,
     };
   }
 
   private async getUpcomingEvents(venueId: string) {
-    // Fetch upcoming events from Eventbrite and OpenDate
-    // Implementation would query both APIs for future events
-    return [] as any[];
+    const upcomingEvents: any[] = [];
+    const now = new Date();
+    const twoMonthsFromNow = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000);
+
+    // Fetch Eventbrite events
+    const { data: eventbriteSnapshots } = await this.supabase
+      .from('eventbrite_snapshots')
+      .select('data')
+      .eq('venue_id', venueId)
+      .order('fetched_at', { ascending: false })
+      .limit(1);
+
+    if (eventbriteSnapshots && eventbriteSnapshots[0]?.data) {
+      const events = eventbriteSnapshots[0].data.events || [];
+      events.forEach((event: any) => {
+        const eventDate = new Date(event.start.local);
+        if (eventDate > now && eventDate <= twoMonthsFromNow) {
+          upcomingEvents.push({
+            eventId: event.id,
+            name: event.name.text,
+            startDate: event.start.local,
+            endDate: event.end.local,
+            source: 'eventbrite',
+            capacity: event.capacity || 0,
+            ticketsSold: event.inventory?.sold || 0,
+            ticketsAvailable: event.inventory?.available || 0,
+            revenue: event.stats?.gross || 0,
+            url: event.url,
+            status: event.status,
+          });
+        }
+      });
+    }
+
+    // Fetch OpenDate events
+    const { data: opendateSnapshots } = await this.supabase
+      .from('opendate_snapshots')
+      .select('data')
+      .eq('venue_id', venueId)
+      .order('fetched_at', { ascending: false })
+      .limit(1);
+
+    if (opendateSnapshots && opendateSnapshots[0]?.data) {
+      const shows = opendateSnapshots[0].data.shows || [];
+      shows.forEach((show: any) => {
+        const showDate = new Date(show.date);
+        if (showDate > now && showDate <= twoMonthsFromNow) {
+          upcomingEvents.push({
+            eventId: show.id,
+            name: show.name || `${show.artist.name} at ${show.venue.name}`,
+            startDate: show.date,
+            endDate: show.endDate || show.date,
+            source: 'opendate',
+            capacity: show.capacity || show.venue.capacity || 0,
+            ticketsSold: show.ticketsSold || 0,
+            ticketsAvailable: show.ticketsAvailable || 0,
+            revenue: show.revenue || 0,
+            artist: show.artist.name,
+            status: show.status,
+          });
+        }
+      });
+    }
+
+    // Sort by date
+    upcomingEvents.sort((a, b) => 
+      new Date(a.startDate).getTime() - new Date(b.startDate).getTime()
+    );
+
+    return upcomingEvents;
   }
 
   // Helper aggregation methods

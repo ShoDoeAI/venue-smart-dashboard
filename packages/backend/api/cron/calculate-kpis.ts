@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { KPICalculator } from '../../src/services/kpi-calculator';
+import { AlertGenerator } from '../../src/services/alert-generator';
 import type { Database } from '@venuesync/shared';
 
 /**
@@ -45,8 +46,9 @@ export default async function handler(
       });
     }
 
-    // Initialize KPI calculator
+    // Initialize KPI calculator and alert generator
     const kpiCalculator = new KPICalculator(supabase);
+    const alertGenerator = new AlertGenerator();
 
     // Calculate date range (yesterday)
     const yesterday = new Date();
@@ -98,6 +100,23 @@ export default async function handler(
             venue.id
           );
 
+          // Generate alerts based on KPIs
+          const kpiResult = {
+            venueMetrics: {
+              venueId: venue.id,
+              venueName: venue.name,
+              period: 'daily',
+              revenueMetrics: dailyKPIs?.revenueMetrics || {},
+              attendanceMetrics: dailyKPIs?.attendanceMetrics || {},
+              hourlyBreakdown: dailyKPIs?.hourlyBreakdown || [],
+            },
+            eventMetrics: realtimeMetrics?.upcomingEvents ? {
+              upcomingEvents: realtimeMetrics.upcomingEvents,
+            } : undefined,
+          };
+
+          const alerts = await alertGenerator.generateAlerts(kpiResult);
+
           return {
             venueId: venue.id,
             venueName: venue.name,
@@ -108,6 +127,7 @@ export default async function handler(
               monthly: monthlyKPIs,
               realtime: realtimeMetrics,
             },
+            alertsGenerated: alerts.length,
           };
         } catch (error) {
           throw error;
@@ -120,12 +140,14 @@ export default async function handler(
       totalVenues: venues.length,
       successful: 0,
       failed: 0,
+      totalAlertsGenerated: 0,
       results: [] as any[],
     };
 
     results.forEach((result, index) => {
       if (result.status === 'fulfilled') {
         summary.successful++;
+        summary.totalAlertsGenerated += result.value.alertsGenerated || 0;
         summary.results.push(result.value);
       } else {
         summary.failed++;
