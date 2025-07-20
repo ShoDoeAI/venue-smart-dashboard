@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AppLayout } from './components/layout/app-layout';
-import Dashboard from './pages/dashboard';
+import Dashboard from './pages/dashboard-v2';
 import Analytics from './pages/analytics';
 import AIAssistant from './pages/ai-assistant';
 import Actions from './pages/actions';
