@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
   TrendingUp, 
@@ -8,13 +8,18 @@ import {
   Ticket,
   AlertCircle,
   Activity,
-  Calendar
+  Calendar,
+  Package
 } from 'lucide-react';
 import { MetricCard } from '../components/kpi/metric-card';
 import { dashboardApi, alertsApi } from '../services/api';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { AttendanceChart } from '../components/charts/attendance-chart';
+import { InventoryChart } from '../components/charts/inventory-chart';
 
 export default function DashboardV2() {
+  const [inventoryView, setInventoryView] = useState<'stock-levels' | 'variance' | 'reorder'>('stock-levels');
+  
   // Fetch dashboard data
   const { data: dashboardData, isLoading: isDashboardLoading } = useQuery({
     queryKey: ['dashboard'],
@@ -64,6 +69,35 @@ export default function DashboardV2() {
     { name: 'Drinks', value: 30, color: '#10b981' },
     { name: 'Events', value: 15, color: '#f59e0b' },
     { name: 'Other', value: 10, color: '#8b5cf6' },
+  ];
+
+  // Mock attendance data (would come from real API)
+  const attendanceData = Array.from({ length: 30 }, (_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - 29 + i);
+    const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+    const hasEvent = Math.random() > 0.7 && isWeekend;
+    
+    return {
+      date: date.toISOString().split('T')[0],
+      attendance: Math.floor(Math.random() * 200 + (isWeekend ? 300 : 150)),
+      capacity: 500,
+      events: hasEvent ? [{
+        name: `Live Music Night ${i}`,
+        type: 'music',
+        attendance: Math.floor(Math.random() * 100 + 200)
+      }] : undefined
+    };
+  });
+
+  // Mock inventory data (would come from real API)
+  const inventoryItems = [
+    { id: '1', name: 'House Beer', category: 'Drinks', currentStock: 120, optimalStock: 200, reorderPoint: 50, unit: 'bottles', lastUpdated: new Date().toISOString(), trend: -5.2, variance: -40 },
+    { id: '2', name: 'Premium Vodka', category: 'Drinks', currentStock: 45, optimalStock: 60, reorderPoint: 20, unit: 'bottles', lastUpdated: new Date().toISOString(), trend: -8.1, variance: -25 },
+    { id: '3', name: 'Burger Patties', category: 'Food', currentStock: 80, optimalStock: 150, reorderPoint: 40, unit: 'units', lastUpdated: new Date().toISOString(), trend: -12.3, variance: -46.7 },
+    { id: '4', name: 'French Fries', category: 'Food', currentStock: 25, optimalStock: 40, reorderPoint: 15, unit: 'kg', lastUpdated: new Date().toISOString(), trend: -15.0, variance: -37.5 },
+    { id: '5', name: 'Napkins', category: 'Supplies', currentStock: 3000, optimalStock: 2500, reorderPoint: 1000, unit: 'units', lastUpdated: new Date().toISOString(), trend: 2.1, variance: 20 },
+    { id: '6', name: 'Coffee Beans', category: 'Drinks', currentStock: 8, optimalStock: 20, reorderPoint: 10, unit: 'kg', lastUpdated: new Date().toISOString(), trend: -20.0, variance: -60 },
   ];
 
   return (
@@ -252,6 +286,68 @@ export default function DashboardV2() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* Attendance & Inventory Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Attendance Chart */}
+        <div className="card p-6">
+          <AttendanceChart 
+            data={attendanceData}
+            showEvents={true}
+            showCapacityLine={true}
+            showTrend={true}
+          />
+        </div>
+
+        {/* Inventory Chart */}
+        <div className="card p-6">
+          <div className="mb-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-900">Inventory Management</h3>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setInventoryView('stock-levels')}
+                  className={cn(
+                    "px-3 py-1 text-sm rounded-md transition-colors",
+                    inventoryView === 'stock-levels' 
+                      ? "bg-brand-50 text-brand-700 font-medium" 
+                      : "text-gray-600 hover:bg-gray-100"
+                  )}
+                >
+                  Stock Levels
+                </button>
+                <button
+                  onClick={() => setInventoryView('variance')}
+                  className={cn(
+                    "px-3 py-1 text-sm rounded-md transition-colors",
+                    inventoryView === 'variance' 
+                      ? "bg-brand-50 text-brand-700 font-medium" 
+                      : "text-gray-600 hover:bg-gray-100"
+                  )}
+                >
+                  Variance
+                </button>
+                <button
+                  onClick={() => setInventoryView('reorder')}
+                  className={cn(
+                    "px-3 py-1 text-sm rounded-md transition-colors",
+                    inventoryView === 'reorder' 
+                      ? "bg-brand-50 text-brand-700 font-medium" 
+                      : "text-gray-600 hover:bg-gray-100"
+                  )}
+                >
+                  Reorder
+                </button>
+              </div>
+            </div>
+          </div>
+          <InventoryChart 
+            items={inventoryItems}
+            view={inventoryView}
+            onItemClick={(item) => console.log('Clicked item:', item)}
+          />
         </div>
       </div>
 
