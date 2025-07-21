@@ -1,6 +1,12 @@
 {
-  "buildCommand": "cd packages/frontend && pnpm run build",
+  "buildCommand": "pnpm install --frozen-lockfile=false && pnpm build:frontend",
   "outputDirectory": "packages/frontend/dist",
-  "installCommand": "npm install -g pnpm && pnpm install --no-frozen-lockfile",
-  "regions": ["sfo1"]
+  "installCommand": "corepack enable && corepack prepare pnpm@latest --activate && pnpm install --frozen-lockfile=false",
+  "framework": null,
+  "regions": ["sfo1"],
+  "functions": {
+    "api/**/*.js": {
+      "runtime": "nodejs18.x"
+    }
+  }
 }

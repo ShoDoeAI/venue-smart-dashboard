@@ -1,54 +1,13 @@
-# Dependencies
+# Don't upload unnecessary files to Vercel
 node_modules
-.pnpm-store
-
-# Build outputs (except frontend dist)
-packages/*/dist
-!packages/frontend/dist
-.next
-out
-
-# Development files
-*.log
-.env
-.env*.local
-.DS_Store
-
-# Testing
+.git
+.husky
 coverage
-.nyc_output
-**/*.test.ts
-**/*.spec.ts
-**/test-*.ts
-test-*.ts
-vitest.config.ts
-
-# Documentation
+.env*
+*.log
+packages/backend/src
+packages/backend/tests
 docs
+scripts
 *.md
 !README.md
-
-# Scripts and configs
-scripts
-deploy.sh
-vercel-build.sh
-
-# Git
-.git
-.gitignore
-.husky
-
-# Editor
-.vscode
-.idea
-
-# Source files (we only need built files)
-packages/backend/src
-packages/shared/src
-
-# Database
-supabase/migrations
-
-# Demo files
-dashboard-demo.html
-dashboard-preview.md
