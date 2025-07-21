@@ -2,9 +2,9 @@
 
 export const API_ENDPOINTS = {
   TOAST: {
-    PRODUCTION: 'https://api.toasttab.com',
-    SANDBOX: 'https://api-sandbox.toasttab.com',
-    AUTH: 'https://api.toasttab.com/authentication/v1/authentication/login',
+    PRODUCTION: 'https://ws-api.toasttab.com',
+    SANDBOX: 'https://ws-sandbox-api.toasttab.com',
+    AUTH: 'https://ws-api.toasttab.com/authentication/v1/authentication/login',
   },
   EVENTBRITE: {
     BASE: 'https://www.eventbriteapi.com/v3',
