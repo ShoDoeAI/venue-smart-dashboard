@@ -106,13 +106,16 @@ module.exports = async (req, res) => {
       created_at: now.toISOString(),
       api_data: {
         toast: {
-          success: !!token,
+          success: !!token && toastData?.revenue > 0,
           data: {
             location: {
               name: "Jack's on Water Street",
               id: TOAST_LOCATION_ID
             },
-            menus: toastData?.menus || []
+            menus: toastData?.menus || [],
+            todayRevenue: toastData?.revenue || 0,
+            todayTransactions: toastData?.transactions || 0,
+            lastUpdated: now.toISOString()
           }
         }
       }
