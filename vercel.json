@@ -1,21 +1,11 @@
 {
   "buildCommand": "cd packages/frontend && pnpm run build",
-  "installCommand": "pnpm install --no-frozen-lockfile",
-  "framework": null,
+  "installCommand": "pnpm install --no-frozen-lockfile", 
   "outputDirectory": "packages/frontend/dist",
-  "routes": [
+  "rewrites": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/packages/frontend/dist/$1"
+      "source": "/(.*)",
+      "destination": "/$1"
     }
-  ],
-  "functions": {
-    "api/*.js": {
-      "maxDuration": 30
-    }
-  }
+  ]
 }

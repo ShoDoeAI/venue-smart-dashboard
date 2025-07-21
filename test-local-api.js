@@ -1,5 +1,5 @@
 // Test the dashboard API locally with real Toast data
-const handler = require('./api/dashboard.js');
+const handler = require('./api/api/dashboard.js');
 
 // Mock request and response objects
 const mockReq = {
