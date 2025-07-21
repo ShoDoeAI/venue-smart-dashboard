@@ -4,7 +4,7 @@
       "maxDuration": 60
     }
   },
-  "buildCommand": "cd packages/frontend && npx vite build",
+  "buildCommand": "cd packages/frontend && ./build.sh",
   "installCommand": "pnpm install",
   "framework": null,
   "outputDirectory": "packages/frontend/dist",
