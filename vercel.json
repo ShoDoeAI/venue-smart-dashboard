@@ -5,19 +5,17 @@
   "outputDirectory": "packages/frontend/dist",
   "rewrites": [
     {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
   ],
   "functions": {
-    "api/dashboard.ts": {
+    "api/dashboard.js": {
       "maxDuration": 30
-    },
-    "api/chat.ts": {
-      "maxDuration": 30
-    },
-    "api/cron/fetch-data.ts": {
-      "maxDuration": 300
     }
   },
   "env": {
