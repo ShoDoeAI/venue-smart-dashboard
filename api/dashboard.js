@@ -1,4 +1,9 @@
-const axios = require('axios');
+let axios;
+try {
+  axios = require('axios');
+} catch (e) {
+  console.error('Failed to load axios:', e.message);
+}
 
 // Toast API credentials
 const TOAST_CLIENT_ID = process.env.TOAST_CLIENT_ID || 'mT5Nsj9fT2XhQ9p0OvaONnqpt1IPkrh7';
@@ -18,6 +23,8 @@ async function getToastToken() {
     return response.data.token.accessToken;
   } catch (error) {
     console.error('Toast auth error:', error.response?.data || error.message);
+    console.error('Auth URL:', 'https://ws-api.toasttab.com/authentication/v1/authentication/login');
+    console.error('Client ID length:', TOAST_CLIENT_ID?.length);
     return null;
   }
 }
@@ -100,6 +107,13 @@ async function fetchToastData(token) {
 }
 
 module.exports = async (req, res) => {
+  // Check if axios loaded
+  if (!axios) {
+    return res.status(500).json({
+      error: 'Dependencies not loaded',
+      message: 'axios module not available'
+    });
+  }
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
