@@ -1,27 +1,71 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
-  TrendingUp, 
   Users, 
   DollarSign, 
   ShoppingCart,
   Ticket,
   AlertCircle,
-  Activity,
-  Calendar,
-  Package
+  Calendar
 } from 'lucide-react';
 import { MetricCard } from '../components/kpi/metric-card';
 import { dashboardApi, alertsApi } from '../services/api';
-import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { AttendanceChart } from '../components/charts/attendance-chart';
 import { InventoryChart } from '../components/charts/inventory-chart';
+
+interface Alert {
+  id: string;
+  type: string;
+  severity: 'critical' | 'high' | 'medium' | 'low';
+  title: string;
+  message: string;
+  created_at: string;
+  action_suggestions?: Array<{ action: string }>;
+}
+
+interface Event {
+  eventId: string;
+  name: string;
+  startDate: string;
+  source: string;
+  ticketsSold: number;
+  capacity: number;
+}
+
+interface DashboardData {
+  success: boolean;
+  snapshot?: any;
+  kpis?: {
+    revenueMetrics?: {
+      current: number;
+      lastPeriod: number;
+      growth: number;
+    };
+    attendanceMetrics?: {
+      current: number;
+      capacity: number;
+      utilizationRate: number;
+    };
+    transactionMetrics?: {
+      count: number;
+      avgAmount: number;
+    };
+    eventMetrics?: {
+      ticketsSoldToday: number;
+    };
+    upcomingEvents?: Event[];
+  };
+  alerts?: Alert[];
+  hourlyData?: Array<{ hour: string; revenue: number; transactions: number }>;
+  categoryBreakdown?: Array<{ name: string; value: number; percentage: number }>;
+}
 
 export default function DashboardV2() {
   const [inventoryView, setInventoryView] = useState<'stock-levels' | 'variance' | 'reorder'>('stock-levels');
   
   // Fetch dashboard data
-  const { data: dashboardData, isLoading: isDashboardLoading } = useQuery({
+  const { data: dashboardData, isLoading: isDashboardLoading } = useQuery<DashboardData>({
     queryKey: ['dashboard'],
     queryFn: dashboardApi.getDashboard,
     refetchInterval: 30000, // Refresh every 30 seconds
@@ -35,7 +79,7 @@ export default function DashboardV2() {
   });
 
   const kpis = dashboardData?.kpis;
-  const activeAlerts = alertsData?.alerts || [];
+  const activeAlerts = (alertsData?.alerts || []) as Alert[];
   const criticalAlerts = activeAlerts.filter(a => a.severity === 'critical');
   const highAlerts = activeAlerts.filter(a => a.severity === 'high');
 
@@ -57,19 +101,14 @@ export default function DashboardV2() {
     );
   }
 
-  // Mock data for visualization (would come from real API)
-  const hourlyRevenue = Array.from({ length: 24 }, (_, i) => ({
-    hour: `${i}:00`,
-    revenue: Math.random() * 5000 + 1000,
-    transactions: Math.floor(Math.random() * 50 + 10),
-  }));
-
-  const categoryBreakdown = [
-    { name: 'Food', value: 45, color: '#3b82f6' },
-    { name: 'Drinks', value: 30, color: '#10b981' },
-    { name: 'Events', value: 15, color: '#f59e0b' },
-    { name: 'Other', value: 10, color: '#8b5cf6' },
-  ];
+  // Use real API data
+  const hourlyRevenue = dashboardData?.hourlyData || [];
+  
+  const categoryColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6'];
+  const categoryBreakdown = (dashboardData?.categoryBreakdown?.map((cat: { name: string; value: number; percentage: number }, index: number) => ({
+    ...cat,
+    color: categoryColors[index % categoryColors.length]
+  })) || []) as Array<{ name: string; value: number; percentage: number; color: string }>;
 
   // Mock attendance data (would come from real API)
   const attendanceData = Array.from({ length: 30 }, (_, i) => {
@@ -204,7 +243,7 @@ export default function DashboardV2() {
                   <p className="text-sm text-gray-600 mt-1">{alert.message}</p>
                   {alert.action_suggestions && alert.action_suggestions.length > 0 && (
                     <div className="mt-2 flex gap-2">
-                      {alert.action_suggestions.slice(0, 2).map((action: any, idx: number) => (
+                      {alert.action_suggestions.slice(0, 2).map((action, idx) => (
                         <button
                           key={idx}
                           className="text-xs px-2 py-1 bg-white rounded border border-gray-200 hover:bg-gray-50"
@@ -225,7 +264,7 @@ export default function DashboardV2() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Hourly Revenue */}
         <div className="lg:col-span-2 card p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Today's Hourly Performance</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Today&apos;s Hourly Performance</h3>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={hourlyRevenue}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -346,7 +385,7 @@ export default function DashboardV2() {
           <InventoryChart 
             items={inventoryItems}
             view={inventoryView}
-            onItemClick={(item) => console.log('Clicked item:', item)}
+            onItemClick={(_item) => {/* Handle item click */}}
           />
         </div>
       </div>
@@ -358,7 +397,7 @@ export default function DashboardV2() {
           <Calendar className="w-5 h-5 text-gray-400" />
         </div>
         <div className="space-y-4">
-          {kpis?.upcomingEvents?.slice(0, 3).map((event: any) => (
+          {(kpis?.upcomingEvents as Event[] | undefined)?.slice(0, 3).map((event) => (
             <div key={event.eventId} className="flex items-center justify-between py-3 border-b border-gray-100 last:border-0">
               <div>
                 <p className="font-medium text-gray-900">{event.name}</p>
