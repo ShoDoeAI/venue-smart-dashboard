@@ -1,18 +1,9 @@
 {
-  "functions": {
-    "api/**/*.ts": {
-      "maxDuration": 60
-    }
-  },
-  "buildCommand": "cd packages/frontend && ./build.sh",
+  "buildCommand": "cd packages/frontend && pnpm run build",
   "installCommand": "pnpm install",
   "framework": null,
   "outputDirectory": "packages/frontend/dist",
   "rewrites": [
-    {
-      "source": "/api/:path*",
-      "destination": "/api/:path*"
-    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
