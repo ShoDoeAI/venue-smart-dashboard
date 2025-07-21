@@ -5,10 +5,6 @@
   "outputDirectory": "packages/frontend/dist",
   "rewrites": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/$1"
-    },
-    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
@@ -17,7 +13,5 @@
     "api/dashboard.js": {
       "maxDuration": 30
     }
-  },
-  "env": {
   }
 }
