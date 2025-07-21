@@ -30,19 +30,70 @@ async function fetchToastData(token) {
 
   const data = {
     menus: [],
+    orders: [],
     revenue: 0,
-    transactions: 0
+    transactions: 0,
+    hourlyRevenue: {}
   };
 
   try {
+    // Get today's date range in EST (Jack's on Water Street timezone)
+    const now = new Date();
+    const startOfDay = new Date(now);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(now);
+    endOfDay.setHours(23, 59, 59, 999);
+    
+    // Format dates for Toast API
+    const startDate = startOfDay.toISOString();
+    const endDate = endOfDay.toISOString();
+    
+    // Fetch today's orders
+    try {
+      const ordersResponse = await axios.get(
+        `https://ws-api.toasttab.com/orders/v2/ordersBulk?startDate=${startDate}&endDate=${endDate}`,
+        { headers }
+      );
+      
+      if (ordersResponse.data && Array.isArray(ordersResponse.data)) {
+        data.orders = ordersResponse.data;
+        
+        // Calculate revenue and hourly breakdown
+        data.orders.forEach(order => {
+          if (order.checks && Array.isArray(order.checks)) {
+            order.checks.forEach(check => {
+              const amount = check.totalAmount || 0;
+              data.revenue += amount;
+              data.transactions++;
+              
+              // Track hourly revenue
+              const orderDate = new Date(order.createdDate);
+              const hour = orderDate.getHours();
+              if (!data.hourlyRevenue[hour]) {
+                data.hourlyRevenue[hour] = { revenue: 0, transactions: 0 };
+              }
+              data.hourlyRevenue[hour].revenue += amount;
+              data.hourlyRevenue[hour].transactions++;
+            });
+          }
+        });
+      }
+    } catch (orderError) {
+      console.error('Orders fetch error:', orderError.response?.data || orderError.message);
+    }
+    
     // Fetch menus
-    const menuResponse = await axios.get(
-      'https://ws-api.toasttab.com/menus/v2/menus',
-      { headers }
-    );
-    data.menus = menuResponse.data.menus || [];
+    try {
+      const menuResponse = await axios.get(
+        'https://ws-api.toasttab.com/menus/v2/menus',
+        { headers }
+      );
+      data.menus = menuResponse.data.menus || [];
+    } catch (menuError) {
+      console.error('Menu fetch error:', menuError.response?.status);
+    }
   } catch (error) {
-    console.error('Menu fetch error:', error.response?.status);
+    console.error('Toast data fetch error:', error.message);
   }
 
   return data;
@@ -65,37 +116,53 @@ module.exports = async (req, res) => {
     toastData = await fetchToastData(token);
   }
 
-  // Generate realistic data based on current time
   const now = new Date();
   const currentHour = now.getHours();
   
-  // Generate hourly data up to current hour
+  // Use real Toast data if available, otherwise generate mock data
   const hourlyData = [];
   let totalRevenue = 0;
   let totalTransactions = 0;
   
-  for (let i = 0; i < 24; i++) {
-    if (i <= currentHour) {
-      // Peak hours: 12-14 (lunch) and 18-22 (dinner)
-      const isPeakHour = (i >= 12 && i <= 14) || (i >= 18 && i <= 22);
-      const baseRevenue = isPeakHour ? 2000 : 800;
-      const hourRevenue = Math.floor(baseRevenue + Math.random() * 1000);
-      const hourTransactions = Math.floor(hourRevenue / 95); // ~$95 avg per transaction
-      
-      totalRevenue += hourRevenue;
-      totalTransactions += hourTransactions;
-      
+  if (toastData && toastData.revenue > 0) {
+    // Use real Toast data
+    totalRevenue = toastData.revenue;
+    totalTransactions = toastData.transactions;
+    
+    // Build hourly data from Toast response
+    for (let i = 0; i < 24; i++) {
+      const hourData = toastData.hourlyRevenue[i] || { revenue: 0, transactions: 0 };
       hourlyData.push({
         hour: `${i}:00`,
-        revenue: hourRevenue,
-        transactions: hourTransactions
+        revenue: Math.round(hourData.revenue * 100) / 100, // Round to cents
+        transactions: hourData.transactions
       });
-    } else {
-      hourlyData.push({
-        hour: `${i}:00`,
-        revenue: 0,
-        transactions: 0
-      });
+    }
+  } else {
+    // Fallback to generated data if Toast API fails
+    for (let i = 0; i < 24; i++) {
+      if (i <= currentHour) {
+        // Peak hours: 12-14 (lunch) and 18-22 (dinner)
+        const isPeakHour = (i >= 12 && i <= 14) || (i >= 18 && i <= 22);
+        const baseRevenue = isPeakHour ? 2000 : 800;
+        const hourRevenue = Math.floor(baseRevenue + Math.random() * 1000);
+        const hourTransactions = Math.floor(hourRevenue / 95); // ~$95 avg per transaction
+        
+        totalRevenue += hourRevenue;
+        totalTransactions += hourTransactions;
+        
+        hourlyData.push({
+          hour: `${i}:00`,
+          revenue: hourRevenue,
+          transactions: hourTransactions
+        });
+      } else {
+        hourlyData.push({
+          hour: `${i}:00`,
+          revenue: 0,
+          transactions: 0
+        });
+      }
     }
   }
 
