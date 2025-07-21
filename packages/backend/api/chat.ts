@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { ClaudeAIService } from '../src/services/claude-ai';
-import { AIContextAggregator } from '../src/services/ai-context';
+import { ClaudeAI } from '../src/services/claude-ai';
+import { AIContextAggregator } from '../src/services/ai-context-aggregator';
 import type { Database } from '@venuesync/shared';
 
 export default async function handler(
@@ -26,30 +26,30 @@ export default async function handler(
 
     // Initialize services
     const contextAggregator = new AIContextAggregator(supabase);
-    const aiService = new ClaudeAIService(
-      process.env.ANTHROPIC_API_KEY!,
-      supabase
+    const aiService = new ClaudeAI(
+      supabase,
+      process.env.ANTHROPIC_API_KEY!
     );
 
     // Get venue ID (would come from auth in production)
     const venueId = 'default-venue-id';
 
     // Generate context
-    const context = await contextAggregator.aggregateContext(venueId);
+    const context = await contextAggregator.buildContext(venueId);
 
     // Send message to Claude
-    const response = await aiService.query(
+    const response = await aiService.query({
       message,
       context,
       conversationId
-    );
+    });
 
     return res.status(200).json({
       success: true,
-      response: response.response,
-      conversationId: response.conversationId,
-      messageId: response.messageId,
-      actions: response.actions || []
+      response: response.message,
+      conversationId: conversationId || 'default',
+      messageId: Date.now().toString(),
+      actions: response.suggestedActions || []
     });
   } catch (error) {
     console.error('Chat API error:', error);

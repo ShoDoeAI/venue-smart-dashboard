@@ -1,5 +1,4 @@
 import { z } from 'zod';
-import { KPICalculatorResult } from './kpi-calculator';
 import { supabase } from '../lib/supabase';
 
 export const AlertSeverity = z.enum(['critical', 'high', 'medium', 'low']);
@@ -156,9 +155,9 @@ export class AlertGenerator {
         const hourlyRevenue = metrics.venueMetrics?.hourlyBreakdown || [];
         if (hourlyRevenue.length < 2) return null;
 
-        const revenues = hourlyRevenue.map(h => h.revenue);
-        const mean = revenues.reduce((a, b) => a + b, 0) / revenues.length;
-        const variance = revenues.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / revenues.length;
+        const revenues = hourlyRevenue.map((h: any) => h.revenue);
+        const mean = revenues.reduce((a: number, b: number) => a + b, 0) / revenues.length;
+        const variance = revenues.reduce((acc: number, val: number) => acc + Math.pow(val - mean, 2), 0) / revenues.length;
         const stdDev = Math.sqrt(variance);
         const coefficientOfVariation = (stdDev / mean) * 100;
 
