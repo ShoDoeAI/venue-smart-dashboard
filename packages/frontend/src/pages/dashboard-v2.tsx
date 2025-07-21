@@ -204,7 +204,7 @@ export default function DashboardV2() {
                   <p className="text-sm text-gray-600 mt-1">{alert.message}</p>
                   {alert.action_suggestions && alert.action_suggestions.length > 0 && (
                     <div className="mt-2 flex gap-2">
-                      {alert.action_suggestions.slice(0, 2).map((action, idx) => (
+                      {alert.action_suggestions.slice(0, 2).map((action: any, idx: number) => (
                         <button
                           key={idx}
                           className="text-xs px-2 py-1 bg-white rounded border border-gray-200 hover:bg-gray-50"
