@@ -43,8 +43,8 @@ vercel-build.sh
 .idea
 
 # Source files (we only need built files)
-packages/*/src
-!packages/frontend/src
+packages/backend/src
+packages/shared/src
 
 # Database
 supabase/migrations
