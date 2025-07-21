@@ -3,14 +3,18 @@
   "installCommand": "pnpm install --no-frozen-lockfile",
   "framework": null,
   "outputDirectory": "packages/frontend/dist",
-  "rewrites": [
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/api/(.*)",
+      "dest": "/api/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/packages/frontend/dist/$1"
     }
   ],
   "functions": {
-    "api/dashboard.js": {
+    "api/*.js": {
       "maxDuration": 30
     }
   }
