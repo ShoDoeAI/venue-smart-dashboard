@@ -21,13 +21,5 @@
     }
   },
   "env": {
-    "SUPABASE_URL": "@supabase-url",
-    "SUPABASE_SERVICE_KEY": "@supabase-service-key",
-    "ANTHROPIC_API_KEY": "@anthropic-api-key",
-    "TOAST_CLIENT_ID": "@toast-client-id",
-    "TOAST_CLIENT_SECRET": "@toast-client-secret",
-    "EVENTBRITE_API_KEY": "@eventbrite-api-key",
-    "OPENDATE_CLIENT_ID": "@opendate-client-id",
-    "OPENDATE_CLIENT_SECRET": "@opendate-client-secret"
   }
 }
