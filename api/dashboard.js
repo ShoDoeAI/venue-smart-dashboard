@@ -39,11 +39,18 @@ async function fetchToastData(token) {
   };
 
   try {
-    // Get yesterday's date range (since venue is closed today)
+    // Get yesterday's date range in Eastern Time (venue is closed Mondays)
     const now = new Date();
-    const yesterday = new Date(now);
+
+    // Convert to Eastern Time by subtracting 4 hours (EDT) or 5 hours (EST)
+    const easternOffset = -4; // EDT (Eastern Daylight Time)
+    const easternNow = new Date(now.getTime() + easternOffset * 60 * 60 * 1000);
+
+    // Get yesterday in Eastern Time
+    const yesterday = new Date(easternNow);
     yesterday.setDate(yesterday.getDate() - 1);
 
+    // Set to start/end of day in Eastern Time
     const startOfDay = new Date(yesterday);
     startOfDay.setHours(0, 0, 0, 0);
     const endOfDay = new Date(yesterday);
