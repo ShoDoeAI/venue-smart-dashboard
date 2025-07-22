@@ -105,6 +105,10 @@ module.exports = async (req, res) => {
   const now = new Date();
   const currentHour = now.getHours();
 
+  // Get yesterday for data fetching (venue closed today)
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+
   // Initialize response data
   let totalRevenue = 0;
   let totalTransactions = 0;
