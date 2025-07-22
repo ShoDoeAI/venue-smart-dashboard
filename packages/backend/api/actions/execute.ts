@@ -32,7 +32,7 @@ export default async function handler(
     );
 
     const executor = new ActionExecutor(supabase);
-    const confirmationService = new ActionConfirmationService(supabase);
+    // const confirmationService = new ActionConfirmationService(supabase);
 
     // Get action details
     const { data: action, error: actionError } = await supabase

@@ -218,7 +218,7 @@ export class AIContextAggregator {
 
     // Check each rule
     for (const rule of alertRules) {
-      let currentValue: number;
+      let currentValue: number = 0;
       let triggered = false;
 
       switch (rule.metric) {
@@ -239,7 +239,7 @@ export class AIContextAggregator {
             .select('id', { count: 'exact', head: true })
             .gte('transaction_date', new Date(Date.now() - 60 * 60 * 1000).toISOString());
           
-          currentValue = recentTransactions?.count || 0;
+          currentValue = recentTransactions?.length || 0;
           triggered = rule.condition === 'below' && currentValue < rule.threshold;
           break;
 

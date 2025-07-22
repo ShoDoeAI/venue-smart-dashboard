@@ -441,6 +441,7 @@ export interface OpenDateFanFilters {
   max_spent?: number;
   last_order_after?: string;
   last_order_before?: string;
+  marketing_opt_in?: boolean;
 }
 
 // Webhook Types

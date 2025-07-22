@@ -6,6 +6,7 @@ import type {
   ToastAction,
   EventbriteAction,
   OpenDateAction,
+  ToastUpdateItemPriceAction,
 } from '@venuesync/shared';
 import { KPICalculator } from './kpi-calculator';
 
@@ -320,7 +321,7 @@ export class ActionConfirmationService {
     const alternatives: ActionConfirmationRequest['alternatives'] = [];
 
     if (action.service === 'toast' && action.actionType === 'update_item_price') {
-      const params = (action as ToastAction).parameters;
+      const params = (action as ToastUpdateItemPriceAction).parameters;
       
       // Suggest smaller price change
       if (params.priceChangePercent > 20) {
@@ -332,7 +333,7 @@ export class ActionConfirmationService {
               ...params,
               newPrice: params.currentPrice * 1.1,
               priceChangePercent: 10,
-            },
+            } as any,
           },
         });
       }

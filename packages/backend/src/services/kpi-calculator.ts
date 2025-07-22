@@ -28,6 +28,10 @@ export interface DailyKPIs {
       transactionCount: number;
     }>;
   };
+  // Legacy properties for backward compatibility
+  revenueMetrics?: any;
+  attendanceMetrics?: any;
+  hourlyBreakdown?: any[];
   inventory?: {
     topItems: Array<{ name: string; quantity: number; revenue: number }>;
     lowStock: Array<{ name: string; remaining: number; threshold: number }>;

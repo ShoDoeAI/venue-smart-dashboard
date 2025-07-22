@@ -62,7 +62,7 @@ export default async function handler(
           const apisToFetch = [];
           if (apiStatuses.toast.needsUpdate) apisToFetch.push('toast');
           if (apiStatuses.eventbrite.needsUpdate) apisToFetch.push('eventbrite');
-          if (apiStatuses.opendate.needsUpdate) apisToFetch.push('opendate');
+          if (apiStatuses.opendate?.needsUpdate) apisToFetch.push('opendate');
           
           if (apisToFetch.length === 0) {
             console.log(`[CRON] Skipping ${venue.name} - all APIs recently updated`);

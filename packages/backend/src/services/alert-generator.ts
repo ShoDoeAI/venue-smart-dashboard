@@ -1,6 +1,21 @@
 import { z } from 'zod';
 import { supabase } from '../lib/supabase';
 
+// Define KPICalculatorResult type
+export interface KPICalculatorResult {
+  venueMetrics?: {
+    venueId: string;
+    venueName: string;
+    period: string;
+    revenueMetrics?: any;
+    attendanceMetrics?: any;
+    hourlyBreakdown?: any[];
+  };
+  eventMetrics?: {
+    upcomingEvents?: any[];
+  };
+}
+
 export const AlertSeverity = z.enum(['critical', 'high', 'medium', 'low']);
 export const AlertType = z.enum([
   'low_ticket_sales',

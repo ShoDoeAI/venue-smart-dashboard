@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { ToastConnector } from '@venuesync/shared';
-import type { Database } from '@venuesync/shared';
+import type { Database, ConnectorCredentials } from '@venuesync/shared';
 
 // Validate environment variables
 const requiredEnvVars = ['SUPABASE_URL', 'SUPABASE_SERVICE_ROLE_KEY'];
@@ -64,10 +64,11 @@ export default async function handler(
         id: credentials.id,
         service: 'toast',
         credentials: credentials.credentials as any,
+        isActive: true,
         metadata: credentials.metadata || {},
         created_at: credentials.created_at,
         updated_at: credentials.updated_at,
-      },
+      } as ConnectorCredentials,
       {
         timeout: 30000,
         maxRetries: 3,

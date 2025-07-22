@@ -34,6 +34,7 @@ export interface ToastAuthResponse {
 
 // Restaurant/Location types
 export interface ToastLocation {
+  id?: string; // Alias for guid in some contexts
   guid: string;
   name: string;
   address?: ToastAddress;

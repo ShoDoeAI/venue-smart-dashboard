@@ -1,4 +1,4 @@
-import { DataOrchestrator } from '../src/services/data-orchestrator';
+import { DataOrchestrator } from '../../src/services/data-orchestrator';
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 /**

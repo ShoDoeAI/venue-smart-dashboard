@@ -7,12 +7,17 @@ export interface ConnectorConfig {
   maxRetries?: number;
   retryDelay?: number;
   rateLimitPerMinute?: number;
+  retryAttempts?: number;
 }
 
 export interface ConnectorCredentials {
+  id?: string;
   service: 'eventbrite' | 'toast' | 'wisk' | 'resy' | 'audience_republic' | 'meta' | 'opentable' | 'opendate';
   credentials: Record<string, unknown>;
   isActive: boolean;
+  metadata?: Record<string, unknown>;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface FetchResult<T> {
