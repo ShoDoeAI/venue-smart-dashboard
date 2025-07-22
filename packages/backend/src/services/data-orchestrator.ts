@@ -2,6 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { ToastConnector } from '@venuesync/shared';
 import { EventbriteConnector } from '@venuesync/shared';
 import { OpenDateConnector } from '@venuesync/shared';
+import { AudienceRepublicConnector } from '@venuesync/shared';
 import type { Database } from '@venuesync/shared';
 import { SnapshotService } from './snapshot-service';
 import { ErrorIsolationService, ErrorSource } from './error-isolation';
@@ -108,6 +109,9 @@ export class DataOrchestrator {
           opendate: results.opendate?.success || false,
           wisk: false, // Placeholder - no public API docs
           resy: false, // Not used - replaced with OpenDate.io
+          audienceRepublic: results.audiencerepublic?.success || false,
+          meta: false, // Not yet implemented
+          openTable: false, // Not yet implemented
         },
       });
 
@@ -205,6 +209,28 @@ export class DataOrchestrator {
           .catch(async error => {
             const { fallbackData, errorId } = await this.errorIsolation.isolateError(
               'opendate',
+              error,
+              { venueId, dateRange }
+            );
+            return {
+              success: false,
+              error: error.message,
+              errorId,
+              fallbackData,
+              duration: Date.now() - apiStartTime,
+            };
+          });
+
+      case 'audiencerepublic':
+        return this.fetchAudienceRepublicData(venueId, dateRange)
+          .then(result => ({
+            success: true,
+            recordCount: result.recordCount,
+            duration: Date.now() - apiStartTime,
+          }))
+          .catch(async error => {
+            const { fallbackData, errorId } = await this.errorIsolation.isolateError(
+              'audiencerepublic',
               error,
               { venueId, dateRange }
             );
@@ -419,6 +445,66 @@ export class DataOrchestrator {
 
     return {
       recordCount: transactions.length,
+    };
+  }
+
+  /**
+   * Fetch Audience Republic data
+   */
+  private async fetchAudienceRepublicData(
+    venueId: string,
+    dateRange?: { start: Date; end: Date }
+  ) {
+    // Get Audience Republic credentials
+    const { data: credentials, error } = await this.supabase
+      .from('api_credentials')
+      .select('*')
+      .eq('venue_id', venueId)
+      .eq('service', 'audiencerepublic')
+      .single();
+
+    if (error || !credentials) {
+      throw new Error('Audience Republic credentials not found');
+    }
+
+    // Initialize connector with type assertion
+    const connector = new AudienceRepublicConnector({
+      credentials: {
+        apiKey: credentials.api_key,
+      },
+      options: {
+        timeout: 30000,
+        retryAttempts: 3,
+      },
+    });
+
+    // Fetch all marketing data
+    const result = await connector.fetchAllData(
+      dateRange?.start || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      dateRange?.end || new Date()
+    );
+
+    if (!result.success) {
+      throw new Error(result.error?.message || 'Failed to fetch Audience Republic data');
+    }
+
+    const data = result.data;
+    if (!data) {
+      return { recordCount: 0 };
+    }
+
+    // Store marketing data in a generic snapshots table or custom table
+    // For now, we'll just count the records
+    const recordCount = 
+      (data.campaigns?.length || 0) + 
+      (data.contacts?.length || 0) + 
+      (data.events?.length || 0);
+
+    // TODO: Save marketing data to appropriate tables
+    // This would require creating new tables for marketing campaigns, contacts, etc.
+    
+    return {
+      recordCount,
     };
   }
 
