@@ -29,7 +29,7 @@ async function getToastToken() {
 }
 
 // Fetch comprehensive Toast data
-async function fetchToastData(dateRange = 7) {
+async function fetchToastData(dateRange = 730) { // Default to 2 years (730 days)
   const token = await getToastToken();
   if (!token) return null;
 
@@ -110,6 +110,48 @@ async function fetchToastData(dateRange = 7) {
     // Calculate average order value
     analysis.averageOrderValue = analysis.totalRevenue / (orders.length || 1);
 
+    // Add year-over-year analysis
+    const currentYear = new Date().getFullYear();
+    const lastYear = currentYear - 1;
+    
+    analysis.yearOverYear = {
+      currentYear: { revenue: 0, orders: 0 },
+      lastYear: { revenue: 0, orders: 0 },
+      growth: 0
+    };
+
+    // Calculate monthly trends
+    analysis.monthlyTrends = {};
+    
+    orders.forEach(order => {
+      const orderDate = new Date(order.createdDate);
+      const year = orderDate.getFullYear();
+      const month = orderDate.toLocaleString('en-US', { month: 'short', year: 'numeric' });
+      
+      if (!analysis.monthlyTrends[month]) {
+        analysis.monthlyTrends[month] = { revenue: 0, orders: 0 };
+      }
+      
+      if (order.checks) {
+        const orderRevenue = order.checks.reduce((sum, check) => sum + (check.totalAmount || 0), 0);
+        analysis.monthlyTrends[month].revenue += orderRevenue;
+        analysis.monthlyTrends[month].orders += 1;
+        
+        if (year === currentYear) {
+          analysis.yearOverYear.currentYear.revenue += orderRevenue;
+          analysis.yearOverYear.currentYear.orders += 1;
+        } else if (year === lastYear) {
+          analysis.yearOverYear.lastYear.revenue += orderRevenue;
+          analysis.yearOverYear.lastYear.orders += 1;
+        }
+      }
+    });
+    
+    // Calculate YoY growth
+    if (analysis.yearOverYear.lastYear.revenue > 0) {
+      analysis.yearOverYear.growth = ((analysis.yearOverYear.currentYear.revenue - analysis.yearOverYear.lastYear.revenue) / analysis.yearOverYear.lastYear.revenue) * 100;
+    }
+
     // Convert amounts from cents
     analysis.totalRevenue = analysis.totalRevenue / 100;
     analysis.averageOrderValue = analysis.averageOrderValue / 100;
@@ -169,7 +211,7 @@ module.exports = async (req, res) => {
     // Fetch all data sources
     const [dashboardData, toastAnalysis] = await Promise.all([
       fetchDashboardData(),
-      fetchToastData(7), // Last 7 days
+      fetchToastData(730), // Last 2 years (730 days)
     ]);
     
     // Extract current metrics
@@ -179,17 +221,22 @@ module.exports = async (req, res) => {
     const alerts = dashboardData?.alerts || [];
 
     // Build comprehensive context
-    const systemPrompt = `You are an AI assistant for Jack's on Water Street, a venue using VenueSync with full access to their Toast POS data.
+    const systemPrompt = `You are an AI assistant for Jack's on Water Street, a venue using VenueSync with full access to their Toast POS data spanning 2 years.
 
 CURRENT STATUS (${new Date().toLocaleString('en-US', { timeZone: 'America/New_York' })} EDT):
 - Today's Revenue: $${currentRevenue.toFixed(2)} from ${transactions} transactions
 - Average Transaction: $${avgTransaction.toFixed(2)}
 
 ${toastAnalysis ? `
-TOAST POS DATA (Last 7 Days):
+TOAST POS HISTORICAL DATA (2 YEARS):
 - Total Revenue: $${toastAnalysis.totalRevenue.toFixed(2)}
 - Total Orders: ${toastAnalysis.totalOrders}
 - Average Order Value: $${toastAnalysis.averageOrderValue.toFixed(2)}
+
+YEAR-OVER-YEAR PERFORMANCE:
+- ${new Date().getFullYear()} Revenue: $${(toastAnalysis.yearOverYear.currentYear.revenue / 100).toFixed(2)} (${toastAnalysis.yearOverYear.currentYear.orders} orders)
+- ${new Date().getFullYear() - 1} Revenue: $${(toastAnalysis.yearOverYear.lastYear.revenue / 100).toFixed(2)} (${toastAnalysis.yearOverYear.lastYear.orders} orders)
+- YoY Growth: ${toastAnalysis.yearOverYear.growth.toFixed(1)}%
 
 TOP SELLING ITEMS:
 ${toastAnalysis.topItems.map((item, i) => `${i + 1}. ${item.name}: ${item.quantity} sold, $${item.revenue.toFixed(2)} revenue`).join('\n')}
