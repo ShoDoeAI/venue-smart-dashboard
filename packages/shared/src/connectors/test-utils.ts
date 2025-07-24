@@ -13,7 +13,7 @@ export function createMockSupabaseClient(): SupabaseClient<Database> {
       update: vi.fn().mockReturnThis(),
       delete: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockResolvedValue({ data: null, error: null }),
+      single: vi.fn().mockResolvedValue({ data: undefined, error: null }),
     }),
     auth: {
       getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),

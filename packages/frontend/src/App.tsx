@@ -9,6 +9,7 @@ import Events from './pages/events';
 import Customers from './pages/customers';
 import Activity from './pages/activity';
 import Settings from './pages/settings';
+import ToastDataViewer from './pages/toast-data-viewer';
 
 export function App() {
   return (
@@ -23,6 +24,7 @@ export function App() {
           <Route path="customers" element={<Customers />} />
           <Route path="activity" element={<Activity />} />
           <Route path="settings" element={<Settings />} />
+          <Route path="toast-data" element={<ToastDataViewer />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Route>
       </Routes>

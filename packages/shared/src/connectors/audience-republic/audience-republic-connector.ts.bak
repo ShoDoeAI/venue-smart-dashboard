@@ -1,5 +1,7 @@
 import { BaseConnector } from '../base-connector';
-import type { ConnectorConfig, FetchResult, ConnectorError } from '../../types/connector';
+import type { ConnectorConfig, FetchResult, ConnectorError, ConnectorCredentials } from '../types';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '../../types/database.generated';
 import type {
   AudienceRepublicConfig,
   AudienceRepublicCredentials,
@@ -31,16 +33,22 @@ import { z } from 'zod';
  * - GET /api/v1/analytics
  * - GET /api/v1/segments
  */
-export class AudienceRepublicConnector extends BaseConnector<AudienceRepublicCredentials> {
+export class AudienceRepublicConnector extends BaseConnector {
   private baseUrl: string;
   private headers: Record<string, string>;
+  private audienceRepublicCredentials: AudienceRepublicCredentials;
 
-  constructor(config: ConnectorConfig<AudienceRepublicCredentials>) {
-    super(config);
-    this.baseUrl = (config as AudienceRepublicConfig).baseUrl || 'https://api.audiencerepublic.com/v1';
+  constructor(
+    credentials: ConnectorCredentials,
+    config: ConnectorConfig,
+    supabase: SupabaseClient<Database>
+  ) {
+    super(credentials, config, supabase);
+    this.audienceRepublicCredentials = credentials.credentials as unknown as AudienceRepublicCredentials;
+    this.baseUrl = 'https://api.audiencerepublic.com/v1';
     this.headers = {
       'Content-Type': 'application/json',
-      'X-API-Key': this.credentials.apiKey,
+      'X-API-Key': this.audienceRepublicCredentials.apiKey,
       'User-Agent': 'VenueSync/1.0',
     };
   }
@@ -96,7 +104,7 @@ export class AudienceRepublicConnector extends BaseConnector<AudienceRepublicCre
       });
 
       if (!result.success || !result.data) {
-        return { success: false, data: null, error: result.error };
+        return { success: false, data: undefined, error: result.error };
       }
 
       const responseSchema = audienceRepublicApiResponseSchema(
@@ -132,7 +140,7 @@ export class AudienceRepublicConnector extends BaseConnector<AudienceRepublicCre
       });
 
       if (!result.success || !result.data) {
-        return { success: false, data: null, error: result.error };
+        return { success: false, data: undefined, error: result.error };
       }
 
       const responseSchema = audienceRepublicApiResponseSchema(
@@ -168,7 +176,7 @@ export class AudienceRepublicConnector extends BaseConnector<AudienceRepublicCre
       });
 
       if (!result.success || !result.data) {
-        return { success: false, data: null, error: result.error };
+        return { success: false, data: undefined, error: result.error };
       }
 
       const responseSchema = audienceRepublicApiResponseSchema(
@@ -204,7 +212,7 @@ export class AudienceRepublicConnector extends BaseConnector<AudienceRepublicCre
       });
 
       if (!result.success || !result.data) {
-        return { success: false, data: null, error: result.error };
+        return { success: false, data: undefined, error: result.error };
       }
 
       const validated = audienceRepublicAnalyticsSchema.parse(result.data);
@@ -237,16 +245,16 @@ export class AudienceRepublicConnector extends BaseConnector<AudienceRepublicCre
 
       // Check for failures
       if (!campaignsResult.success) {
-        return { success: false, data: null, error: campaignsResult.error };
+        return { success: false, data: undefined, error: campaignsResult.error };
       }
       if (!contactsResult.success) {
-        return { success: false, data: null, error: contactsResult.error };
+        return { success: false, data: undefined, error: contactsResult.error };
       }
       if (!eventsResult.success) {
-        return { success: false, data: null, error: eventsResult.error };
+        return { success: false, data: undefined, error: eventsResult.error };
       }
       if (!analyticsResult.success) {
-        return { success: false, data: null, error: analyticsResult.error };
+        return { success: false, data: undefined, error: analyticsResult.error };
       }
 
       // Calculate aggregate metrics
@@ -319,7 +327,7 @@ export class AudienceRepublicConnector extends BaseConnector<AudienceRepublicCre
 
     return {
       success: false,
-      data: null,
+      data: undefined,
       error: connectorError,
     };
   }

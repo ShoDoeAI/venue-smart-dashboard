@@ -50,6 +50,7 @@ async function testToastFlow() {
       {
         id: 'test-toast-1',
         service: 'toast',
+        isActive: true,
         credentials: {
           clientId: process.env.TOAST_CLIENT_ID!,
           clientSecret: process.env.TOAST_CLIENT_SECRET!,
@@ -104,7 +105,7 @@ async function testToastFlow() {
     console.log(`📅 Date range: ${startTime.toISOString()} to ${endTime.toISOString()}`);
     
     const transactionsResult = await connector.fetchAllTransactions(
-      location.id,
+      location.id || location.guid,
       startTime,
       endTime
     );
@@ -166,7 +167,7 @@ async function testToastFlow() {
 
     // Test team members
     console.log('   - Fetching team members...');
-    const teamMembersResult = await connector.fetchTeamMembers([location.id]);
+    const teamMembersResult = await connector.fetchTeamMembers([location.id || location.guid]);
     if (teamMembersResult.success) {
       console.log(`   ✅ Found ${teamMembersResult.data?.data.length || 0} team member(s)`);
     }

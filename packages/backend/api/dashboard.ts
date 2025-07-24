@@ -18,8 +18,12 @@ export default async function handler(
       process.env.SUPABASE_SERVICE_KEY!
     );
 
-    // Get venue ID from query or default
-    const venueId = req.query.venueId as string || 'default-venue-id';
+    // Get venue ID from query or use Jack's on Water Street
+    const venueId = req.query.venueId as string || 'bfb355cb-55e4-4f57-af16-d0d18c11ad3c';
+    
+    // Get date range from query params
+    const startDate = req.query.startDate as string;
+    const endDate = req.query.endDate as string;
 
     // Get latest snapshot
     const { data: snapshot, error: snapshotError } = await supabase
@@ -37,11 +41,24 @@ export default async function handler(
     // Get real-time KPIs
     const kpiCalculator = new KPICalculator(supabase);
     let realtimeMetrics;
+    let historicalData;
     
     try {
       realtimeMetrics = await kpiCalculator.calculateRealtimeMetrics(venueId);
+      
+      // If date range provided, fetch historical data
+      if (startDate && endDate) {
+        const { data: historicalTransactions } = await supabase
+          .from('toast_transactions')
+          .select('*')
+          .gte('transaction_date', startDate)
+          .lte('transaction_date', endDate)
+          .order('transaction_date', { ascending: true });
+          
+        historicalData = historicalTransactions;
+      }
     } catch (error) {
-      console.error('Error calculating real-time metrics:', error);
+      console.error('Error calculating metrics:', error);
     }
 
     // Get active alerts
@@ -56,6 +73,32 @@ export default async function handler(
       .eq('summary_date', new Date().toISOString().split('T')[0])
       .single();
 
+    // Calculate hourly breakdown if we have Toast data
+    let hourlyBreakdown;
+    if (todaySummary) {
+      const { data: todayTransactions } = await supabase
+        .from('toast_transactions')
+        .select('transaction_date, total_amount, customer_id')
+        .gte('transaction_date', new Date().toISOString().split('T')[0])
+        .lt('transaction_date', new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+        
+      if (todayTransactions) {
+        hourlyBreakdown = Array.from({ length: 24 }, (_, hour) => {
+          const hourTransactions = todayTransactions.filter(tx => {
+            const txHour = new Date(tx.transaction_date).getHours();
+            return txHour === hour;
+          });
+          
+          return {
+            hour,
+            revenue: hourTransactions.reduce((sum, tx) => sum + (tx.total_amount || 0), 0),
+            transactions: hourTransactions.length,
+            customers: new Set(hourTransactions.map(tx => tx.customer_id).filter(Boolean)).size
+          };
+        });
+      }
+    }
+    
     // Prepare response
     const response = {
       success: true,
@@ -78,8 +121,10 @@ export default async function handler(
         eventMetrics: {
           ticketsSoldToday: todaySummary?.total_tickets_sold || 0
         },
-        upcomingEvents: realtimeMetrics?.upcomingEvents || []
+        upcomingEvents: realtimeMetrics?.upcomingEvents || [],
+        hourlyBreakdown: hourlyBreakdown || []
       },
+      historicalData: historicalData || null,
       alerts: alerts.slice(0, 5), // Top 5 alerts
       lastUpdated: new Date().toISOString()
     };

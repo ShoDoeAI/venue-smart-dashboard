@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VenueSync Deployment Diagnostic</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8">🔍 VenueSync Deployment Diagnostic</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- API Endpoints Test -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">API Endpoints</h2>
+                <div id="api-tests" class="space-y-2"></div>
+                <button onclick="testAllAPIs()" class="mt-4 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+                    Test All Endpoints
+                </button>
+            </div>
+            
+            <!-- Toast Verification -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Toast API Verification</h2>
+                <div id="toast-verification" class="text-sm">
+                    <p class="text-gray-400">Click to verify Toast connection...</p>
+                </div>
+                <button onclick="verifyToast()" class="mt-4 bg-green-600 hover:bg-green-700 px-4 py-2 rounded">
+                    Verify Toast Data
+                </button>
+            </div>
+            
+            <!-- Environment Check -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">Environment Variables</h2>
+                <div id="env-check" class="space-y-1 text-sm"></div>
+                <button onclick="checkEnvironment()" class="mt-4 bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded">
+                    Check Environment
+                </button>
+            </div>
+            
+            <!-- AI Chat Test -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">AI Chat Test</h2>
+                <input type="text" id="ai-input" placeholder="Ask about weekend revenue..." 
+                    class="w-full p-2 bg-gray-700 rounded mb-2">
+                <button onclick="testAIChat()" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded">
+                    Test AI Chat
+                </button>
+                <div id="ai-response" class="mt-4 text-sm"></div>
+            </div>
+        </div>
+        
+        <!-- Logs -->
+        <div class="mt-8 bg-gray-800 rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Diagnostic Logs</h2>
+            <div id="logs" class="bg-gray-900 p-4 rounded font-mono text-xs overflow-auto max-h-96"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3000' 
+            : 'https://venue-smart-dashboard.vercel.app';
+        
+        const endpoints = [
+            { name: 'Health', path: '/api/health', method: 'GET' },
+            { name: 'Dashboard', path: '/api/dashboard', method: 'GET' },
+            { name: 'Chat', path: '/api/chat', method: 'POST', body: { message: 'test' } },
+            { name: 'Alerts', path: '/api/alerts', method: 'GET' },
+            { name: 'Verify Toast', path: '/api/verify-toast', method: 'GET' },
+            { name: 'Weekend Data', path: '/api/weekend-data', method: 'GET' },
+            { name: 'Environment Check', path: '/api/env-check', method: 'GET' },
+        ];
+        
+        function log(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            const time = new Date().toLocaleTimeString();
+            const color = type === 'error' ? 'text-red-400' : type === 'success' ? 'text-green-400' : 'text-gray-400';
+            logs.innerHTML += `<div class="${color}">[${time}] ${message}</div>`;
+            logs.scrollTop = logs.scrollHeight;
+        }
+        
+        async function testEndpoint(endpoint) {
+            const startTime = Date.now();
+            try {
+                const options = {
+                    method: endpoint.method,
+                    headers: { 'Content-Type': 'application/json' }
+                };
+                
+                if (endpoint.body) {
+                    options.body = JSON.stringify(endpoint.body);
+                }
+                
+                const response = await fetch(API_URL + endpoint.path, options);
+                const duration = Date.now() - startTime;
+                const data = await response.json().catch(() => null);
+                
+                const result = {
+                    name: endpoint.name,
+                    status: response.status,
+                    ok: response.ok,
+                    duration,
+                    data
+                };
+                
+                log(`${endpoint.name}: ${response.status} (${duration}ms)`, response.ok ? 'success' : 'error');
+                return result;
+                
+            } catch (error) {
+                log(`${endpoint.name}: ${error.message}`, 'error');
+                return {
+                    name: endpoint.name,
+                    status: 0,
+                    ok: false,
+                    error: error.message
+                };
+            }
+        }
+        
+        async function testAllAPIs() {
+            const container = document.getElementById('api-tests');
+            container.innerHTML = '<p class="text-gray-400">Testing...</p>';
+            log('Starting API endpoint tests...');
+            
+            const results = await Promise.all(endpoints.map(testEndpoint));
+            
+            container.innerHTML = results.map(r => `
+                <div class="flex justify-between items-center p-2 rounded ${r.ok ? 'bg-green-900/20' : 'bg-red-900/20'}">
+                    <span>${r.name}</span>
+                    <span class="${r.ok ? 'text-green-400' : 'text-red-400'}">${r.status || 'Error'}</span>
+                </div>
+            `).join('');
+        }
+        
+        async function verifyToast() {
+            const container = document.getElementById('toast-verification');
+            container.innerHTML = '<p class="text-gray-400">Verifying Toast connection...</p>';
+            log('Verifying Toast API connection...');
+            
+            try {
+                const response = await fetch(API_URL + '/api/verify-toast');
+                const data = await response.json();
+                
+                if (data.success && data.verification) {
+                    const v = data.verification;
+                    container.innerHTML = `
+                        <div class="space-y-2">
+                            <p class="text-green-400">✅ ${v.authentication}</p>
+                            ${v.restaurant ? `<p>📍 ${v.restaurant.name}</p>` : ''}
+                            <p>📊 Last Weekend Revenue: $${v.lastWeekend.totalRevenue}</p>
+                            <p>📅 Today (${v.today.dayOfWeek}): $${v.today.revenue}</p>
+                            <p>📦 Historical Orders: ${v.dataAccess.historicalOrdersCount}</p>
+                            <div class="mt-2 p-2 bg-gray-700 rounded">
+                                <p class="text-xs font-semibold">Sample Menu Items:</p>
+                                <p class="text-xs">${v.lastWeekend.sampleMenuItems.slice(0, 5).join(', ')}</p>
+                            </div>
+                            <div class="mt-2">
+                                <p class="${v.dataQuality.isProduction ? 'text-green-400' : 'text-yellow-400'}">
+                                    ${v.dataQuality.isProduction ? '✅ Production Data Confirmed' : '⚠️ Low revenue - verify data'}
+                                </p>
+                            </div>
+                        </div>
+                    `;
+                    log('Toast verification successful!', 'success');
+                } else {
+                    throw new Error(data.error || 'Verification failed');
+                }
+            } catch (error) {
+                container.innerHTML = `<p class="text-red-400">❌ ${error.message}</p>`;
+                log(`Toast verification failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function checkEnvironment() {
+            const container = document.getElementById('env-check');
+            container.innerHTML = '<p class="text-gray-400">Checking...</p>';
+            log('Checking environment variables...');
+            
+            try {
+                const response = await fetch(API_URL + '/api/env-check');
+                const data = await response.json();
+                
+                const vars = [
+                    { name: 'TOAST_CLIENT_ID', value: data.TOAST_CLIENT_ID, required: true },
+                    { name: 'TOAST_CLIENT_SECRET', value: data.TOAST_CLIENT_SECRET, required: true },
+                    { name: 'TOAST_LOCATION_ID', value: data.TOAST_LOCATION_ID, required: true },
+                    { name: 'SUPABASE_URL', value: data.SUPABASE_URL, required: true },
+                    { name: 'SUPABASE_SERVICE_KEY', value: data.SUPABASE_SERVICE_KEY, required: true },
+                    { name: 'ANTHROPIC_API_KEY', value: data.ANTHROPIC_API_KEY, required: true },
+                ];
+                
+                container.innerHTML = vars.map(v => `
+                    <div class="flex justify-between">
+                        <span class="text-xs">${v.name}</span>
+                        <span class="${v.value ? 'text-green-400' : 'text-red-400'} text-xs">
+                            ${v.value ? '✓ Set' : '✗ Missing'}
+                        </span>
+                    </div>
+                `).join('');
+                
+                const allSet = vars.every(v => v.value || !v.required);
+                log(`Environment check: ${allSet ? 'All required variables set' : 'Missing required variables'}`, 
+                    allSet ? 'success' : 'error');
+                    
+            } catch (error) {
+                container.innerHTML = `<p class="text-red-400">Error: ${error.message}</p>`;
+                log(`Environment check failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testAIChat() {
+            const input = document.getElementById('ai-input');
+            const container = document.getElementById('ai-response');
+            const message = input.value || 'What was our revenue last weekend?';
+            
+            container.innerHTML = '<p class="text-gray-400">Asking AI...</p>';
+            log(`Testing AI chat with: "${message}"`);
+            
+            try {
+                const response = await fetch(API_URL + '/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+                
+                const data = await response.json();
+                
+                if (data.response) {
+                    container.innerHTML = `
+                        <div class="bg-gray-700 p-3 rounded">
+                            <p class="text-xs text-gray-400 mb-1">AI Response:</p>
+                            <p class="text-sm">${data.response}</p>
+                        </div>
+                    `;
+                    log('AI chat test successful', 'success');
+                } else {
+                    throw new Error('No response from AI');
+                }
+            } catch (error) {
+                container.innerHTML = `<p class="text-red-400">Error: ${error.message}</p>`;
+                log(`AI chat test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Run initial tests on load
+        window.addEventListener('load', () => {
+            log('Deployment diagnostic tool loaded');
+            log(`Testing against: ${API_URL}`);
+        });
+    </script>
+</body>
+</html>

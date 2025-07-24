@@ -71,6 +71,7 @@ export default async function handler(
       {
         id: 'test-toast-api',
         service: 'toast',
+        isActive: true,
         credentials: {
           clientId: process.env.TOAST_CLIENT_ID!,
           clientSecret: process.env.TOAST_CLIENT_SECRET!,
@@ -117,7 +118,7 @@ export default async function handler(
     startTime.setDate(startTime.getDate() - 7);
 
     const transactionsResult = await connector.fetchAllTransactions(
-      location.id,
+      location.id || location.guid,
       startTime,
       endTime
     );
@@ -140,7 +141,7 @@ export default async function handler(
 
     // Get additional data
     const customersResult = await connector.fetchCustomers();
-    const teamMembersResult = await connector.fetchTeamMembers([location.id]);
+    const teamMembersResult = await connector.fetchTeamMembers([location.id || location.guid]);
 
     return res.status(200).json({
       success: true,

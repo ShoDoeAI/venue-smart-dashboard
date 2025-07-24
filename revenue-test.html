@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Jack's Revenue Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8">🍺 Jack's Revenue Accuracy Test</h1>
+        
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Test Your Revenue Calculations</h2>
+            <p class="mb-4">This will compare different calculation methods to find why totals don't match.</p>
+            
+            <div class="space-y-4">
+                <button onclick="testLocalAPI()" 
+                    class="w-full bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded text-lg font-semibold">
+                    Test Local API (localhost:3000)
+                </button>
+                
+                <button onclick="testDeployedAPI()" 
+                    class="w-full bg-green-600 hover:bg-green-700 px-6 py-3 rounded text-lg font-semibold">
+                    Test Deployed API (Vercel)
+                </button>
+            </div>
+        </div>
+        
+        <div id="results" class="space-y-4"></div>
+    </div>
+
+    <script>
+        async function testAPI(baseURL) {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="bg-yellow-800 p-4 rounded">Running revenue tests...</div>';
+            
+            try {
+                // Test 1: Get current dashboard data
+                const dashboardResponse = await fetch(baseURL + '/api/dashboard');
+                const dashboardData = await dashboardResponse.json();
+                
+                // Test 2: Get last 7 days historical
+                const end = new Date();
+                const start = new Date();
+                start.setDate(start.getDate() - 7);
+                
+                const historicalResponse = await fetch(
+                    baseURL + `/api/toast-historical?startDate=${start.toISOString().split('T')[0]}&endDate=${end.toISOString().split('T')[0]}`
+                );
+                const historicalData = await historicalResponse.json();
+                
+                // Test 3: Ask AI about revenue
+                const aiResponse = await fetch(baseURL + '/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: 'What was our total revenue last week including tax and tips?' })
+                });
+                const aiData = await aiResponse.json();
+                
+                // Display results
+                let html = '';
+                
+                // Dashboard data
+                if (dashboardData.success) {
+                    html += `
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4">Dashboard API Results</h3>
+                            <p><strong>Restaurant:</strong> ${dashboardData.restaurant?.name || 'Unknown'}</p>
+                            <p><strong>Today's Revenue:</strong> $${dashboardData.data?.today?.revenue?.toFixed(2) || '0.00'}</p>
+                            <p><strong>Yesterday's Revenue:</strong> $${dashboardData.data?.yesterday?.revenue?.toFixed(2) || '0.00'}</p>
+                            <p><strong>Last Weekend:</strong> $${dashboardData.data?.lastWeekend?.revenue?.toFixed(2) || '0.00'}</p>
+                            <p><strong>Last 7 Days:</strong> $${dashboardData.data?.last7Days?.revenue?.toFixed(2) || '0.00'}</p>
+                        </div>
+                    `;
+                }
+                
+                // Historical data
+                if (historicalData.success) {
+                    const data = historicalData.data;
+                    html += `
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4">Historical API Results (Last 7 Days)</h3>
+                            <p><strong>Total Revenue:</strong> $${data.totalRevenue?.toFixed(2) || '0.00'}</p>
+                            <p><strong>Total Orders:</strong> ${data.totalOrders || 0}</p>
+                            <p><strong>Daily Breakdown:</strong></p>
+                            <div class="mt-2 space-y-1">
+                                ${data.dailyBreakdown?.map(day => 
+                                    `<div class="ml-4 text-sm">
+                                        ${day.date} (${day.dayOfWeek}): $${day.revenue.toFixed(2)}
+                                    </div>`
+                                ).join('') || 'No daily data'}
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // AI response
+                if (aiData.response) {
+                    html += `
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h3 class="text-lg font-semibold mb-4">AI Chat Response</h3>
+                            <p class="whitespace-pre-wrap">${aiData.response}</p>
+                        </div>
+                    `;
+                }
+                
+                // Comparison
+                html += `
+                    <div class="bg-red-900 rounded-lg p-6">
+                        <h3 class="text-lg font-semibold mb-4">🔍 Revenue Comparison</h3>
+                        <p>Dashboard says last 7 days: $${dashboardData.data?.last7Days?.revenue?.toFixed(2) || '0.00'}</p>
+                        <p>Historical API says: $${historicalData.data?.totalRevenue?.toFixed(2) || '0.00'}</p>
+                        <p>AI Chat says: Check the response above</p>
+                        
+                        <div class="mt-4 p-4 bg-red-800 rounded">
+                            <p class="font-bold">❓ Questions to Answer:</p>
+                            <ol class="list-decimal list-inside mt-2">
+                                <li>Do these numbers match?</li>
+                                <li>What does your Toast report show for the same period?</li>
+                                <li>Are we including tax and tips correctly?</li>
+                            </ol>
+                        </div>
+                    </div>
+                `;
+                
+                results.innerHTML = html;
+                
+            } catch (error) {
+                results.innerHTML = `
+                    <div class="bg-red-800 p-4 rounded">
+                        <p class="font-bold">Error:</p>
+                        <p>${error.message}</p>
+                        <p class="mt-2 text-sm">Make sure your API is running at ${baseURL}</p>
+                    </div>
+                `;
+            }
+        }
+        
+        function testLocalAPI() {
+            testAPI('http://localhost:3000');
+        }
+        
+        function testDeployedAPI() {
+            testAPI('https://venue-smart-dashboard.vercel.app');
+        }
+    </script>
+</body>
+</html>

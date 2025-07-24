@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Connection Check - Jack's on Water Street</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8">🔍 Connection Status Check</h1>
+        
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <p class="mb-4">Click to test your complete data flow:</p>
+            
+            <div class="space-y-4">
+                <button onclick="testLocal()" 
+                    class="w-full bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded text-lg font-semibold">
+                    Test Local Connection (localhost:3000)
+                </button>
+                
+                <button onclick="testProduction()" 
+                    class="w-full bg-green-600 hover:bg-green-700 px-6 py-3 rounded text-lg font-semibold">
+                    Test Production (Vercel)
+                </button>
+            </div>
+        </div>
+        
+        <div id="results" class="space-y-4"></div>
+    </div>
+
+    <script>
+        async function testConnection(baseURL) {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="bg-yellow-800 p-4 rounded">Testing connections...</div>';
+            
+            let html = '';
+            
+            try {
+                // Test 1: Dashboard from Supabase
+                html += '<div class="bg-gray-800 rounded-lg p-6">';
+                html += '<h3 class="text-xl font-semibold mb-4">📊 Dashboard API (from Supabase)</h3>';
+                
+                try {
+                    const response = await fetch(baseURL + '/api/dashboard-supabase');
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        html += '<p class="text-green-400">✅ Connected to Supabase</p>';
+                        html += `<p>Data Source: ${data.dataSource}</p>`;
+                        html += `<p>Last Sync: ${data.lastSync ? new Date(data.lastSync).toLocaleString() : 'Never'}</p>`;
+                        html += '<div class="mt-4 bg-gray-700 p-4 rounded">';
+                        html += `<p><strong>Today:</strong> $${data.data.today.revenue.toFixed(2)} (${data.data.today.transactions} transactions)</p>`;
+                        html += `<p><strong>Yesterday:</strong> $${data.data.yesterday.revenue.toFixed(2)}</p>`;
+                        html += `<p><strong>Last 7 Days:</strong> $${data.data.last7Days.revenue.toFixed(2)}</p>`;
+                        html += `<p><strong>Last Weekend:</strong> $${data.data.lastWeekend.revenue.toFixed(2)}</p>`;
+                        html += '</div>';
+                    } else {
+                        html += `<p class="text-red-400">❌ Error: ${data.error}</p>`;
+                    }
+                } catch (error) {
+                    html += `<p class="text-red-400">❌ Cannot reach dashboard-supabase endpoint</p>`;
+                }
+                
+                html += '</div>';
+                
+                // Test 2: Direct Toast Dashboard (old method)
+                html += '<div class="bg-gray-800 rounded-lg p-6 mt-4">';
+                html += '<h3 class="text-xl font-semibold mb-4">🍞 Direct Toast API (old method)</h3>';
+                
+                try {
+                    const response = await fetch(baseURL + '/api/dashboard');
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        html += '<p class="text-yellow-400">⚠️ Still using direct Toast API calls</p>';
+                        html += '<p>This is slower and doesn\'t use Supabase</p>';
+                    } else {
+                        html += `<p class="text-red-400">❌ Error: ${data.error}</p>`;
+                    }
+                } catch (error) {
+                    html += `<p class="text-gray-400">Direct Toast endpoint not available</p>`;
+                }
+                
+                html += '</div>';
+                
+                // Test 3: Manual Sync Status
+                html += '<div class="bg-gray-800 rounded-lg p-6 mt-4">';
+                html += '<h3 class="text-xl font-semibold mb-4">🔄 Manual Sync Capability</h3>';
+                
+                html += '<p>To sync data from Toast to Supabase:</p>';
+                html += '<pre class="bg-black p-4 rounded mt-2 text-xs overflow-x-auto">';
+                html += `curl -X POST ${baseURL}/api/manual-sync \\
+  -H "Content-Type: application/json" \\
+  -d '{"service": "toast"}'`;
+                html += '</pre>';
+                
+                html += '<button onclick="manualSync(\'' + baseURL + '\')" class="mt-4 bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded">';
+                html += 'Trigger Manual Sync (Last 30 Days)';
+                html += '</button>';
+                html += '<div id="sync-result-' + baseURL.replace(/[^a-z]/gi, '') + '"></div>';
+                
+                html += '</div>';
+                
+            } catch (error) {
+                html = `<div class="bg-red-800 p-4 rounded">
+                    <p class="font-bold">Connection Error</p>
+                    <p>${error.message}</p>
+                </div>`;
+            }
+            
+            results.innerHTML = html;
+        }
+        
+        function testLocal() {
+            testConnection('http://localhost:3000');
+        }
+        
+        function testProduction() {
+            testConnection('https://venue-smart-dashboard.vercel.app');
+        }
+        
+        async function manualSync(baseURL) {
+            const resultId = 'sync-result-' + baseURL.replace(/[^a-z]/gi, '');
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.innerHTML = '<p class="text-yellow-400 mt-2">Syncing...</p>';
+            
+            try {
+                const response = await fetch(baseURL + '/api/manual-sync', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ service: 'toast' })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="bg-green-800 p-4 rounded mt-2">
+                            <p class="font-bold">✅ Sync Successful!</p>
+                            <p>Orders processed: ${data.services?.toast?.ordersProcessed || 0}</p>
+                            <p>Transactions created: ${data.services?.toast?.transactionsCreated || 0}</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p class="text-red-400 mt-2">❌ Sync failed: ${data.error}</p>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="text-red-400 mt-2">❌ Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

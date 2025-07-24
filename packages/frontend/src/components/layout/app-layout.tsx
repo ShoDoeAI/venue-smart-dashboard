@@ -9,6 +9,7 @@ import {
   BarChart3,
   Calendar,
   Users,
+  Database,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
@@ -67,6 +68,12 @@ const navigation: NavItem[] = [
     href: '/settings',
     icon: Settings,
     description: 'Configure your integrations',
+  },
+  {
+    title: 'Toast Data',
+    href: '/toast-data',
+    icon: Database,
+    description: 'View raw Toast POS data',
   },
 ];
 

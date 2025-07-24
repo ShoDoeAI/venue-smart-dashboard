@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VenueSync API Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6">VenueSync API Endpoint Test</h1>
+        
+        <div class="space-y-4">
+            <!-- Health Check -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="font-semibold mb-2">Health Check</h2>
+                <button onclick="testHealth()" class="bg-blue-500 text-white px-4 py-2 rounded">Test /api/health</button>
+                <pre id="health-result" class="mt-2 p-2 bg-gray-100 rounded text-sm"></pre>
+            </div>
+
+            <!-- Dashboard -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="font-semibold mb-2">Dashboard API</h2>
+                <button onclick="testDashboard()" class="bg-blue-500 text-white px-4 py-2 rounded">Test /api/dashboard</button>
+                <pre id="dashboard-result" class="mt-2 p-2 bg-gray-100 rounded text-sm"></pre>
+            </div>
+
+            <!-- Chat -->
+            <div class="bg-white p-4 rounded-lg shadow">
+                <h2 class="font-semibold mb-2">Chat API</h2>
+                <input id="chat-message" type="text" placeholder="Enter message" class="border rounded px-3 py-2 mr-2" value="What is today's revenue?">
+                <button onclick="testChat()" class="bg-blue-500 text-white px-4 py-2 rounded">Test /api/chat</button>
+                <pre id="chat-result" class="mt-2 p-2 bg-gray-100 rounded text-sm"></pre>
+            </div>
+        </div>
+
+        <div class="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <h3 class="font-semibold text-yellow-800">Instructions:</h3>
+            <ol class="list-decimal list-inside text-sm text-yellow-700 mt-2">
+                <li>Open this file locally in your browser</li>
+                <li>Test each endpoint to see if they're accessible</li>
+                <li>Check the browser console for CORS errors</li>
+                <li>The production URL is: https://venue-smart-dashboard-dzusht8kf-shomari-mitchell-s-projects.vercel.app</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        const BASE_URL = 'https://venue-smart-dashboard-dzusht8kf-shomari-mitchell-s-projects.vercel.app';
+
+        async function testEndpoint(endpoint, options = {}) {
+            try {
+                const response = await fetch(BASE_URL + endpoint, {
+                    ...options,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    }
+                });
+                
+                const data = await response.json();
+                return {
+                    status: response.status,
+                    ok: response.ok,
+                    data: data
+                };
+            } catch (error) {
+                return {
+                    error: error.message,
+                    type: error.name
+                };
+            }
+        }
+
+        async function testHealth() {
+            const result = await testEndpoint('/api/health');
+            document.getElementById('health-result').textContent = JSON.stringify(result, null, 2);
+        }
+
+        async function testDashboard() {
+            const result = await testEndpoint('/api/dashboard');
+            document.getElementById('dashboard-result').textContent = JSON.stringify(result, null, 2);
+        }
+
+        async function testChat() {
+            const message = document.getElementById('chat-message').value;
+            const result = await testEndpoint('/api/chat', {
+                method: 'POST',
+                body: JSON.stringify({ message })
+            });
+            document.getElementById('chat-result').textContent = JSON.stringify(result, null, 2);
+        }
+
+        // Also test with local development URL
+        async function testLocal() {
+            const localUrl = 'http://localhost:5173';
+            console.log('Testing local endpoints at:', localUrl);
+            
+            try {
+                const health = await fetch(localUrl + '/api/health');
+                console.log('Local health check:', health.status);
+            } catch (e) {
+                console.log('Local server not running');
+            }
+        }
+
+        // Run tests on load
+        window.onload = () => {
+            console.log('Testing production endpoints at:', BASE_URL);
+            testLocal();
+        };
+    </script>
+</body>
+</html>

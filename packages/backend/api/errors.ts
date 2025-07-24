@@ -1,7 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { createClient } from '@supabase/supabase-js';
 import { ErrorIsolationService } from '../src/services/error-isolation';
-import type { Database } from '@venuesync/shared';
 
 export default async function handler(
   req: VercelRequest,
@@ -13,11 +11,6 @@ export default async function handler(
   }
 
   try {
-    const supabase = createClient<Database>(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_KEY!
-    );
-
     const errorService = new ErrorIsolationService();
 
     // Get query parameters

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VenueSync - Complete API Integration Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse-slow {
+            animation: pulse 3s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <header class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <h1 class="text-2xl font-bold text-gray-900">🏢 VenueSync Dashboard</h1>
+                        <span class="ml-4 text-sm text-gray-500">All 6 APIs Integrated</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <span class="w-2 h-2 bg-green-400 rounded-full mr-1 animate-pulse"></span>
+                            Live Data
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Summary Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Today's Revenue</p>
+                            <p class="text-2xl font-bold text-gray-900">$38,480</p>
+                            <p class="text-sm text-green-600 flex items-center mt-1">
+                                <i data-lucide="trending-up" class="w-4 h-4 mr-1"></i>
+                                +15% from last week
+                            </p>
+                        </div>
+                        <div class="p-3 bg-green-50 rounded-lg">
+                            <i data-lucide="dollar-sign" class="w-6 h-6 text-green-600"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Total Customers</p>
+                            <p class="text-2xl font-bold text-gray-900">847</p>
+                            <p class="text-sm text-blue-600 flex items-center mt-1">
+                                <i data-lucide="users" class="w-4 h-4 mr-1"></i>
+                                156 VIP guests
+                            </p>
+                        </div>
+                        <div class="p-3 bg-blue-50 rounded-lg">
+                            <i data-lucide="users" class="w-6 h-6 text-blue-600"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Events & Shows</p>
+                            <p class="text-2xl font-bold text-gray-900">5</p>
+                            <p class="text-sm text-purple-600 flex items-center mt-1">
+                                <i data-lucide="ticket" class="w-4 h-4 mr-1"></i>
+                                629 tickets sold
+                            </p>
+                        </div>
+                        <div class="p-3 bg-purple-50 rounded-lg">
+                            <i data-lucide="calendar" class="w-6 h-6 text-purple-600"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-gray-600">Social Reach</p>
+                            <p class="text-2xl font-bold text-gray-900">45.2K</p>
+                            <p class="text-sm text-orange-600 flex items-center mt-1">
+                                <i data-lucide="heart" class="w-4 h-4 mr-1"></i>
+                                4.8% engagement
+                            </p>
+                        </div>
+                        <div class="p-3 bg-orange-50 rounded-lg">
+                            <i data-lucide="share-2" class="w-6 h-6 text-orange-600"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Integration Status -->
+            <div class="bg-white rounded-lg shadow mb-8">
+                <div class="px-6 py-4 border-b">
+                    <h2 class="text-lg font-semibold text-gray-900">API Integration Status</h2>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Toast POS -->
+                        <div class="flex items-center p-4 border rounded-lg">
+                            <div class="flex-shrink-0 w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                                <span class="text-xl">🍞</span>
+                            </div>
+                            <div class="ml-4 flex-1">
+                                <h3 class="text-sm font-medium text-gray-900">Toast POS</h3>
+                                <p class="text-xs text-gray-500">Orders & Payments</p>
+                                <div class="mt-1 flex items-center">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                        Connected
+                                    </span>
+                                    <span class="ml-2 text-xs text-gray-500">45 orders today</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Eventbrite -->
+                        <div class="flex items-center p-4 border rounded-lg">
+                            <div class="flex-shrink-0 w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                                <span class="text-xl">🎫</span>
+                            </div>
+                            <div class="ml-4 flex-1">
+                                <h3 class="text-sm font-medium text-gray-900">Eventbrite</h3>
+                                <p class="text-xs text-gray-500">Event Ticketing</p>
+                                <div class="mt-1 flex items-center">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                        Connected
+                                    </span>
+                                    <span class="ml-2 text-xs text-gray-500">3 upcoming events</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- OpenDate.io -->
+                        <div class="flex items-center p-4 border rounded-lg">
+                            <div class="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <span class="text-xl">🎸</span>
+                            </div>
+                            <div class="ml-4 flex-1">
+                                <h3 class="text-sm font-medium text-gray-900">OpenDate.io</h3>
+                                <p class="text-xs text-gray-500">Live Music Shows</p>
+                                <div class="mt-1 flex items-center">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                        Connected
+                                    </span>
+                                    <span class="ml-2 text-xs text-gray-500">2 shows booked</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Audience Republic -->
+                        <div class="flex items-center p-4 border rounded-lg">
+                            <div class="flex-shrink-0 w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                                <span class="text-xl">📧</span>
+                            </div>
+                            <div class="ml-4 flex-1">
+                                <h3 class="text-sm font-medium text-gray-900">Audience Republic</h3>
+                                <p class="text-xs text-gray-500">Marketing Campaigns</p>
+                                <div class="mt-1 flex items-center">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                        Placeholder
+                                    </span>
+                                    <span class="ml-2 text-xs text-gray-500">12.8K contacts</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Meta Business Suite -->
+                        <div class="flex items-center p-4 border rounded-lg">
+                            <div class="flex-shrink-0 w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                                <span class="text-xl">📱</span>
+                            </div>
+                            <div class="ml-4 flex-1">
+                                <h3 class="text-sm font-medium text-gray-900">Meta Business Suite</h3>
+                                <p class="text-xs text-gray-500">Social Media</p>
+                                <div class="mt-1 flex items-center">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                                        Connected
+                                    </span>
+                                    <span class="ml-2 text-xs text-gray-500">24.6K fans</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- OpenTable -->
+                        <div class="flex items-center p-4 border rounded-lg">
+                            <div class="flex-shrink-0 w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
+                                <span class="text-xl">🍷</span>
+                            </div>
+                            <div class="ml-4 flex-1">
+                                <h3 class="text-sm font-medium text-gray-900">OpenTable</h3>
+                                <p class="text-xs text-gray-500">Reservations</p>
+                                <div class="mt-1 flex items-center">
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                        Placeholder
+                                    </span>
+                                    <span class="ml-2 text-xs text-gray-500">32 reservations</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Live Activity Feed -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Activity Stream -->
+                <div class="lg:col-span-2 bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b">
+                        <h2 class="text-lg font-semibold text-gray-900">Live Activity Stream</h2>
+                    </div>
+                    <div class="p-6 space-y-4 max-h-96 overflow-y-auto">
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                <i data-lucide="dollar-sign" class="w-4 h-4 text-green-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-900">New order: Table 12 - $127.50</p>
+                                <p class="text-xs text-gray-500">Toast POS • 2 minutes ago</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0 w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center">
+                                <i data-lucide="ticket" class="w-4 h-4 text-purple-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-900">2 tickets sold for Jazz Festival</p>
+                                <p class="text-xs text-gray-500">Eventbrite • 5 minutes ago</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i data-lucide="heart" class="w-4 h-4 text-blue-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-900">Instagram post reached 1.2K people</p>
+                                <p class="text-xs text-gray-500">Meta • 8 minutes ago</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0 w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                                <i data-lucide="calendar" class="w-4 h-4 text-red-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-900">New reservation: Party of 6 at 7:30 PM</p>
+                                <p class="text-xs text-gray-500">OpenTable • 12 minutes ago</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                <i data-lucide="mail" class="w-4 h-4 text-green-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-900">Email campaign opened by 342 contacts</p>
+                                <p class="text-xs text-gray-500">Audience Republic • 15 minutes ago</p>
+                            </div>
+                        </div>
+
+                        <div class="flex items-start space-x-3">
+                            <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <i data-lucide="music" class="w-4 h-4 text-blue-600"></i>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-gray-900">Artist confirmed: The Blue Notes</p>
+                                <p class="text-xs text-gray-500">OpenDate.io • 18 minutes ago</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- AI Insights -->
+                <div class="bg-white rounded-lg shadow">
+                    <div class="px-6 py-4 border-b">
+                        <h2 class="text-lg font-semibold text-gray-900 flex items-center">
+                            <span class="mr-2">🤖</span> AI Insights (Claude)
+                        </h2>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                            <h3 class="text-sm font-semibold text-blue-900 mb-2">💡 Opportunity Detected</h3>
+                            <p class="text-sm text-blue-800">Friday jazz events drive 25% higher bar revenue. Consider adding an extra show this month.</p>
+                        </div>
+
+                        <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                            <h3 class="text-sm font-semibold text-green-900 mb-2">📈 Performance Alert</h3>
+                            <p class="text-sm text-green-800">Revenue up 15% vs last week. VIP guests contributing 35% of total sales.</p>
+                        </div>
+
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <h3 class="text-sm font-semibold text-yellow-900 mb-2">⚡ Action Required</h3>
+                            <p class="text-sm text-yellow-800">Low stock alert: Ribeye steaks. Suggest 86'ing or sourcing from alternate supplier.</p>
+                        </div>
+
+                        <div class="mt-4 pt-4 border-t">
+                            <button class="w-full bg-blue-600 text-white rounded-lg px-4 py-2 text-sm font-medium hover:bg-blue-700">
+                                Chat with AI Assistant
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Simulate real-time updates
+        function updateMetrics() {
+            // Update revenue
+            const revenueEl = document.querySelector('.text-2xl');
+            const currentRevenue = parseFloat(revenueEl.textContent.replace('$', '').replace(',', ''));
+            const newRevenue = currentRevenue + (Math.random() * 100);
+            revenueEl.textContent = '$' + newRevenue.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        // Update every 5 seconds
+        setInterval(updateMetrics, 5000);
+    </script>
+</body>
+</html>

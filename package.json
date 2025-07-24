@@ -27,7 +27,9 @@
     "deploy": "./deploy.sh",
     "deploy:prod": "./deploy.sh production",
     "vercel": "vercel",
-    "vercel:prod": "vercel --prod"
+    "vercel:prod": "vercel --prod",
+    "check:toast": "tsx scripts/check-toast-integration.ts",
+    "setup:toast": "tsx scripts/setup-toast-credentials.ts"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

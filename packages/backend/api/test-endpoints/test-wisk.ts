@@ -13,6 +13,7 @@ async function testWiskIntegration() {
   const credentials: ConnectorCredentials = {
     id: 'test-wisk-connector',
     service: 'wisk',
+    isActive: true,
     credentials: {
       apiKey: process.env.WISK_API_KEY || 'test-api-key',
       accountId: process.env.WISK_ACCOUNT_ID || 'test-account-id',

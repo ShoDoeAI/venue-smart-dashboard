@@ -2,10 +2,10 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import { ToastConnector } from '@venuesync/shared';
 import { EventbriteConnector } from '@venuesync/shared';
 import { OpenDateConnector } from '@venuesync/shared';
-import { AudienceRepublicConnector } from '@venuesync/shared';
+// import { AudienceRepublicConnector } from '@venuesync/shared';
 import type { Database } from '@venuesync/shared';
 import { SnapshotService } from './snapshot-service';
-import { ErrorIsolationService, ErrorSource } from './error-isolation';
+import { ErrorIsolationService } from './error-isolation';
 
 export interface OrchestratorConfig {
   venueId: string;
@@ -222,26 +222,11 @@ export class DataOrchestrator {
           });
 
       case 'audiencerepublic':
-        return this.fetchAudienceRepublicData(venueId, dateRange)
-          .then(result => ({
-            success: true,
-            recordCount: result.recordCount,
-            duration: Date.now() - apiStartTime,
-          }))
-          .catch(async error => {
-            const { fallbackData, errorId } = await this.errorIsolation.isolateError(
-              'audiencerepublic',
-              error,
-              { venueId, dateRange }
-            );
-            return {
-              success: false,
-              error: error.message,
-              errorId,
-              fallbackData,
-              duration: Date.now() - apiStartTime,
-            };
-          });
+        // Placeholder - Connector temporarily disabled
+        return {
+          success: false,
+          error: 'Audience Republic connector temporarily disabled',
+        };
 
       case 'wisk':
         // Placeholder - No public API documentation available
@@ -448,9 +433,8 @@ export class DataOrchestrator {
     };
   }
 
-  /**
-   * Fetch Audience Republic data
-   */
+  /*
+  // Temporarily disabled - AudienceRepublicConnector not available
   private async fetchAudienceRepublicData(
     venueId: string,
     dateRange?: { start: Date; end: Date }
@@ -507,12 +491,13 @@ export class DataOrchestrator {
       recordCount,
     };
   }
+  */
 
   /**
    * Calculate aggregate metrics from fetched data
    */
   private async calculateAggregateMetrics(
-    venueId: string,
+    _venueId: string,
     snapshotTimestamp: string
   ) {
     // Get transactions from all sources for this snapshot

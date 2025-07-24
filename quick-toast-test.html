@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick Toast Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8">🍞 Quick Toast Connection Test</h1>
+        
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <p class="mb-4">This will test your Toast API connection directly from your browser.</p>
+            <p class="text-yellow-400 mb-4">Note: This may fail due to CORS. If it does, use the Node.js test instead.</p>
+            
+            <button onclick="testToast()" 
+                class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded text-lg font-semibold">
+                Test Toast Connection
+            </button>
+        </div>
+        
+        <div id="results" class="space-y-4"></div>
+        
+        <div class="mt-8 bg-gray-800 rounded-lg p-6">
+            <h2 class="text-xl font-semibold mb-4">Your Toast Credentials:</h2>
+            <div class="font-mono text-sm space-y-2">
+                <p>Client ID: mT5Nsj9fT2XhQ9p0OvaONnqpt1IPkrh7</p>
+                <p>Location ID: bfb355cb-55e4-4f57-af16-d0d18c11ad3c</p>
+                <p>API Host: https://ws-api.toasttab.com (PRODUCTION)</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function testToast() {
+            const results = document.getElementById('results');
+            results.innerHTML = '';
+            
+            // Your credentials
+            const credentials = {
+                clientId: 'mT5Nsj9fT2XhQ9p0OvaONnqpt1IPkrh7',
+                clientSecret: '-PvyQasB-AopTOeL1ogLmQ5s5ZH1AbvwKdv2Shbe0NghzbmPvWyQ5O56akh6VNn4',
+                locationId: 'bfb355cb-55e4-4f57-af16-d0d18c11ad3c'
+            };
+            
+            try {
+                // Try via your local API first
+                results.innerHTML = '<div class="bg-yellow-800 p-4 rounded">Testing via local API...</div>';
+                
+                const response = await fetch('http://localhost:3000/api/dashboard-accurate');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.restaurant) {
+                        results.innerHTML = `
+                            <div class="bg-green-800 p-4 rounded">
+                                <h3 class="text-xl font-bold mb-2">✅ Connected to Toast!</h3>
+                                <p class="text-2xl font-bold text-yellow-400">${data.restaurant.name}</p>
+                                <p>${data.restaurant.address}, ${data.restaurant.city}, ${data.restaurant.state}</p>
+                            </div>
+                            
+                            <div class="bg-blue-800 p-4 rounded">
+                                <h3 class="font-bold mb-2">Current Data:</h3>
+                                <p>Today's Revenue: $${data.data.today.revenue.toFixed(2)}</p>
+                                <p>Yesterday's Revenue: $${data.data.yesterday.revenue.toFixed(2)}</p>
+                                <p>Last Weekend Revenue: $${data.data.lastWeekend.revenue.toFixed(2)}</p>
+                                <p>Last 7 Days Revenue: $${data.data.last7Days.revenue.toFixed(2)}</p>
+                            </div>
+                            
+                            <div class="bg-purple-800 p-4 rounded">
+                                <h3 class="font-bold mb-2">Sample Menu Items:</h3>
+                                <div class="grid grid-cols-2 gap-2 mt-2">
+                                    ${data.data.sampleMenuItems.map(item => `<div>• ${item}</div>`).join('')}
+                                </div>
+                                <p class="text-sm text-gray-400 mt-2">Total items: ${data.data.totalMenuItems}</p>
+                            </div>
+                            
+                            <div class="bg-gray-700 p-4 rounded border-2 ${data.data.last7Days.revenue > 100 ? 'border-green-500' : 'border-yellow-500'}">
+                                <h3 class="font-bold text-xl mb-2">
+                                    ${data.data.last7Days.revenue > 100 ? '✅ REAL PRODUCTION DATA' : '⚠️ CHECK DATA'}
+                                </h3>
+                                <p>Is this your restaurant? Do the menu items look correct?</p>
+                            </div>
+                        `;
+                    } else {
+                        results.innerHTML = '<div class="bg-red-800 p-4 rounded">No restaurant data found</div>';
+                    }
+                } else {
+                    throw new Error('Local API not running');
+                }
+            } catch (error) {
+                results.innerHTML = `
+                    <div class="bg-red-800 p-4 rounded">
+                        <p class="font-bold">❌ Error: ${error.message}</p>
+                        <p class="mt-2">Please run the following in your terminal:</p>
+                        <pre class="bg-black p-2 rounded mt-2">node test-toast-local.js</pre>
+                    </div>
+                `;
+            }
+        }
+        
+        // Also try the command line test
+        window.onload = () => {
+            document.getElementById('results').innerHTML = `
+                <div class="bg-blue-800 p-4 rounded">
+                    <p class="font-bold mb-2">To test your Toast connection:</p>
+                    <p>1. Click the button above, or</p>
+                    <p>2. Run this in your terminal:</p>
+                    <pre class="bg-black p-2 rounded mt-2">node test-toast-local.js</pre>
+                </div>
+            `;
+        };
+    </script>
+</body>
+</html>

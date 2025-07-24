@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Supabase Data Check</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8">🔍 Check Supabase Toast Data</h1>
+        
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <p class="mb-4">Enter your Supabase credentials to check Toast data:</p>
+            
+            <div class="space-y-4">
+                <input type="text" id="supabaseUrl" placeholder="Supabase URL" 
+                    value="https://bmhplnojfuznflbyqqze.supabase.co"
+                    class="w-full p-2 bg-gray-700 rounded">
+                
+                <input type="password" id="supabaseKey" placeholder="Supabase Service Key" 
+                    class="w-full p-2 bg-gray-700 rounded">
+                
+                <button onclick="checkData()" 
+                    class="w-full bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded text-lg font-semibold">
+                    Check Toast Data in Supabase
+                </button>
+            </div>
+        </div>
+        
+        <div id="results" class="space-y-4"></div>
+    </div>
+
+    <script>
+        async function checkData() {
+            const url = document.getElementById('supabaseUrl').value;
+            const key = document.getElementById('supabaseKey').value;
+            
+            if (!url || !key) {
+                alert('Please enter both URL and key');
+                return;
+            }
+            
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="bg-yellow-800 p-4 rounded">Checking Supabase...</div>';
+            
+            try {
+                // Initialize Supabase client
+                const { createClient } = supabase;
+                const client = createClient(url, key);
+                
+                let html = '';
+                
+                // Check toast_transactions
+                html += '<div class="bg-gray-800 rounded-lg p-6">';
+                html += '<h3 class="text-xl font-semibold mb-4">Toast Transactions Table</h3>';
+                
+                const { count, error } = await client
+                    .from('toast_transactions')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (error) {
+                    html += `<p class="text-red-400">❌ Error: ${error.message}</p>`;
+                    html += '<p class="text-yellow-400 mt-2">Table might not exist. Run the migration.</p>';
+                } else {
+                    html += `<p class="text-green-400">✅ Table exists with ${count || 0} records</p>`;
+                    
+                    if (count > 0) {
+                        // Get recent transactions
+                        const { data: recent } = await client
+                            .from('toast_transactions')
+                            .select('*')
+                            .order('created_at', { ascending: false })
+                            .limit(5);
+                        
+                        html += '<div class="mt-4">';
+                        html += '<p class="font-semibold">Recent Transactions:</p>';
+                        recent.forEach(t => {
+                            const date = new Date(t.created_at).toLocaleString();
+                            const amount = (t.total_amount / 100).toFixed(2);
+                            html += `<p class="text-sm">• ${date} - $${amount}</p>`;
+                        });
+                        html += '</div>';
+                        
+                        // Calculate total
+                        const { data: all } = await client
+                            .from('toast_transactions')
+                            .select('total_amount');
+                        
+                        const total = all.reduce((sum, t) => sum + (t.total_amount / 100), 0);
+                        html += `<p class="mt-4 text-lg">Total Revenue in Database: <span class="text-green-400 font-bold">$${total.toFixed(2)}</span></p>`;
+                    } else {
+                        html += '<div class="mt-4 bg-yellow-900 p-4 rounded">';
+                        html += '<p class="font-bold">⚠️ No Toast data found!</p>';
+                        html += '<p>Run this command to sync:</p>';
+                        html += '<pre class="bg-black p-2 rounded mt-2">node sync-toast-now.js</pre>';
+                        html += '</div>';
+                    }
+                }
+                
+                html += '</div>';
+                
+                // Check venue_snapshots
+                html += '<div class="bg-gray-800 rounded-lg p-6 mt-4">';
+                html += '<h3 class="text-xl font-semibold mb-4">Venue Snapshots</h3>';
+                
+                const { count: snapCount, error: snapError } = await client
+                    .from('venue_snapshots')
+                    .select('*', { count: 'exact', head: true });
+                
+                if (snapError) {
+                    html += `<p class="text-red-400">❌ Error: ${snapError.message}</p>`;
+                } else {
+                    html += `<p class="text-green-400">✅ ${snapCount || 0} snapshots</p>`;
+                }
+                
+                html += '</div>';
+                
+                results.innerHTML = html;
+                
+            } catch (error) {
+                results.innerHTML = `
+                    <div class="bg-red-800 p-4 rounded">
+                        <p class="font-bold">Error:</p>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

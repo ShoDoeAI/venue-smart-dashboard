@@ -70,6 +70,17 @@ export default function Dashboard() {
     },
     refetchInterval: 60000, // Refresh every minute
   });
+  
+  // Fetch dashboard data with hourly breakdown
+  const { data: dashboardData } = useQuery({
+    queryKey: ['dashboardData'],
+    queryFn: async () => {
+      const response = await fetch('/api/dashboard');
+      if (!response.ok) throw new Error('Failed to fetch dashboard data');
+      return response.json();
+    },
+    refetchInterval: 60000,
+  });
 
   // Calculate metrics
   const today = dailySummaries[0];
@@ -111,11 +122,41 @@ export default function Dashboard() {
     transactions: day.transaction_count,
   }));
 
-  const hourlyData = Array.from({ length: 24 }, (_, i) => ({
-    hour: `${i}:00`,
-    revenue: Math.random() * 5000 + 1000,
-    customers: Math.floor(Math.random() * 50 + 10),
-  }));
+  // Use real hourly data from API if available, otherwise use distribution
+  const hourlyData = React.useMemo(() => {
+    if (dashboardData?.kpis?.hourlyBreakdown && dashboardData.kpis.hourlyBreakdown.length > 0) {
+      // Use real data from Toast API
+      return dashboardData.kpis.hourlyBreakdown.map((item: any) => ({
+        hour: `${item.hour}:00`,
+        revenue: item.revenue / 100, // Convert from cents
+        customers: item.customers,
+      }));
+    }
+    
+    // Fallback to distribution if no real data
+    const hourlyBuckets = Array.from({ length: 24 }, (_, i) => ({
+      hour: `${i}:00`,
+      revenue: 0,
+      customers: 0,
+    }));
+
+    if (today) {
+      // Typical restaurant hourly distribution
+      const hourlyDistribution = [
+        0.01, 0.01, 0.01, 0.01, 0.01, 0.01, // 0-5 AM: 6%
+        0.02, 0.03, 0.04, 0.05, 0.06, 0.08, // 6-11 AM: 28%
+        0.10, 0.08, 0.06, 0.05, 0.06, 0.08, // 12-5 PM: 43%
+        0.10, 0.09, 0.04, 0.02, 0.01, 0.01, // 6-11 PM: 27%
+      ];
+
+      hourlyDistribution.forEach((percentage, hour) => {
+        hourlyBuckets[hour].revenue = (today.total_revenue || 0) * percentage / 100;
+        hourlyBuckets[hour].customers = Math.round((today.unique_customers || 0) * percentage);
+      });
+    }
+
+    return hourlyBuckets;
+  }, [today, dashboardData]);
 
   if (isLoading) {
     return (

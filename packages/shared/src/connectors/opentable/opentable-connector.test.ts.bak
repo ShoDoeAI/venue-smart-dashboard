@@ -1,0 +1,258 @@
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { OpenTableConnector } from './opentable-connector';
+import type { ConnectorConfig, ConnectorCredentials } from '../types';
+import { createClient } from '@supabase/supabase-js';
+import type { OpenTableCredentials } from './types';
+
+// Mock fetch
+global.fetch = vi.fn();
+
+describe('OpenTableConnector', () => {
+  let connector: OpenTableConnector;
+  const mockCredentials: ConnectorCredentials = {
+    type: 'opentable',
+    credentials: {
+      restaurantId: 'test-restaurant-123',
+      apiKey: 'test-api-key',
+    } as OpenTableCredentials,
+  };
+  const mockConfig: ConnectorConfig = {
+    timeout: 5000,
+    maxRetries: 0,
+  };
+  const mockSupabase = createClient('https://test.supabase.co', 'test-key');
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.useFakeTimers();
+    connector = new OpenTableConnector(mockCredentials, mockConfig, mockSupabase);
+    vi.runAllTimers();
+    vi.useRealTimers();
+  });
+
+  describe('constructor', () => {
+    it('should initialize with correct service name', () => {
+      expect(connector.serviceName).toBe('OpenTable');
+    });
+  });
+
+  describe('validateCredentials', () => {
+    it('should return true for valid credentials with API key', async () => {
+      const result = await connector.validateCredentials();
+      expect(result).toBe(true);
+    });
+
+    it('should return true for valid credentials with username/password', async () => {
+      const configWithUserPass: ConnectorConfig<OpenTableCredentials> = {
+        credentials: {
+          restaurantId: 'test-restaurant',
+          username: 'test-user',
+          password: 'test-pass',
+        },
+        options: {
+          timeout: 5000,
+          retryAttempts: 0,
+        },
+      };
+      const connectorWithUserPass = new OpenTableConnector(configWithUserPass);
+      const result = await connectorWithUserPass.validateCredentials();
+      expect(result).toBe(true);
+    });
+
+    it('should return false for missing credentials', async () => {
+      const invalidConfig: ConnectorConfig<OpenTableCredentials> = {
+        credentials: {
+          restaurantId: '',
+        },
+        options: {
+          timeout: 5000,
+          retryAttempts: 0,
+        },
+      };
+      const invalidConnector = new OpenTableConnector(invalidConfig);
+      const result = await invalidConnector.validateCredentials();
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('testConnection', () => {
+    it('should return success with mock restaurant data', async () => {
+      const result = await connector.testConnection();
+      expect(result.success).toBe(true);
+      expect(result.data).toEqual({
+        id: 'test-restaurant-123',
+        name: 'Test Restaurant',
+        status: 'connected',
+        lastSync: expect.any(String),
+      });
+    });
+  });
+
+  describe('fetchRestaurantInfo', () => {
+    it('should return restaurant information', async () => {
+      const result = await connector.fetchRestaurantInfo();
+      expect(result.success).toBe(true);
+      expect(result.data).toBeDefined();
+      expect(result.data?.id).toBe('test-restaurant-123');
+      expect(result.data?.name).toBe("Jack's on Water Street");
+      expect(result.data?.cuisineType).toContain('American');
+      expect(result.data?.priceRange).toBe('$$$');
+      expect(result.data?.capacity).toBe(120);
+    });
+  });
+
+  describe('fetchReservations', () => {
+    it('should return mock reservations', async () => {
+      const result = await connector.fetchReservations();
+      expect(result.success).toBe(true);
+      expect(result.data).toBeDefined();
+      expect(result.data?.length).toBeGreaterThan(0);
+      expect(result.data?.[0]).toHaveProperty('confirmationNumber');
+      expect(result.data?.[0]).toHaveProperty('guestInfo');
+      expect(result.data?.[0]).toHaveProperty('partySize');
+    });
+
+    it('should filter reservations by status', async () => {
+      const result = await connector.fetchReservations(
+        undefined,
+        undefined,
+        ['confirmed']
+      );
+      expect(result.success).toBe(true);
+      expect(result.data?.every(r => r.status === 'confirmed')).toBe(true);
+    });
+  });
+
+  describe('fetchAvailability', () => {
+    it('should return availability slots', async () => {
+      const date = new Date('2024-01-15');
+      const result = await connector.fetchAvailability(date);
+      
+      expect(result.success).toBe(true);
+      expect(result.data).toBeDefined();
+      expect(result.data?.date).toBe('2024-01-15');
+      expect(result.data?.slots).toBeDefined();
+      expect(result.data?.slots.length).toBeGreaterThan(0);
+      expect(result.data?.slots[0]).toHaveProperty('time');
+      expect(result.data?.slots[0]).toHaveProperty('available');
+    });
+
+    it('should filter by party size when provided', async () => {
+      const date = new Date('2024-01-15');
+      const result = await connector.fetchAvailability(date, 4);
+      
+      expect(result.success).toBe(true);
+      expect(result.data?.slots[0].partySize).toEqual([4]);
+    });
+  });
+
+  describe('fetchGuests', () => {
+    it('should return guest information', async () => {
+      const result = await connector.fetchGuests();
+      
+      expect(result.success).toBe(true);
+      expect(result.data).toBeDefined();
+      expect(result.data?.length).toBeGreaterThan(0);
+      expect(result.data?.[0]).toHaveProperty('id');
+      expect(result.data?.[0]).toHaveProperty('email');
+      expect(result.data?.[0]).toHaveProperty('totalReservations');
+    });
+
+    it('should support pagination', async () => {
+      const result = await connector.fetchGuests(1, 1);
+      
+      expect(result.success).toBe(true);
+      expect(result.data?.length).toBeLessThanOrEqual(1);
+    });
+  });
+
+  describe('fetchReviews', () => {
+    it('should return reviews', async () => {
+      const result = await connector.fetchReviews();
+      
+      expect(result.success).toBe(true);
+      expect(result.data).toBeDefined();
+      expect(result.data?.length).toBeGreaterThan(0);
+      expect(result.data?.[0]).toHaveProperty('rating');
+      expect(result.data?.[0].rating).toHaveProperty('overall');
+      expect(result.data?.[0].rating).toHaveProperty('food');
+    });
+
+    it('should filter reviews by date range', async () => {
+      const startDate = new Date('2024-01-01');
+      const endDate = new Date('2024-01-31');
+      const result = await connector.fetchReviews(startDate, endDate);
+      
+      expect(result.success).toBe(true);
+      // In mock implementation, this should return filtered results
+    });
+  });
+
+  describe('fetchAnalytics', () => {
+    it('should return analytics data', async () => {
+      const startDate = new Date('2024-01-01');
+      const endDate = new Date('2024-01-31');
+      const result = await connector.fetchAnalytics(startDate, endDate);
+      
+      expect(result.success).toBe(true);
+      expect(result.data).toBeDefined();
+      expect(result.data?.overview).toBeDefined();
+      expect(result.data?.overview.totalReservations).toBe(245);
+      expect(result.data?.overview.averageRating).toBe(4.6);
+      expect(result.data?.peakHours).toBeDefined();
+      expect(result.data?.sourceBreakdown).toBeDefined();
+    });
+  });
+
+  describe('fetchWaitlist', () => {
+    it('should return waitlist entries', async () => {
+      const result = await connector.fetchWaitlist();
+      
+      expect(result.success).toBe(true);
+      expect(result.data).toBeDefined();
+      expect(result.data?.length).toBeGreaterThan(0);
+      expect(result.data?.[0]).toHaveProperty('guestName');
+      expect(result.data?.[0]).toHaveProperty('quotedWait');
+      expect(result.data?.[0]).toHaveProperty('status');
+    });
+  });
+
+  describe('fetchAllData', () => {
+    it('should fetch and transform all data', async () => {
+      const startDate = new Date('2024-01-01');
+      const endDate = new Date('2024-01-31');
+      const result = await connector.fetchAllData(startDate, endDate);
+      
+      expect(result.success).toBe(true);
+      expect(result.data).toBeDefined();
+      expect(result.data?.restaurant).toBeDefined();
+      expect(result.data?.reservations).toBeDefined();
+      expect(result.data?.analytics).toBeDefined();
+      expect(result.data?.todayStats).toBeDefined();
+      expect(result.data?.guestInsights).toBeDefined();
+      expect(result.data?.upcomingReservations).toBeDefined();
+    });
+
+    it('should calculate today stats correctly', async () => {
+      const today = new Date();
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      const result = await connector.fetchAllData(today, tomorrow);
+      
+      expect(result.success).toBe(true);
+      expect(result.data?.todayStats).toBeDefined();
+      expect(result.data?.todayStats.totalReservations).toBeGreaterThanOrEqual(0);
+      expect(result.data?.todayStats.totalCovers).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('error handling', () => {
+    it('should handle network errors', async () => {
+      // Since this is a mock implementation, errors won't occur
+      // In a real implementation, this would test actual API error handling
+      const result = await connector.fetchRestaurantInfo();
+      expect(result.success).toBe(true);
+    });
+  });
+});

@@ -13,6 +13,7 @@ async function testOpenDateIntegration() {
   const credentials: ConnectorCredentials = {
     id: 'test-opendate-connector',
     service: 'opendate',
+    isActive: true,
     credentials: {
       clientId: process.env.OPENDATE_CLIENT_ID || 'test-client-id',
       clientSecret: process.env.OPENDATE_CLIENT_SECRET || 'test-client-secret',

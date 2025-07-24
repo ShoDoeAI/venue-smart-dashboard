@@ -31,8 +31,8 @@ export default async function handler(
       process.env.ANTHROPIC_API_KEY!
     );
 
-    // Get venue ID (would come from auth in production)
-    const venueId = 'default-venue-id';
+    // Get venue ID from query params or use Jack's on Water Street
+    const venueId = req.query?.venueId as string || req.body?.venueId || 'bfb355cb-55e4-4f57-af16-d0d18c11ad3c';
 
     // Generate context
     const context = await contextAggregator.buildContext(venueId);

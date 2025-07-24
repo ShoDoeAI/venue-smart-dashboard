@@ -1,0 +1,133 @@
+import { MetaConnector } from '@shared/connectors';
+import type { ConnectorConfig, MetaCredentials } from '@shared/types';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
+
+async function testMetaConnector() {
+  console.log('Testing Meta Business Suite Connector...\n');
+
+  const config: ConnectorConfig<MetaCredentials> = {
+    credentials: {
+      accessToken: process.env.META_ACCESS_TOKEN || 'test-access-token',
+      pageId: process.env.META_PAGE_ID || 'test-page-id',
+    },
+    options: {
+      timeout: 30000,
+      retryAttempts: 2,
+    },
+  };
+
+  const connector = new MetaConnector(config);
+
+  try {
+    // Test 1: Validate credentials
+    console.log('1. Testing credential validation...');
+    const isValid = await connector.validateCredentials();
+    console.log(`   Credentials valid: ${isValid}\n`);
+
+    if (!isValid) {
+      console.log('❌ Invalid credentials. Please check your Meta access token and page ID.');
+      return;
+    }
+
+    // Test 2: Test connection
+    console.log('2. Testing connection...');
+    const connectionResult = await connector.testConnection();
+    if (connectionResult.success) {
+      console.log('   ✅ Connection successful');
+      console.log('   Page info:', connectionResult.data);
+    } else {
+      console.log('   ❌ Connection failed:', connectionResult.error);
+      return;
+    }
+
+    // Test 3: Fetch page insights
+    console.log('\n3. Fetching page insights...');
+    const insightsResult = await connector.fetchPageInsights([
+      'page_views_total',
+      'page_fans',
+      'page_engaged_users',
+      'page_impressions',
+    ], 'day');
+    
+    if (insightsResult.success) {
+      console.log('   ✅ Page insights fetched');
+      console.log(`   Metrics count: ${insightsResult.data?.length}`);
+      insightsResult.data?.forEach(insight => {
+        const value = insight.values?.[0]?.value || 0;
+        console.log(`   - ${insight.name}: ${value}`);
+      });
+    } else {
+      console.log('   ❌ Failed to fetch insights:', insightsResult.error);
+    }
+
+    // Test 4: Fetch recent posts
+    console.log('\n4. Fetching recent posts...');
+    const postsResult = await connector.fetchPosts(5);
+    
+    if (postsResult.success) {
+      console.log('   ✅ Posts fetched');
+      console.log(`   Posts count: ${postsResult.data?.length}`);
+      postsResult.data?.forEach((post, index) => {
+        console.log(`   Post ${index + 1}:`);
+        console.log(`   - Message: ${post.message?.substring(0, 50)}...`);
+        console.log(`   - Type: ${post.type}`);
+        console.log(`   - Created: ${post.createdTime}`);
+        if (post.insights) {
+          console.log(`   - Reach: ${post.insights.reach}`);
+          console.log(`   - Engagement: ${post.insights.engagement}`);
+        }
+      });
+    } else {
+      console.log('   ❌ Failed to fetch posts:', postsResult.error);
+    }
+
+    // Test 5: Fetch audience demographics
+    console.log('\n5. Fetching audience demographics...');
+    const demographicsResult = await connector.fetchAudienceDemographics();
+    
+    if (demographicsResult.success) {
+      console.log('   ✅ Demographics fetched');
+      const data = demographicsResult.data;
+      if (data) {
+        console.log('   Age/Gender Distribution:', Object.keys(data.ageGenderDistribution).length, 'segments');
+        console.log('   Country Distribution:', Object.keys(data.countryDistribution).length, 'countries');
+        console.log('   City Distribution:', Object.keys(data.cityDistribution).length, 'cities');
+      }
+    } else {
+      console.log('   ❌ Failed to fetch demographics:', demographicsResult.error);
+    }
+
+    // Test 6: Fetch all data (comprehensive)
+    console.log('\n6. Fetching comprehensive data...');
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 7); // Last 7 days
+    
+    const allDataResult = await connector.fetchAllData(startDate, endDate);
+    
+    if (allDataResult.success) {
+      console.log('   ✅ Comprehensive data fetched');
+      const data = allDataResult.data;
+      if (data) {
+        console.log(`   - Total engagement: ${data.totalEngagement}`);
+        console.log(`   - Average engagement rate: ${data.avgEngagementRate.toFixed(2)}%`);
+        console.log(`   - Page fans: ${data.pageMetrics.pageFans}`);
+        console.log(`   - Posts analyzed: ${data.posts.length}`);
+        console.log(`   - Top performing content: ${data.topPerformingContent.length} items`);
+      }
+    } else {
+      console.log('   ❌ Failed to fetch comprehensive data:', allDataResult.error);
+    }
+
+    console.log('\n✅ All tests completed!');
+
+  } catch (error) {
+    console.error('\n❌ Test failed with error:', error);
+  }
+}
+
+// Run the test
+testMetaConnector().catch(console.error);

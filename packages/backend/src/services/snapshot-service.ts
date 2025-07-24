@@ -184,7 +184,7 @@ export class SnapshotService {
   /**
    * Check if a snapshot is needed based on frequency settings
    */
-  async isSnapshotNeeded(venueId: string, frequencyMinutes: number = 180): boolean {
+  async isSnapshotNeeded(venueId: string, frequencyMinutes: number = 180): Promise<boolean> {
     const latestSnapshot = await this.getLatestSnapshot(venueId);
     
     if (!latestSnapshot) {

@@ -13,6 +13,7 @@ async function testEventbriteIntegration() {
   const credentials: ConnectorCredentials = {
     id: 'test-eventbrite-connector',
     service: 'eventbrite',
+    isActive: true,
     credentials: {
       accessToken: process.env.EVENTBRITE_ACCESS_TOKEN || 'test-token',
       environment: 'production',

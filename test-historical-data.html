@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Jack's Historical Data Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8">🍺 Jack's on Water Street - Historical Data Test</h1>
+        
+        <!-- Date Range Selector -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">Select Date Range</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">Start Date</label>
+                    <input type="date" id="startDate" class="w-full p-2 bg-gray-700 rounded" 
+                           value="2024-11-01">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-400 mb-1">End Date</label>
+                    <input type="date" id="endDate" class="w-full p-2 bg-gray-700 rounded" 
+                           value="2024-11-30">
+                </div>
+                <div class="flex items-end">
+                    <button onclick="fetchHistoricalData()" 
+                        class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded font-semibold">
+                        Fetch Real Data
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Quick Date Buttons -->
+            <div class="mt-4 flex gap-2 flex-wrap">
+                <button onclick="setDateRange('lastWeek')" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-sm">
+                    Last Week
+                </button>
+                <button onclick="setDateRange('lastMonth')" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-sm">
+                    Last Month
+                </button>
+                <button onclick="setDateRange('last30Days')" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-sm">
+                    Last 30 Days
+                </button>
+                <button onclick="setDateRange('last90Days')" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-sm">
+                    Last 90 Days
+                </button>
+                <button onclick="setDateRange('yearToDate')" class="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-sm">
+                    Year to Date
+                </button>
+            </div>
+        </div>
+
+        <!-- Results Container -->
+        <div id="results" class="space-y-6"></div>
+    </div>
+
+    <script>
+        function setDateRange(range) {
+            const endDate = new Date();
+            let startDate = new Date();
+            
+            switch(range) {
+                case 'lastWeek':
+                    startDate.setDate(endDate.getDate() - 7);
+                    break;
+                case 'lastMonth':
+                    startDate.setMonth(endDate.getMonth() - 1);
+                    break;
+                case 'last30Days':
+                    startDate.setDate(endDate.getDate() - 30);
+                    break;
+                case 'last90Days':
+                    startDate.setDate(endDate.getDate() - 90);
+                    break;
+                case 'yearToDate':
+                    startDate = new Date(endDate.getFullYear(), 0, 1);
+                    break;
+            }
+            
+            document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+            document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+        }
+
+        async function fetchHistoricalData() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const resultsDiv = document.getElementById('results');
+            
+            if (!startDate || !endDate) {
+                alert('Please select both start and end dates');
+                return;
+            }
+            
+            resultsDiv.innerHTML = '<div class="bg-yellow-800 p-6 rounded">Loading historical data from Toast...</div>';
+            
+            try {
+                // Try local API first
+                let response = await fetch(`http://localhost:3000/api/toast-historical?startDate=${startDate}&endDate=${endDate}`);
+                
+                if (!response.ok) {
+                    // Try deployed API
+                    response = await fetch(`https://venue-smart-dashboard.vercel.app/api/toast-historical?startDate=${startDate}&endDate=${endDate}`);
+                }
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResults(data.data);
+                } else {
+                    throw new Error(data.error || 'Failed to fetch data');
+                }
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="bg-red-800 p-6 rounded">
+                        <p class="font-bold mb-2">Error fetching data:</p>
+                        <p>${error.message}</p>
+                        <p class="mt-4 text-sm">Make sure your API is running locally or deployed.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function displayResults(data) {
+            const resultsDiv = document.getElementById('results');
+            
+            // Summary Card
+            const summaryHtml = `
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h2 class="text-xl font-semibold mb-4">Summary (${data.dateRange.start} to ${data.dateRange.end})</h2>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                            <p class="text-gray-400 text-sm">Total Revenue</p>
+                            <p class="text-2xl font-bold">$${data.totalRevenue.toFixed(2)}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 text-sm">Total Orders</p>
+                            <p class="text-2xl font-bold">${data.totalOrders}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 text-sm">Avg Order Value</p>
+                            <p class="text-2xl font-bold">$${data.summary.avgOrderValue.toFixed(2)}</p>
+                        </div>
+                        <div>
+                            <p class="text-gray-400 text-sm">Avg Daily Revenue</p>
+                            <p class="text-2xl font-bold">$${data.summary.avgDailyRevenue.toFixed(2)}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Daily Breakdown
+            const dailyHtml = `
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h2 class="text-xl font-semibold mb-4">Daily Breakdown</h2>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead>
+                                <tr class="border-b border-gray-700">
+                                    <th class="text-left p-2">Date</th>
+                                    <th class="text-left p-2">Day</th>
+                                    <th class="text-right p-2">Revenue</th>
+                                    <th class="text-right p-2">Orders</th>
+                                    <th class="text-right p-2">Avg Check</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${data.dailyBreakdown.map(day => `
+                                    <tr class="border-b border-gray-700 ${day.revenue > 0 ? '' : 'opacity-50'}">
+                                        <td class="p-2">${day.date}</td>
+                                        <td class="p-2">${day.dayOfWeek}</td>
+                                        <td class="p-2 text-right font-semibold">$${day.revenue.toFixed(2)}</td>
+                                        <td class="p-2 text-right">${day.orders}</td>
+                                        <td class="p-2 text-right">$${day.avgCheck.toFixed(2)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+
+            // Top Items
+            const topItemsHtml = `
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h2 class="text-xl font-semibold mb-4">Top Selling Items</h2>
+                    <div class="space-y-2">
+                        ${data.topItems.slice(0, 10).map((item, i) => `
+                            <div class="flex justify-between items-center p-2 bg-gray-700 rounded">
+                                <div>
+                                    <span class="text-gray-400">#${i + 1}</span>
+                                    <span class="ml-2 font-semibold">${item.name}</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-green-400">$${item.revenue.toFixed(2)}</span>
+                                    <span class="text-gray-400 ml-2">(${item.quantity} sold)</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+
+            // Hourly Distribution
+            const hourlyHtml = `
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <h2 class="text-xl font-semibold mb-4">Revenue by Hour</h2>
+                    <div class="space-y-1">
+                        ${data.hourlyBreakdown.map(hour => {
+                            const maxRevenue = Math.max(...data.hourlyBreakdown.map(h => h.revenue));
+                            const percentage = (hour.revenue / maxRevenue) * 100;
+                            return `
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-gray-400 w-12">${hour.hour}:00</span>
+                                    <div class="flex-1 bg-gray-700 rounded overflow-hidden">
+                                        <div class="bg-blue-600 h-4" style="width: ${percentage}%"></div>
+                                    </div>
+                                    <span class="text-sm">$${hour.revenue.toFixed(2)}</span>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+
+            resultsDiv.innerHTML = summaryHtml + dailyHtml + topItemsHtml + hourlyHtml;
+        }
+
+        // Set default to last 30 days on load
+        window.onload = () => {
+            setDateRange('last30Days');
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,2 @@
+// Re-export the analytics connector from shared package
+export { ToastAnalyticsConnector } from '@venuesync/shared/src/connectors/toast/toast-analytics-connector';

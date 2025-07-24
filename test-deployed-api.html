@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Deployed Toast API</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8">🍞 Test Your Deployed Toast API</h1>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <p class="text-lg mb-4">This will test your DEPLOYED API to verify Toast data accuracy.</p>
+            
+            <div class="space-y-4">
+                <button onclick="testAPI('https://venue-smart-dashboard.vercel.app')" 
+                    class="w-full bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 text-lg">
+                    Test Production API (venue-smart-dashboard.vercel.app)
+                </button>
+                
+                <button onclick="testAPI('http://localhost:3000')" 
+                    class="w-full bg-gray-600 text-white px-6 py-3 rounded hover:bg-gray-700 text-lg">
+                    Test Local API (localhost:3000)
+                </button>
+            </div>
+        </div>
+        
+        <div id="results" class="mt-8"></div>
+    </div>
+
+    <script>
+        async function testAPI(baseURL) {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<div class="bg-yellow-50 p-4 rounded"><p class="text-yellow-800">Testing API at ' + baseURL + '...</p></div>';
+            
+            try {
+                // Test 1: Check if API is accessible
+                resultsDiv.innerHTML += '<div class="mt-4 bg-blue-50 p-4 rounded"><p class="text-blue-800">1️⃣ Testing API health...</p></div>';
+                
+                const healthResponse = await fetch(baseURL + '/api/health');
+                if (healthResponse.ok) {
+                    resultsDiv.innerHTML += '<div class="mt-2 bg-green-50 p-4 rounded"><p class="text-green-800">✅ API is accessible</p></div>';
+                } else {
+                    throw new Error('API health check failed');
+                }
+                
+                // Test 2: Verify Toast Data
+                resultsDiv.innerHTML += '<div class="mt-4 bg-blue-50 p-4 rounded"><p class="text-blue-800">2️⃣ Verifying Toast connection...</p></div>';
+                
+                const verifyResponse = await fetch(baseURL + '/api/verify-toast');
+                const verifyData = await verifyResponse.json();
+                
+                if (verifyData.success && verifyData.verification) {
+                    const v = verifyData.verification;
+                    
+                    // Restaurant Info
+                    if (v.restaurant) {
+                        resultsDiv.innerHTML += `
+                            <div class="mt-4 bg-white border border-gray-200 p-4 rounded">
+                                <h3 class="font-semibold text-lg mb-2">📍 Restaurant Details:</h3>
+                                <p><strong>Name:</strong> ${v.restaurant.name}</p>
+                                <p><strong>Address:</strong> ${v.restaurant.address}, ${v.restaurant.city}, ${v.restaurant.state}</p>
+                            </div>
+                        `;
+                    }
+                    
+                    // Last Weekend Data
+                    if (v.lastWeekend) {
+                        resultsDiv.innerHTML += `
+                            <div class="mt-4 bg-white border border-gray-200 p-4 rounded">
+                                <h3 class="font-semibold text-lg mb-2">📊 Last Weekend Revenue:</h3>
+                                <p><strong>Saturday (${v.lastWeekend.dates.saturday}):</strong> $${v.lastWeekend.saturdayRevenue}</p>
+                                <p><strong>Sunday (${v.lastWeekend.dates.sunday}):</strong> $${v.lastWeekend.sundayRevenue}</p>
+                                <p><strong>Total Weekend:</strong> $${v.lastWeekend.totalRevenue}</p>
+                                <p><strong>Orders:</strong> ${v.lastWeekend.totalOrders}</p>
+                            </div>
+                        `;
+                    }
+                    
+                    // Menu Items
+                    if (v.lastWeekend && v.lastWeekend.sampleMenuItems) {
+                        resultsDiv.innerHTML += `
+                            <div class="mt-4 bg-white border border-gray-200 p-4 rounded">
+                                <h3 class="font-semibold text-lg mb-2">🍔 Sample Menu Items:</h3>
+                                <div class="grid grid-cols-2 gap-2">
+                                    ${v.lastWeekend.sampleMenuItems.map(item => `<div>• ${item}</div>`).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Today's Data
+                    if (v.today) {
+                        resultsDiv.innerHTML += `
+                            <div class="mt-4 bg-white border border-gray-200 p-4 rounded">
+                                <h3 class="font-semibold text-lg mb-2">📅 Today (${v.today.dayOfWeek}):</h3>
+                                <p><strong>Revenue:</strong> $${v.today.revenue}</p>
+                                <p><strong>Orders:</strong> ${v.today.orders}</p>
+                                <p><strong>Status:</strong> ${v.today.status}</p>
+                            </div>
+                        `;
+                    }
+                    
+                    // Data Quality Check
+                    if (v.dataQuality) {
+                        const isProduction = v.dataQuality.isProduction;
+                        resultsDiv.innerHTML += `
+                            <div class="mt-6 ${isProduction ? 'bg-green-50 border-green-500' : 'bg-yellow-50 border-yellow-500'} border-2 p-6 rounded">
+                                <h3 class="font-bold text-xl mb-4">🔍 Data Verification:</h3>
+                                <p class="${isProduction ? 'text-green-800' : 'text-yellow-800'} font-semibold text-lg">
+                                    ${isProduction ? '✅ This is REAL PRODUCTION DATA!' : '⚠️ This might be test/sandbox data'}
+                                </p>
+                                <div class="mt-4 space-y-2">
+                                    <p>• Production Data: ${v.dataQuality.isProduction ? 'YES' : 'NO'}</p>
+                                    <p>• Has Menu Items: ${v.dataQuality.hasMenuItems ? 'YES' : 'NO'}</p>
+                                    <p>• Has Historical Data: ${v.dataQuality.hasHistoricalData ? 'YES' : 'NO'}</p>
+                                    <p>• Total Historical Orders: ${v.dataAccess.historicalOrdersCount}</p>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    
+                    // Test 3: Dashboard Data
+                    resultsDiv.innerHTML += '<div class="mt-4 bg-blue-50 p-4 rounded"><p class="text-blue-800">3️⃣ Testing dashboard data...</p></div>';
+                    
+                    const dashboardResponse = await fetch(baseURL + '/api/dashboard');
+                    const dashboardData = await dashboardResponse.json();
+                    
+                    if (dashboardData.success) {
+                        resultsDiv.innerHTML += `
+                            <div class="mt-4 bg-white border border-gray-200 p-4 rounded">
+                                <h3 class="font-semibold text-lg mb-2">📈 Dashboard Overview:</h3>
+                                <p><strong>Today's Revenue:</strong> $${dashboardData.data?.overview?.revenue?.toFixed(2) || '0.00'}</p>
+                                <p><strong>Transactions:</strong> ${dashboardData.data?.overview?.transactions || 0}</p>
+                            </div>
+                        `;
+                    }
+                    
+                    // Test 4: AI Chat
+                    resultsDiv.innerHTML += '<div class="mt-4 bg-blue-50 p-4 rounded"><p class="text-blue-800">4️⃣ Testing AI chat...</p></div>';
+                    
+                    const chatResponse = await fetch(baseURL + '/api/chat', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message: 'What was our total revenue last weekend?' })
+                    });
+                    
+                    if (chatResponse.ok) {
+                        const chatData = await chatResponse.json();
+                        if (chatData.response) {
+                            resultsDiv.innerHTML += `
+                                <div class="mt-4 bg-white border border-gray-200 p-4 rounded">
+                                    <h3 class="font-semibold text-lg mb-2">🤖 AI Response:</h3>
+                                    <p class="text-gray-700">${chatData.response}</p>
+                                </div>
+                            `;
+                        }
+                    }
+                    
+                } else {
+                    throw new Error(verifyData.error || 'Toast verification failed');
+                }
+                
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="mt-4 bg-red-50 border border-red-200 p-4 rounded">
+                        <p class="text-red-800 font-semibold">❌ Error: ${error.message}</p>
+                        <p class="text-red-600 text-sm mt-2">Make sure the API is deployed and environment variables are set.</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>

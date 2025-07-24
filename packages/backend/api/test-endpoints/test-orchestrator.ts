@@ -49,7 +49,7 @@ async function testDataOrchestrator() {
     console.log('   API Statuses:');
     console.log(`   - Toast: ${statuses.toast.needsUpdate ? '🔄 Needs update' : '✅ Up to date'}`);
     console.log(`   - Eventbrite: ${statuses.eventbrite.needsUpdate ? '🔄 Needs update' : '✅ Up to date'}`);
-    console.log(`   - OpenDate.io: ${statuses.opendate.needsUpdate ? '🔄 Needs update' : '✅ Up to date'}`);
+    console.log(`   - OpenDate.io: ${statuses.opendate?.needsUpdate ? '🔄 Needs update' : '✅ Up to date'}`);
     console.log(`   - WISK: ${statuses.wisk.needsUpdate ? '🔄 Needs update' : '⏸️  Placeholder'}`);
 
     // Test 2: Fetch data from all APIs
@@ -161,8 +161,8 @@ async function testDataOrchestrator() {
 const vi = {
   fn: (impl?: any) => {
     const fn = impl || (() => {});
-    fn.mockResolvedValue = (value: any) => fn;
-    fn.mockImplementation = (impl: any) => fn;
+    fn.mockResolvedValue = (_value: any) => fn;
+    fn.mockImplementation = (_impl: any) => fn;
     return fn;
   },
 };

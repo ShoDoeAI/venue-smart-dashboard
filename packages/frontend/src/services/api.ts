@@ -79,13 +79,13 @@ export const api = new ApiClient(API_BASE_URL);
 
 // Dashboard API
 export const dashboardApi = {
-  getDashboard: () => 
+  getDashboard: (params?: { startDate?: string; endDate?: string }) => 
     api.get<{
       success: boolean;
       snapshot?: any;
       kpis?: any;
       alerts?: any[];
-    }>('/api/dashboard'),
+    }>('/api/dashboard', { params }),
   
   getRealtimeMetrics: () =>
     api.get<{

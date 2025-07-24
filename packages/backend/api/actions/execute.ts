@@ -1,7 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { ActionExecutor } from '../../src/services/action-executor';
-import { ActionConfirmationService } from '../../src/services/action-confirmation';
 import type { Database } from '@venuesync/shared';
 
 /**
