@@ -1,13 +1,43 @@
-# Don't upload unnecessary files to Vercel
-node_modules
-.git
-.husky
-coverage
-.env*
-*.log
-packages/backend/src
-packages/backend/tests
-docs
-scripts
+# Ignore test files and directories
+**/*.test.ts
+**/*.test.tsx
+**/*.spec.ts
+**/*.spec.tsx
+**/test/**
+**/tests/**
+**/e2e/**
+**/__tests__/**
+
+# Ignore Playwright files
+playwright.config.js
+playwright.config.ts
+
+# Ignore performance tests
+**/performance/**
+
+# Ignore test utilities
+**/test-utils.ts
+**/test-helpers.ts
+
+# Ignore documentation
 *.md
-!README.md
+docs/
+
+# Ignore scripts
+scripts/
+*.sh
+
+# Ignore local env files
+.env.local
+.env.*.local
+
+# Ignore git files
+.git/
+.gitignore
+
+# Ignore IDE files
+.vscode/
+.idea/
+
+# Ignore macOS files
+.DS_Store

@@ -1,7 +1,7 @@
 {
-  "buildCommand": "pnpm install --no-frozen-lockfile && cd packages/frontend && pnpm run build",
+  "buildCommand": "cd packages/frontend && pnpm run build",
   "outputDirectory": "packages/frontend/dist",
-  "installCommand": "npm install -g pnpm && pnpm install --no-frozen-lockfile",
+  "installCommand": "npm install -g pnpm && PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 pnpm install --no-frozen-lockfile",
   "framework": null,
   "functions": {
     "api/*.js": {
