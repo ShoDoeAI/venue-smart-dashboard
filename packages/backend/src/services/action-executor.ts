@@ -7,7 +7,6 @@ import type {
   VenueSyncAction,
   ActionExecutionResult,
   ActionValidation,
-  ActionRollback,
   ToastAction,
   EventbriteAction,
   OpenDateAction,
@@ -91,7 +90,7 @@ export class ActionExecutor {
           result = await this.executeOpenDateAction(action as OpenDateAction);
           break;
         default:
-          throw new Error(`Unknown service: ${action.service}`);
+          throw new Error(`Unknown service: ${(action as VenueSyncAction).service}`);
       }
 
       // Update action status
@@ -186,7 +185,7 @@ export class ActionExecutor {
         }
 
         default:
-          throw new Error(`Unknown Toast action type: ${action.actionType}`);
+          throw new Error(`Unknown Toast action type: ${(action as ToastAction).actionType}`);
       }
 
       return {
@@ -269,7 +268,7 @@ export class ActionExecutor {
         }
 
         default:
-          throw new Error(`Unknown Eventbrite action type: ${action.actionType}`);
+          throw new Error(`Unknown Eventbrite action type: ${(action as EventbriteAction).actionType}`);
       }
 
       return {
@@ -365,7 +364,7 @@ export class ActionExecutor {
         }
 
         default:
-          throw new Error(`Unknown OpenDate action type: ${action.actionType}`);
+          throw new Error(`Unknown OpenDate action type: ${(action as OpenDateAction).actionType}`);
       }
 
       return {
@@ -421,7 +420,7 @@ export class ActionExecutor {
       case 'opendate':
         return this.rollbackOpenDateAction(action as OpenDateAction, rollbackData);
       default:
-        throw new Error(`Unknown service for rollback: ${action.service}`);
+        throw new Error(`Unknown service for rollback: ${(action as VenueSyncAction).service}`);
     }
   }
 
@@ -626,7 +625,7 @@ export class ActionExecutor {
    */
   private async rollbackToastAction(
     action: ToastAction,
-    rollbackData: any
+    _rollbackData: any
   ): Promise<ActionExecutionResult> {
     // Implementation would restore original state
     return {
@@ -640,7 +639,7 @@ export class ActionExecutor {
 
   private async rollbackEventbriteAction(
     action: EventbriteAction,
-    rollbackData: any
+    _rollbackData: any
   ): Promise<ActionExecutionResult> {
     // Implementation would restore original state
     return {
@@ -654,7 +653,7 @@ export class ActionExecutor {
 
   private async rollbackOpenDateAction(
     action: OpenDateAction,
-    rollbackData: any
+    _rollbackData: any
   ): Promise<ActionExecutionResult> {
     // Implementation would restore original state
     return {

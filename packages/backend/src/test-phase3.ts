@@ -178,8 +178,8 @@ async function testKPICalculatorEnhancements() {
     if (realtimeMetrics.upcomingEvents && realtimeMetrics.upcomingEvents.length > 0) {
       console.log('   Next event:', {
         name: realtimeMetrics.upcomingEvents[0].name,
-        date: realtimeMetrics.upcomingEvents[0].startDate,
-        ticketsSold: realtimeMetrics.upcomingEvents[0].ticketsSold,
+        date: realtimeMetrics.upcomingEvents[0].startTime,
+        ticketsSold: realtimeMetrics.upcomingEvents[0].soldTickets,
         capacity: realtimeMetrics.upcomingEvents[0].capacity
       });
     }
@@ -198,7 +198,7 @@ async function testKPICalculatorEnhancements() {
     if (weeklyKPIs) {
       console.log(`✅ Weekly KPIs calculated`);
       console.log('   Growth Rates:', weeklyKPIs.growthRates);
-      console.log('   Period:', weeklyKPIs.period);
+      console.log('   Period:', `${weeklyKPIs.weekStart} to ${weeklyKPIs.weekEnd}`);
     }
 
     // Test monthly KPIs with YoY comparison
@@ -215,7 +215,7 @@ async function testKPICalculatorEnhancements() {
     if (monthlyKPIs) {
       console.log(`✅ Monthly KPIs calculated`);
       console.log('   Year-over-Year:', monthlyKPIs.yearOverYear);
-      console.log('   Period:', monthlyKPIs.period);
+      console.log('   Period:', `${monthlyKPIs.month}/${monthlyKPIs.year}`);
     }
 
   } catch (error) {

@@ -256,11 +256,34 @@ export class KPICalculator {
       monthlyMetrics
     );
 
+    // Calculate growth rates
+    const previousMonthStart = new Date(monthStart);
+    previousMonthStart.setMonth(previousMonthStart.getMonth() - 1);
+    const previousMonthEnd = new Date(monthEnd);
+    previousMonthEnd.setMonth(previousMonthEnd.getMonth() - 1);
+    
+    const growthRates = await this.calculateGrowthRates(
+      venueId,
+      previousMonthStart,
+      previousMonthEnd,
+      monthlyMetrics
+    );
+
+    // Convert weekly KPIs to weeklyComparison format
+    const weeklyComparison = weeklyKPIs.map((week: any, index: number) => ({
+      weekNumber: index + 1,
+      revenue: week.metrics?.revenue?.total || 0,
+      transactions: week.metrics?.transactions?.count || 0,
+      customers: week.metrics?.customers?.unique || 0,
+    }));
+
     return {
-      month: monthStart.getMonth() + 1,
+      month: (monthStart.getMonth() + 1).toString(),
       year: monthStart.getFullYear(),
       ...monthlyMetrics,
       yearOverYear,
+      growthRates,
+      weeklyComparison,
     };
   }
 
@@ -332,7 +355,7 @@ export class KPICalculator {
 
   // Helper methods
 
-  private async fetchToastTransactions(venueId: string, start: Date, end: Date) {
+  private async fetchToastTransactions(_venueId: string, start: Date, end: Date) {
     const { data, error } = await this.supabase
       .from('toast_transactions')
       .select('*')
@@ -353,7 +376,7 @@ export class KPICalculator {
     };
   }
 
-  private async fetchEventbriteTransactions(venueId: string, start: Date, end: Date) {
+  private async fetchEventbriteTransactions(_venueId: string, start: Date, end: Date) {
     const { data, error } = await this.supabase
       .from('eventbrite_transactions')
       .select('*')
@@ -377,7 +400,7 @@ export class KPICalculator {
     };
   }
 
-  private async fetchOpenDateTransactions(venueId: string, start: Date, end: Date) {
+  private async fetchOpenDateTransactions(_venueId: string, start: Date, end: Date) {
     const { data, error } = await this.supabase
       .from('opendate_transactions')
       .select('*')
@@ -480,7 +503,7 @@ export class KPICalculator {
     venueId: string,
     allTransactions: any[],
     startDate: Date,
-    endDate: Date
+    _endDate: Date
   ) {
     // Get unique customers
     const customerSet = new Set<string>();
@@ -530,7 +553,7 @@ export class KPICalculator {
     };
   }
 
-  private calculateInventoryMetrics(inventory: any) {
+  private calculateInventoryMetrics(_inventory: any) {
     // TODO: Implement based on actual inventory data structure
     return undefined;
   }
@@ -714,23 +737,50 @@ export class KPICalculator {
 
     metrics.avgRevenuePerWeek = metrics.totalRevenue / Math.max(weeklyKPIs.length, 1);
 
+    // Calculate aggregated metrics for the month
+    const totalPOS = weeklyKPIs.reduce((sum, week) => sum + (week.metrics?.revenue?.pos || 0), 0);
+    const totalEvents = weeklyKPIs.reduce((sum, week) => sum + (week.metrics?.revenue?.events || 0), 0);
+    const totalTickets = weeklyKPIs.reduce((sum, week) => sum + (week.metrics?.revenue?.tickets || 0), 0);
+
     return {
       revenue: {
         total: metrics.totalRevenue,
-        avgPerWeek: metrics.avgRevenuePerWeek,
-        trend: metrics.weeklyTrends,
+        pos: totalPOS,
+        events: totalEvents,
+        tickets: totalTickets,
+        byHour: [], // Aggregated hourly data not available at monthly level
+        byCategory: [], // Aggregated category data would need to be calculated
       },
       transactions: {
-        count: metrics.totalTransactions,
-        avgPerWeek: metrics.totalTransactions / Math.max(weeklyKPIs.length, 1),
+        total: metrics.totalTransactions,
+        average: metrics.totalRevenue / Math.max(metrics.totalTransactions, 1),
+        bySource: [],
+        byPaymentMethod: [],
       },
       customers: {
         unique: metrics.uniqueCustomers.size,
+        new: 0, // Would need to be calculated from weekly data
+        returning: 0, // Would need to be calculated from weekly data
+        topCustomers: [],
       },
-      topItems: Array.from(metrics.topSellingItems.entries())
-        .map(([id, data]) => ({ id, ...data }))
-        .sort((a, b) => b.revenue - a.revenue)
-        .slice(0, 10),
+      inventory: {
+        topItems: Array.from(metrics.topSellingItems.entries())
+          .map(([_id, data]) => ({ 
+            name: data.name, 
+            quantity: data.quantity, 
+            revenue: data.revenue,
+          }))
+          .sort((a, b) => b.revenue - a.revenue)
+          .slice(0, 10),
+        lowStock: [],
+      },
+      events: {
+        total: 0,
+        attendees: 0,
+        capacity: 0,
+        utilizationRate: 0,
+        topEvents: [],
+      },
     };
   }
 
@@ -824,11 +874,9 @@ export class KPICalculator {
 
     if (error || !lastYearKPIs || lastYearKPIs.length === 0) {
       return {
-        revenue: { growth: 0, lastYear: 0, current: currentMetrics.revenue?.total || 0 },
-        transactions: { growth: 0, lastYear: 0, current: currentMetrics.transactions?.count || 0 },
-        customers: { growth: 0, lastYear: 0, current: currentMetrics.customers?.unique || 0 },
-        avgTransaction: { growth: 0, lastYear: 0, current: currentMetrics.transactions?.avgAmount || 0 },
-        hasData: false,
+        revenue: 0,
+        transactions: 0,
+        customers: 0,
       };
     }
 
@@ -864,30 +912,12 @@ export class KPICalculator {
     const currentRevenue = currentMetrics.revenue?.total || 0;
     const currentTransactions = currentMetrics.transactions?.count || 0;
     const currentCustomers = currentMetrics.customers?.unique || 0;
-    const currentAvgTransaction = currentMetrics.transactions?.avgAmount || 0;
+    // const currentAvgTransaction = currentMetrics.transactions?.avgAmount || 0;
 
     return {
-      revenue: {
-        growth: calculateYoYGrowth(currentRevenue, lastYearMetrics.totalRevenue),
-        lastYear: lastYearMetrics.totalRevenue,
-        current: currentRevenue,
-      },
-      transactions: {
-        growth: calculateYoYGrowth(currentTransactions, lastYearMetrics.totalTransactions),
-        lastYear: lastYearMetrics.totalTransactions,
-        current: currentTransactions,
-      },
-      customers: {
-        growth: calculateYoYGrowth(currentCustomers, lastYearMetrics.uniqueCustomers.size),
-        lastYear: lastYearMetrics.uniqueCustomers.size,
-        current: currentCustomers,
-      },
-      avgTransaction: {
-        growth: calculateYoYGrowth(currentAvgTransaction, lastYearMetrics.avgTransaction),
-        lastYear: lastYearMetrics.avgTransaction,
-        current: currentAvgTransaction,
-      },
-      hasData: true,
+      revenue: calculateYoYGrowth(currentRevenue, lastYearMetrics.totalRevenue),
+      transactions: calculateYoYGrowth(currentTransactions, lastYearMetrics.totalTransactions),
+      customers: calculateYoYGrowth(currentCustomers, lastYearMetrics.uniqueCustomers.size),
     };
   }
 

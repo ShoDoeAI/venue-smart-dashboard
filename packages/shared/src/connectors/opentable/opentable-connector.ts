@@ -1,9 +1,8 @@
 import { BaseConnector } from '../base-connector';
-import type { ConnectorConfig, FetchResult, ConnectorError, ConnectorCredentials } from '../types';
+import type { ConnectorConfig, FetchResult, ConnectorCredentials, ConnectorError } from '../types';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../../types/database.generated';
 import type {
-  OpenTableConfig,
   OpenTableCredentials,
   OpenTableReservation,
   OpenTableRestaurant,
@@ -22,7 +21,6 @@ import {
   openTableReviewSchema,
   openTableAnalyticsSchema,
   openTableWaitlistEntrySchema,
-  openTableApiResponseSchema,
 } from '../../schemas/opentable';
 import { z } from 'zod';
 
@@ -38,8 +36,6 @@ import { z } from 'zod';
  * This implementation provides mock data for development and testing purposes.
  */
 export class OpenTableConnector extends BaseConnector {
-  private baseUrl: string;
-  private headers: Record<string, string>;
   private openTableCredentials: OpenTableCredentials;
 
   constructor(
@@ -50,16 +46,6 @@ export class OpenTableConnector extends BaseConnector {
     super(credentials, config, supabase);
     
     this.openTableCredentials = credentials.credentials as unknown as OpenTableCredentials;
-    this.baseUrl = 'https://api.opentable.com/v1';
-    
-    // In a real implementation, this would handle OAuth or session-based auth
-    this.headers = {
-      'Content-Type': 'application/json',
-      'User-Agent': 'VenueSync/1.0',
-      ...(this.openTableCredentials.apiKey && {
-        'Authorization': `Bearer ${this.openTableCredentials.apiKey}`,
-      }),
-    };
   }
 
   get serviceName(): string {
@@ -70,11 +56,12 @@ export class OpenTableConnector extends BaseConnector {
     // Placeholder: In production, this would validate against OpenTable's auth system
     return Boolean(
       this.openTableCredentials.restaurantId && 
-      (this.openTableCredentials.apiKey || (this.credentials.username && this.credentials.password))
+      this.openTableCredentials.apiKey
     );
   }
 
   async testConnection(): Promise<FetchResult<unknown>> {
+    const startTime = Date.now();
     // Placeholder: Return mock restaurant data
     const mockRestaurant = {
       id: this.openTableCredentials.restaurantId,
@@ -86,7 +73,9 @@ export class OpenTableConnector extends BaseConnector {
     return {
       success: true,
       data: mockRestaurant,
-      error: null,
+      error: undefined,
+      timestamp: new Date(),
+      duration: Date.now() - startTime,
     };
   }
 
@@ -94,7 +83,8 @@ export class OpenTableConnector extends BaseConnector {
    * Fetch restaurant information
    */
   async fetchRestaurantInfo(): Promise<FetchResult<OpenTableRestaurant>> {
-    return this.fetchWithRetry(
+    const startTime = Date.now();
+    const result = await this.fetchWithRetry(
       async () => {
         // Mock restaurant data
         const restaurant: OpenTableRestaurant = {
@@ -131,6 +121,11 @@ export class OpenTableConnector extends BaseConnector {
       },
       'fetchRestaurantInfo'
     );
+    return {
+      ...result,
+      timestamp: new Date(),
+      duration: Date.now() - startTime,
+    };
   }
 
   /**
@@ -138,14 +133,15 @@ export class OpenTableConnector extends BaseConnector {
    */
   async fetchReservations(
     startDate?: Date,
-    endDate?: Date,
+    _endDate?: Date,
     status?: string[]
   ): Promise<FetchResult<OpenTableReservation[]>> {
-    return this.fetchWithRetry(
+    const startTime = Date.now();
+    const result = await this.fetchWithRetry(
       async () => {
         const now = new Date();
         const start = startDate || new Date(now.setHours(0, 0, 0, 0));
-        const end = endDate || new Date(now.setHours(23, 59, 59, 999));
+        // const _end = endDate || new Date(now.setHours(23, 59, 59, 999));
 
         // Mock reservations data
         const reservations: OpenTableReservation[] = [
@@ -207,6 +203,11 @@ export class OpenTableConnector extends BaseConnector {
       },
       'fetchReservations'
     );
+    return {
+      ...result,
+      timestamp: new Date(),
+      duration: Date.now() - startTime,
+    };
   }
 
   /**
@@ -216,7 +217,8 @@ export class OpenTableConnector extends BaseConnector {
     date: Date,
     partySize?: number
   ): Promise<FetchResult<OpenTableAvailability>> {
-    return this.fetchWithRetry(
+    const startTime = Date.now();
+    const result = await this.fetchWithRetry(
       async () => {
         const availability: OpenTableAvailability = {
           date: date.toISOString().split('T')[0],
@@ -244,6 +246,11 @@ export class OpenTableConnector extends BaseConnector {
       },
       'fetchAvailability'
     );
+    return {
+      ...result,
+      timestamp: new Date(),
+      duration: Date.now() - startTime,
+    };
   }
 
   /**
@@ -253,7 +260,8 @@ export class OpenTableConnector extends BaseConnector {
     limit = 100,
     offset = 0
   ): Promise<FetchResult<OpenTableGuest[]>> {
-    return this.fetchWithRetry(
+    const startTime = Date.now();
+    const result = await this.fetchWithRetry(
       async () => {
         // Mock guest data
         const guests: OpenTableGuest[] = [
@@ -294,6 +302,11 @@ export class OpenTableConnector extends BaseConnector {
       },
       'fetchGuests'
     );
+    return {
+      ...result,
+      timestamp: new Date(),
+      duration: Date.now() - startTime,
+    };
   }
 
   /**
@@ -303,7 +316,8 @@ export class OpenTableConnector extends BaseConnector {
     startDate?: Date,
     endDate?: Date
   ): Promise<FetchResult<OpenTableReview[]>> {
-    return this.fetchWithRetry(
+    const startTime = Date.now();
+    const result = await this.fetchWithRetry(
       async () => {
         // Mock review data
         const reviews: OpenTableReview[] = [
@@ -354,6 +368,11 @@ export class OpenTableConnector extends BaseConnector {
       },
       'fetchReviews'
     );
+    return {
+      ...result,
+      timestamp: new Date(),
+      duration: Date.now() - startTime,
+    };
   }
 
   /**
@@ -363,7 +382,8 @@ export class OpenTableConnector extends BaseConnector {
     startDate: Date,
     endDate: Date
   ): Promise<FetchResult<OpenTableAnalytics>> {
-    return this.fetchWithRetry(
+    const startTime = Date.now();
+    const result = await this.fetchWithRetry(
       async () => {
         // Mock analytics data
         const analytics: OpenTableAnalytics = {
@@ -420,13 +440,19 @@ export class OpenTableConnector extends BaseConnector {
       },
       'fetchAnalytics'
     );
+    return {
+      ...result,
+      timestamp: new Date(),
+      duration: Date.now() - startTime,
+    };
   }
 
   /**
    * Fetch waitlist entries
    */
   async fetchWaitlist(): Promise<FetchResult<OpenTableWaitlistEntry[]>> {
-    return this.fetchWithRetry(
+    const startTime = Date.now();
+    const result = await this.fetchWithRetry(
       async () => {
         // Mock waitlist data
         const waitlist: OpenTableWaitlistEntry[] = [
@@ -459,6 +485,11 @@ export class OpenTableConnector extends BaseConnector {
       },
       'fetchWaitlist'
     );
+    return {
+      ...result,
+      timestamp: new Date(),
+      duration: Date.now() - startTime,
+    };
   }
 
   /**
@@ -468,6 +499,7 @@ export class OpenTableConnector extends BaseConnector {
     startDate: Date,
     endDate: Date
   ): Promise<FetchResult<TransformedOpenTableData>> {
+    const startTime = Date.now();
     try {
       // Fetch all data in parallel
       const [
@@ -475,7 +507,7 @@ export class OpenTableConnector extends BaseConnector {
         reservationsResult,
         analyticsResult,
         guestsResult,
-        waitlistResult,
+        _waitlistResult,
       ] = await Promise.all([
         this.fetchRestaurantInfo(),
         this.fetchReservations(startDate, endDate),
@@ -486,23 +518,47 @@ export class OpenTableConnector extends BaseConnector {
 
       // Check for failures
       if (!restaurantResult.success) {
-        return { success: false, data: undefined, error: restaurantResult.error };
+        return { 
+          success: false, 
+          data: undefined, 
+          error: restaurantResult.error,
+          timestamp: new Date(),
+          duration: Date.now() - startTime,
+        };
       }
       if (!reservationsResult.success) {
-        return { success: false, data: undefined, error: reservationsResult.error };
+        return { 
+          success: false, 
+          data: undefined, 
+          error: reservationsResult.error,
+          timestamp: new Date(),
+          duration: Date.now() - startTime,
+        };
       }
       if (!analyticsResult.success) {
-        return { success: false, data: undefined, error: analyticsResult.error };
+        return { 
+          success: false, 
+          data: undefined, 
+          error: analyticsResult.error,
+          timestamp: new Date(),
+          duration: Date.now() - startTime,
+        };
       }
       if (!guestsResult.success) {
-        return { success: false, data: undefined, error: guestsResult.error };
+        return { 
+          success: false, 
+          data: undefined, 
+          error: guestsResult.error,
+          timestamp: new Date(),
+          duration: Date.now() - startTime,
+        };
       }
 
       const restaurant = restaurantResult.data!;
       const reservations = reservationsResult.data || [];
       const analytics = analyticsResult.data!;
       const guests = guestsResult.data || [];
-      const waitlist = waitlistResult.data || [];
+      // const _waitlist = waitlistResult.data || [];
 
       // Calculate today's stats
       const today = new Date();
@@ -565,17 +621,24 @@ export class OpenTableConnector extends BaseConnector {
       return {
         success: true,
         data: transformedData,
-        error: null,
+        error: undefined,
+        timestamp: new Date(),
+        duration: Date.now() - startTime,
       };
     } catch (error) {
-      return this.handleError(error);
+      return {
+        success: false,
+        error: this.handleError(error, 'fetchAllData'),
+        timestamp: new Date(),
+        duration: Date.now() - startTime,
+      };
     }
   }
 
   /**
    * Override handleError to parse OpenTable-specific errors
    */
-  protected handleError(error: unknown, context?: string): ConnectorError {
+  protected handleError(error: unknown, context: string): ConnectorError {
     // In a real implementation, this would handle OpenTable-specific error codes
     return super.handleError(error, context);
   }

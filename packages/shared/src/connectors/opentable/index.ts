@@ -1,2 +1,2 @@
-// export * from './opentable-connector';
+export { OpenTableConnector } from './opentable-connector';
 export * from './types';

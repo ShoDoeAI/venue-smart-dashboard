@@ -3,7 +3,6 @@ import type { ConnectorConfig, FetchResult, ConnectorError, ConnectorCredentials
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../../types/database.generated';
 import type {
-  AudienceRepublicConfig,
   AudienceRepublicCredentials,
   AudienceRepublicCampaign,
   AudienceRepublicContact,
@@ -60,9 +59,7 @@ export class AudienceRepublicConnector extends BaseConnector {
   async validateCredentials(): Promise<boolean> {
     try {
       // Test API key by fetching account info
-      const result = await this.fetchWithRetry('/account', {
-        headers: this.headers,
-      });
+      const result = await this.makeApiRequest('/account');
       return result.success;
     } catch {
       return false;
@@ -70,17 +67,18 @@ export class AudienceRepublicConnector extends BaseConnector {
   }
 
   async testConnection(): Promise<FetchResult<unknown>> {
+    const startTime = Date.now();
     try {
-      const result = await this.fetchWithRetry('/health', {
-        headers: this.headers,
-      });
+      const result = await this.makeApiRequest('/health');
       return {
         success: result.success,
         data: result.data || { status: 'ok', service: 'AudienceRepublic' },
         error: result.error,
+        timestamp: new Date(),
+        duration: Date.now() - startTime,
       };
     } catch (error) {
-      return this.handleError(error);
+      return this.createErrorResult(error, startTime);
     }
   }
 
@@ -92,6 +90,7 @@ export class AudienceRepublicConnector extends BaseConnector {
     endDate?: Date,
     limit = 100
   ): Promise<FetchResult<AudienceRepublicCampaign[]>> {
+    const startTime = Date.now();
     try {
       const params = new URLSearchParams({
         limit: limit.toString(),
@@ -99,12 +98,10 @@ export class AudienceRepublicConnector extends BaseConnector {
         ...(endDate && { end_date: endDate.toISOString() }),
       });
 
-      const result = await this.fetchWithRetry(`/campaigns?${params}`, {
-        headers: this.headers,
-      });
+      const result = await this.makeApiRequest(`/campaigns?${params}`);
 
       if (!result.success || !result.data) {
-        return { success: false, data: undefined, error: result.error };
+        return this.createErrorResult(result.error || new Error('No data received'), startTime);
       }
 
       const responseSchema = audienceRepublicApiResponseSchema(
@@ -115,10 +112,12 @@ export class AudienceRepublicConnector extends BaseConnector {
       return {
         success: true,
         data: validated.data,
-        error: null,
+        error: undefined,
+        timestamp: new Date(),
+        duration: Date.now() - startTime,
       };
     } catch (error) {
-      return this.handleError(error);
+      return this.createErrorResult(error, startTime);
     }
   }
 
@@ -129,18 +128,17 @@ export class AudienceRepublicConnector extends BaseConnector {
     limit = 100,
     offset = 0
   ): Promise<FetchResult<AudienceRepublicContact[]>> {
+    const startTime = Date.now();
     try {
       const params = new URLSearchParams({
         limit: limit.toString(),
         offset: offset.toString(),
       });
 
-      const result = await this.fetchWithRetry(`/contacts?${params}`, {
-        headers: this.headers,
-      });
+      const result = await this.makeApiRequest(`/contacts?${params}`);
 
       if (!result.success || !result.data) {
-        return { success: false, data: undefined, error: result.error };
+        return this.createErrorResult(result.error || new Error('No data received'), startTime);
       }
 
       const responseSchema = audienceRepublicApiResponseSchema(
@@ -151,10 +149,12 @@ export class AudienceRepublicConnector extends BaseConnector {
       return {
         success: true,
         data: validated.data,
-        error: null,
+        error: undefined,
+        timestamp: new Date(),
+        duration: Date.now() - startTime,
       };
     } catch (error) {
-      return this.handleError(error);
+      return this.createErrorResult(error, startTime);
     }
   }
 
@@ -165,18 +165,17 @@ export class AudienceRepublicConnector extends BaseConnector {
     startDate?: Date,
     endDate?: Date
   ): Promise<FetchResult<AudienceRepublicEvent[]>> {
+    const startTime = Date.now();
     try {
       const params = new URLSearchParams({
         ...(startDate && { start_date: startDate.toISOString() }),
         ...(endDate && { end_date: endDate.toISOString() }),
       });
 
-      const result = await this.fetchWithRetry(`/events?${params}`, {
-        headers: this.headers,
-      });
+      const result = await this.makeApiRequest(`/events?${params}`);
 
       if (!result.success || !result.data) {
-        return { success: false, data: undefined, error: result.error };
+        return this.createErrorResult(result.error || new Error('No data received'), startTime);
       }
 
       const responseSchema = audienceRepublicApiResponseSchema(
@@ -187,10 +186,12 @@ export class AudienceRepublicConnector extends BaseConnector {
       return {
         success: true,
         data: validated.data,
-        error: null,
+        error: undefined,
+        timestamp: new Date(),
+        duration: Date.now() - startTime,
       };
     } catch (error) {
-      return this.handleError(error);
+      return this.createErrorResult(error, startTime);
     }
   }
 
@@ -201,18 +202,17 @@ export class AudienceRepublicConnector extends BaseConnector {
     startDate: Date,
     endDate: Date
   ): Promise<FetchResult<AudienceRepublicAnalytics>> {
+    const startTime = Date.now();
     try {
       const params = new URLSearchParams({
         start_date: startDate.toISOString(),
         end_date: endDate.toISOString(),
       });
 
-      const result = await this.fetchWithRetry(`/analytics?${params}`, {
-        headers: this.headers,
-      });
+      const result = await this.makeApiRequest(`/analytics?${params}`);
 
       if (!result.success || !result.data) {
-        return { success: false, data: undefined, error: result.error };
+        return this.createErrorResult(result.error || new Error('No data received'), startTime);
       }
 
       const validated = audienceRepublicAnalyticsSchema.parse(result.data);
@@ -220,10 +220,12 @@ export class AudienceRepublicConnector extends BaseConnector {
       return {
         success: true,
         data: validated,
-        error: null,
+        error: undefined,
+        timestamp: new Date(),
+        duration: Date.now() - startTime,
       };
     } catch (error) {
-      return this.handleError(error);
+      return this.createErrorResult(error, startTime);
     }
   }
 
@@ -234,6 +236,7 @@ export class AudienceRepublicConnector extends BaseConnector {
     startDate: Date,
     endDate: Date
   ): Promise<FetchResult<TransformedAudienceRepublicData>> {
+    const startTime = Date.now();
     try {
       // Fetch all data in parallel
       const [campaignsResult, contactsResult, eventsResult, analyticsResult] = await Promise.all([
@@ -245,16 +248,16 @@ export class AudienceRepublicConnector extends BaseConnector {
 
       // Check for failures
       if (!campaignsResult.success) {
-        return { success: false, data: undefined, error: campaignsResult.error };
+        return this.createErrorResult(campaignsResult.error || new Error('Failed to fetch campaigns'), startTime);
       }
       if (!contactsResult.success) {
-        return { success: false, data: undefined, error: contactsResult.error };
+        return this.createErrorResult(contactsResult.error || new Error('Failed to fetch contacts'), startTime);
       }
       if (!eventsResult.success) {
-        return { success: false, data: undefined, error: eventsResult.error };
+        return this.createErrorResult(eventsResult.error || new Error('Failed to fetch events'), startTime);
       }
       if (!analyticsResult.success) {
-        return { success: false, data: undefined, error: analyticsResult.error };
+        return this.createErrorResult(analyticsResult.error || new Error('Failed to fetch analytics'), startTime);
       }
 
       // Calculate aggregate metrics
@@ -290,33 +293,52 @@ export class AudienceRepublicConnector extends BaseConnector {
       return {
         success: true,
         data: transformedData,
-        error: null,
+        error: undefined,
+        timestamp: new Date(),
+        duration: Date.now() - startTime,
       };
     } catch (error) {
-      return this.handleError(error);
+      return this.createErrorResult(error, startTime);
     }
   }
 
   /**
-   * Override fetchWithRetry to use full URL
+   * Helper method to make API requests
    */
-  protected async fetchWithRetry(
+  private async makeApiRequest(
     endpoint: string,
     options?: RequestInit
   ): Promise<FetchResult<unknown>> {
     const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
-    return super.fetchWithRetry(url, options);
+    
+    return super.fetchWithRetry(
+      async () => {
+        const response = await fetch(url, {
+          ...options,
+          headers: {
+            ...this.headers,
+            ...options?.headers,
+          },
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return data;
+      },
+      'makeApiRequest'
+    );
   }
 
   /**
-   * Handle API-specific errors
+   * Create error result with proper typing
    */
-  private handleError(error: unknown): FetchResult<any> {
+  private createErrorResult(error: unknown, startTime: number): FetchResult<any> {
     const connectorError: ConnectorError = {
       code: 'UNKNOWN',
       message: error instanceof Error ? error.message : 'Unknown error occurred',
-      service: this.serviceName,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(),
+      retryable: false,
     };
 
     if (error instanceof z.ZodError) {
@@ -329,6 +351,8 @@ export class AudienceRepublicConnector extends BaseConnector {
       success: false,
       data: undefined,
       error: connectorError,
+      timestamp: new Date(),
+      duration: Date.now() - startTime,
     };
   }
 }

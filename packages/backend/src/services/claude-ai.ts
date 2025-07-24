@@ -385,7 +385,7 @@ ${context.activeAlerts.map(a => `- ${a.type}: ${a.message}`).join('\n')}` : 'No 
       questions.push(...matches.map(q => q.trim()));
     }
 
-    return questions.length > 0 ? questions : undefined;
+    return questions.length > 0 ? questions : [];
   }
 
   /**
@@ -393,9 +393,9 @@ ${context.activeAlerts.map(a => `- ${a.type}: ${a.message}`).join('\n')}` : 'No 
    */
   private cleanMessageText(
     text: string,
-    actions?: AIResponse['suggestedActions'],
-    insights?: AIResponse['insights'],
-    questions?: string[]
+    _actions?: AIResponse['suggestedActions'],
+    _insights?: AIResponse['insights'],
+    _questions?: string[]
   ): string {
     // For now, return the full text
     // In production, you might want to remove extracted sections

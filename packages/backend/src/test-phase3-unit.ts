@@ -3,7 +3,8 @@
  * Unit tests for Phase 3 features without database dependencies
  */
 
-import { AlertGenerator, AlertSeverity, AlertType } from './services/alert-generator';
+import { z } from 'zod';
+import { AlertGenerator, AlertType, AlertSeverity } from './services/alert-generator';
 import { ErrorIsolationService, ErrorSource } from './services/error-isolation';
 
 async function testAlertGeneratorUnit() {
@@ -59,7 +60,7 @@ function testErrorIsolationUnit() {
   const errorService = new ErrorIsolationService();
   
   // Test error boundary configurations
-  const sources: ErrorSource['_output'][] = ['toast', 'eventbrite', 'opendate', 'wisk', 'resy', 'audience_republic', 'meta'];
+  const sources: z.infer<typeof ErrorSource>[] = ['toast', 'eventbrite', 'opendate', 'wisk', 'resy', 'audience_republic', 'meta'];
   
   console.log('Error Boundary Configurations:');
   sources.forEach(source => {
@@ -106,7 +107,7 @@ function testKPICalculatorHelpers() {
 function testAlertRules() {
   console.log('\n📋 Testing Alert Rule Definitions...\n');
   
-  const alertTypes: AlertType['_output'][] = [
+  const alertTypes: z.infer<typeof AlertType>[] = [
     'low_ticket_sales',
     'high_variance', 
     'stock_outage',
@@ -116,7 +117,7 @@ function testAlertRules() {
     'system_error'
   ];
 
-  const severities: AlertSeverity['_output'][] = ['critical', 'high', 'medium', 'low'];
+  const severities: z.infer<typeof AlertSeverity>[] = ['critical', 'high', 'medium', 'low'];
 
   console.log('Alert Types:', alertTypes.join(', '));
   console.log('Severity Levels:', severities.join(', '));

@@ -51,7 +51,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // 3. Test Toast API connection
-    const connector = new ToastConnector(supabase);
+    const connectorConfig = {
+      timeout: 30000,
+      retries: 3,
+      retryDelay: 1000
+    };
+    
+    const connector = new ToastConnector(creds, connectorConfig, supabase);
     
     // Fetch last 24 hours of data
     const endDate = new Date();
@@ -60,10 +66,23 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     console.log(`Fetching Toast data from ${startDate.toISOString()} to ${endDate.toISOString()}`);
     
-    const data = await connector.fetchData({
-      venueId: venue.id,
-      dateRange: { start: startDate, end: endDate }
-    });
+    // Fetch orders
+    const ordersResult = await connector.fetchOrders(
+      creds.credentials.locationGuid,
+      startDate,
+      endDate
+    );
+    
+    const orders = Array.isArray(ordersResult.data) 
+      ? ordersResult.data 
+      : (ordersResult.data && 'data' in ordersResult.data ? ordersResult.data.data : []);
+    
+    const data = {
+      orders: orders || [],
+      payments: [],
+      lineItems: [],
+      customers: []
+    };
 
     // 4. Check what data we got
     const summary = {

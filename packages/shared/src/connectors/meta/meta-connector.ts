@@ -105,6 +105,7 @@ export class MetaConnector extends BaseConnector {
     since?: Date,
     until?: Date
   ): Promise<FetchResult<MetaPageInsights[]>> {
+    const startTime = Date.now();
     try {
       const params = new URLSearchParams({
         access_token: this.metaCredentials.accessToken,
@@ -123,7 +124,13 @@ export class MetaConnector extends BaseConnector {
       );
 
       if (!result.success || !result.data) {
-        return { success: false, data: undefined, error: result.error };
+        return { 
+          success: false, 
+          data: undefined, 
+          error: result.error,
+          timestamp: new Date(),
+          duration: Date.now() - startTime,
+        };
       }
 
       const responseSchema = metaApiResponseSchema(
@@ -134,10 +141,19 @@ export class MetaConnector extends BaseConnector {
       return {
         success: true,
         data: validated.data,
-        error: null,
+        error: undefined,
+        timestamp: new Date(),
+        duration: Date.now() - startTime,
       };
     } catch (error) {
-      return this.handleError(error);
+      const errorResult = this.handleError(error);
+      return {
+        success: false,
+        data: undefined,
+        error: errorResult,
+        timestamp: new Date(),
+        duration: Date.now() - startTime,
+      };
     }
   }
 
@@ -149,6 +165,7 @@ export class MetaConnector extends BaseConnector {
     since?: Date,
     until?: Date
   ): Promise<FetchResult<MetaPost[]>> {
+    const startTime = Date.now();
     try {
       const params = new URLSearchParams({
         access_token: this.metaCredentials.accessToken,
@@ -167,7 +184,13 @@ export class MetaConnector extends BaseConnector {
       );
 
       if (!result.success || !result.data) {
-        return { success: false, data: undefined, error: result.error };
+        return { 
+          success: false, 
+          data: undefined, 
+          error: result.error,
+          timestamp: new Date(),
+          duration: Date.now() - startTime,
+        };
       }
 
       const posts: MetaPost[] = [];
@@ -209,10 +232,19 @@ export class MetaConnector extends BaseConnector {
       return {
         success: true,
         data: posts,
-        error: null,
+        error: undefined,
+        timestamp: new Date(),
+        duration: Date.now() - startTime,
       };
     } catch (error) {
-      return this.handleError(error);
+      const errorResult = this.handleError(error);
+      return {
+        success: false,
+        data: undefined,
+        error: errorResult,
+        timestamp: new Date(),
+        duration: Date.now() - startTime,
+      };
     }
   }
 
@@ -220,6 +252,7 @@ export class MetaConnector extends BaseConnector {
    * Fetch insights for a specific post
    */
   private async fetchPostInsights(postId: string): Promise<FetchResult<any>> {
+    const startTime = Date.now();
     try {
       const params = new URLSearchParams({
         access_token: this.metaCredentials.accessToken,
@@ -235,7 +268,13 @@ export class MetaConnector extends BaseConnector {
       );
 
       if (!result.success || !result.data?.data) {
-        return { success: false, data: undefined, error: result.error };
+        return { 
+          success: false, 
+          data: undefined, 
+          error: result.error,
+          timestamp: new Date(),
+          duration: Date.now() - startTime,
+        };
       }
 
       // Transform insights data
@@ -267,10 +306,19 @@ export class MetaConnector extends BaseConnector {
       return {
         success: true,
         data: insights,
-        error: null,
+        error: undefined,
+        timestamp: new Date(),
+        duration: Date.now() - startTime,
       };
     } catch (error) {
-      return this.handleError(error);
+      const errorResult = this.handleError(error);
+      return {
+        success: false,
+        data: undefined,
+        error: errorResult,
+        timestamp: new Date(),
+        duration: Date.now() - startTime,
+      };
     }
   }
 
@@ -278,6 +326,7 @@ export class MetaConnector extends BaseConnector {
    * Fetch audience demographics
    */
   async fetchAudienceDemographics(): Promise<FetchResult<MetaAudienceDemographics>> {
+    const startTime = Date.now();
     try {
       const params = new URLSearchParams({
         access_token: this.metaCredentials.accessToken,
@@ -294,7 +343,13 @@ export class MetaConnector extends BaseConnector {
       );
 
       if (!result.success || !result.data?.data) {
-        return { success: false, data: undefined, error: result.error };
+        return { 
+          success: false, 
+          data: undefined, 
+          error: result.error,
+          timestamp: new Date(),
+          duration: Date.now() - startTime,
+        };
       }
 
       const demographics: MetaAudienceDemographics = {
@@ -327,10 +382,19 @@ export class MetaConnector extends BaseConnector {
       return {
         success: true,
         data: demographics,
-        error: null,
+        error: undefined,
+        timestamp: new Date(),
+        duration: Date.now() - startTime,
       };
     } catch (error) {
-      return this.handleError(error);
+      const errorResult = this.handleError(error);
+      return {
+        success: false,
+        data: undefined,
+        error: errorResult,
+        timestamp: new Date(),
+        duration: Date.now() - startTime,
+      };
     }
   }
 
@@ -401,6 +465,7 @@ export class MetaConnector extends BaseConnector {
     startDate: Date,
     endDate: Date
   ): Promise<FetchResult<TransformedMetaData>> {
+    const startTime = Date.now();
     try {
       // Define metrics to fetch
       const pageMetrics = [
@@ -425,13 +490,31 @@ export class MetaConnector extends BaseConnector {
 
       // Check for failures
       if (!insightsResult.success) {
-        return { success: false, data: undefined, error: insightsResult.error };
+        return { 
+          success: false, 
+          data: undefined, 
+          error: insightsResult.error,
+          timestamp: new Date(),
+          duration: Date.now() - startTime,
+        };
       }
       if (!postsResult.success) {
-        return { success: false, data: undefined, error: postsResult.error };
+        return { 
+          success: false, 
+          data: undefined, 
+          error: postsResult.error,
+          timestamp: new Date(),
+          duration: Date.now() - startTime,
+        };
       }
       if (!demographicsResult.success) {
-        return { success: false, data: undefined, error: demographicsResult.error };
+        return { 
+          success: false, 
+          data: undefined, 
+          error: demographicsResult.error,
+          timestamp: new Date(),
+          duration: Date.now() - startTime,
+        };
       }
 
       const insights = insightsResult.data || [];
@@ -515,10 +598,19 @@ export class MetaConnector extends BaseConnector {
       return {
         success: true,
         data: transformedData,
-        error: null,
+        error: undefined,
+        timestamp: new Date(),
+        duration: Date.now() - startTime,
       };
     } catch (error) {
-      return this.handleError(error);
+      const errorResult = this.handleError(error);
+      return {
+        success: false,
+        data: undefined,
+        error: errorResult,
+        timestamp: new Date(),
+        duration: Date.now() - startTime,
+      };
     }
   }
 
@@ -531,7 +623,7 @@ export class MetaConnector extends BaseConnector {
   ): Promise<any> {
     const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
     const response = await fetch(url, options);
-    const data = await response.json();
+    const data = await response.json() as any;
     
     // Check for Facebook API errors
     if (data.error) {
@@ -548,8 +640,8 @@ export class MetaConnector extends BaseConnector {
     const connectorError: ConnectorError = {
       code: 'UNKNOWN',
       message: 'Unknown error occurred',
-      service: this.serviceName,
-      timestamp: new Date().toISOString(),
+      timestamp: new Date(),
+      retryable: false,
     };
 
     if (error) {
@@ -566,10 +658,12 @@ export class MetaConnector extends BaseConnector {
         case 17:
           connectorError.code = 'RATE_LIMIT';
           connectorError.message = 'Rate limit exceeded';
+          connectorError.retryable = true;
           break;
         case 1:
         case 2:
           connectorError.code = 'NETWORK_ERROR';
+          connectorError.retryable = true;
           break;
         default:
           connectorError.code = 'API_ERROR';
@@ -596,12 +690,13 @@ export class MetaConnector extends BaseConnector {
         code: 'INVALID_RESPONSE',
         message: 'Invalid response format from Meta API',
         service: this.serviceName,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(),
         details: error.errors,
+        retryable: false,
       } as ConnectorError;
     }
     
     // Use base class error handling
-    return super.handleError(error, context);
+    return super.handleError(error, context || 'unknown');
   }
 }

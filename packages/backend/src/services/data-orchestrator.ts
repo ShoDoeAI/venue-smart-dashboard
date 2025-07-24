@@ -275,17 +275,24 @@ export class DataOrchestrator {
     );
 
     // Get location if not specified
+    let finalLocationId: string;
     if (!locationId) {
       const locationsResult = await connector.fetchLocations();
       if (!locationsResult.success || !locationsResult.data?.length) {
         throw new Error('No Toast locations found');
       }
-      locationId = locationsResult.data[0].id;
+      const firstLocation = locationsResult.data[0];
+      if (!firstLocation?.id) {
+        throw new Error('Toast location missing ID');
+      }
+      finalLocationId = firstLocation.id;
+    } else {
+      finalLocationId = locationId;
     }
 
     // Fetch transactions
     const result = await connector.fetchAllTransactions(
-      locationId,
+      finalLocationId,
       dateRange?.start || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
       dateRange?.end || new Date()
     );
@@ -343,9 +350,15 @@ export class DataOrchestrator {
       this.supabase
     );
 
-    // Fetch events and attendees as transactions
+    // First fetch events
+    const eventsResult = await connector.fetchEvents();
+    if (!eventsResult.success || !eventsResult.data?.data?.length) {
+      return { recordCount: 0 }; // No events, no transactions
+    }
+
+    // Fetch transactions for the first event (or modify to handle multiple events)
     const result = await connector.fetchAllTransactions(
-      undefined, // Will fetch all organizations
+      eventsResult.data.data[0].id,
       dateRange?.start || new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
       dateRange?.end || new Date()
     );

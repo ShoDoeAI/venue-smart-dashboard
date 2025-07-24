@@ -271,7 +271,7 @@ export class AIContextAggregator {
   /**
    * Check for event-specific alerts
    */
-  private async checkEventAlerts(venueId: string): Promise<AIContext['activeAlerts']> {
+  private async checkEventAlerts(_venueId: string): Promise<AIContext['activeAlerts']> {
     const alerts: AIContext['activeAlerts'] = [];
 
     // Check Eventbrite events
@@ -282,7 +282,7 @@ export class AIContextAggregator {
       .limit(10);
 
     // Check OpenDate shows
-    const { data: opendateShows } = await this.supabase
+    const { data: _opendateShows } = await this.supabase
       .from('opendate_transactions')
       .select('confirm_id, event_name')
       .gte('transaction_date', new Date().toISOString())
@@ -299,7 +299,7 @@ export class AIContextAggregator {
       });
 
       // Check for low ticket sales
-      eventMap.forEach((count, eventId) => {
+      eventMap.forEach((count, _eventId) => {
         if (count < 10) {
           alerts.push({
             type: 'Event Alert',
@@ -424,8 +424,8 @@ export class AIContextAggregator {
     // Calculate summary metrics
     const totalRevenue = dailyKPIs.reduce((sum, day) => sum + (day.revenue_total || 0), 0);
     const totalTransactions = dailyKPIs.reduce((sum, day) => sum + (day.transaction_count || 0), 0);
-    const totalCustomers = dailyKPIs.reduce((sum, day) => sum + (day.unique_customers || 0), 0);
-    const avgDailyRevenue = totalRevenue / dailyKPIs.length;
+    // const totalCustomers = dailyKPIs.reduce((sum, day) => sum + (day.unique_customers || 0), 0); // Currently unused
+    // const avgDailyRevenue = totalRevenue / dailyKPIs.length; // Currently unused
 
     return {
       historicalTrends: {

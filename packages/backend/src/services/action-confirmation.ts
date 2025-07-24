@@ -8,13 +8,9 @@ import type {
   OpenDateAction,
   ToastUpdateItemPriceAction,
 } from '@venuesync/shared';
-import { KPICalculator } from './kpi-calculator';
 
 export class ActionConfirmationService {
-  private kpiCalculator: KPICalculator;
-
   constructor(private supabase: SupabaseClient<Database>) {
-    this.kpiCalculator = new KPICalculator(supabase);
   }
 
   /**
@@ -184,13 +180,13 @@ export class ActionConfirmationService {
         const priceDiff = newPrice - currentPrice;
         
         // Get event details to estimate impact
-        const { data: eventData } = await this.supabase
-          .from('eventbrite_transactions')
-          .select('*')
-          .eq('event_id', action.parameters.eventId)
-          .limit(50);
+        // const { data: eventData } = await this.supabase
+        //   .from('eventbrite_transactions')
+        //   .select('*')
+        //   .eq('event_id', action.parameters.eventId)
+        //   .limit(50);
 
-        const soldTickets = eventData?.length || 0;
+        // const soldTickets = eventData?.length || 0; // Currently unused
         const remainingCapacity = 100; // Would get actual from API
 
         impact.revenueChange = remainingCapacity * priceDiff;
@@ -357,20 +353,23 @@ export class ActionConfirmationService {
     }
 
     if (action.service === 'eventbrite' && action.actionType === 'update_capacity') {
-      const params = (action as EventbriteAction).parameters;
-      
-      // Suggest gradual capacity increase
-      if (params.newCapacity > params.currentCapacity * 1.5) {
-        alternatives.push({
-          description: 'Increase capacity gradually by 25%',
-          action: {
-            ...action,
-            parameters: {
-              ...params,
-              newCapacity: Math.floor(params.currentCapacity * 1.25),
+      const eventbriteAction = action as EventbriteAction;
+      if (eventbriteAction.actionType === 'update_capacity') {
+        const params = eventbriteAction.parameters;
+        
+        // Suggest gradual capacity increase
+        if (params.newCapacity > params.currentCapacity * 1.5) {
+          alternatives.push({
+            description: 'Increase capacity gradually by 25%',
+            action: {
+              ...action,
+              parameters: {
+                ...params,
+                newCapacity: Math.floor(params.currentCapacity * 1.25),
+              },
             },
-          },
-        });
+          });
+        }
       }
     }
 
