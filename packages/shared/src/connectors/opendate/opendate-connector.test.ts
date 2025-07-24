@@ -30,6 +30,8 @@ describe('OpenDateConnector', () => {
   let connector: OpenDateConnector;
   let mockSupabase: ReturnType<typeof createMockSupabaseClient>;
   let mockAxiosInstance: any;
+  let responseInterceptorSuccess: any;
+  let responseInterceptorError: any;
 
   beforeEach(() => {
     mockSupabase = createMockSupabaseClient();
@@ -39,6 +41,7 @@ describe('OpenDateConnector', () => {
       post: vi.fn(),
       put: vi.fn(),
       delete: vi.fn(),
+      request: vi.fn(),
       defaults: {
         headers: {},
       },
@@ -47,7 +50,10 @@ describe('OpenDateConnector', () => {
           use: vi.fn(),
         },
         response: {
-          use: vi.fn(),
+          use: vi.fn((success, error) => {
+            responseInterceptorSuccess = success;
+            responseInterceptorError = error;
+          }),
         },
       },
     };
@@ -788,13 +794,24 @@ describe('OpenDateConnector', () => {
 
   describe('OAuth token refresh', () => {
     it('should refresh token on 401 response', async () => {
-      // First request returns 401
-      mockAxiosInstance.get.mockRejectedValueOnce({
-        response: { status: 401 },
+      // Create a proper 401 error object
+      const error401 = {
+        response: { 
+          status: 401,
+          data: { error: 'Unauthorized' }
+        },
         config: { 
           url: '/artists',
           headers: {},
+          method: 'get'
         },
+        isAxiosError: true,
+      };
+
+      // Mock the initial request to trigger interceptor
+      mockAxiosInstance.get.mockImplementationOnce(() => {
+        // Trigger the error interceptor with 401 error
+        return responseInterceptorError(error401);
       });
 
       // Token refresh succeeds
@@ -805,8 +822,8 @@ describe('OpenDateConnector', () => {
         },
       });
 
-      // Retry succeeds
-      mockAxiosInstance.request = vi.fn().mockResolvedValueOnce({
+      // Retry request succeeds
+      mockAxiosInstance.request.mockResolvedValueOnce({
         data: {
           data: [],
           pagination: {
@@ -820,8 +837,10 @@ describe('OpenDateConnector', () => {
         },
       });
 
-      await connector.fetchArtists();
+      // Make the request
+      const result = await connector.fetchArtists();
 
+      // Verify token refresh was called
       expect(axios.post).toHaveBeenCalledWith(
         'https://api.opendate.io/v1/auth/refresh',
         expect.objectContaining({
@@ -830,7 +849,68 @@ describe('OpenDateConnector', () => {
           client_secret: 'test-client-secret',
         })
       );
+      
+      // Verify authorization header was updated
       expect(mockAxiosInstance.defaults.headers['Authorization']).toBe('Bearer new-access-token');
+      
+      // Verify retry was attempted
+      expect(mockAxiosInstance.request).toHaveBeenCalledWith(
+        expect.objectContaining({
+          url: '/artists',
+          headers: expect.objectContaining({
+            'Authorization': 'Bearer new-access-token'
+          })
+        })
+      );
+      
+      // Verify result is successful
+      expect(result.success).toBe(true);
+      expect(result.data?.data).toEqual([]);
+    });
+
+    it('should handle token refresh failure', async () => {
+      // Create a proper 401 error object
+      const error401 = {
+        response: { 
+          status: 401,
+          data: { error: 'Unauthorized' }
+        },
+        config: { 
+          url: '/artists',
+          headers: {},
+          method: 'get'
+        },
+        isAxiosError: true,
+      };
+
+      // Mock the initial request to trigger interceptor
+      mockAxiosInstance.get.mockImplementationOnce(() => {
+        // Trigger the error interceptor with 401 error
+        return responseInterceptorError(error401);
+      });
+
+      // Token refresh fails
+      (axios.post as any).mockRejectedValueOnce(new Error('Refresh failed'));
+
+      // Make the request
+      const result = await connector.fetchArtists();
+
+      // Verify token refresh was attempted
+      expect(axios.post).toHaveBeenCalledWith(
+        'https://api.opendate.io/v1/auth/refresh',
+        expect.objectContaining({
+          refresh_token: 'test-refresh-token',
+          client_id: 'test-client-id',
+          client_secret: 'test-client-secret',
+        })
+      );
+      
+      // Verify request was not retried
+      expect(mockAxiosInstance.request).not.toHaveBeenCalled();
+      
+      // Verify result is failure
+      expect(result.success).toBe(false);
+      expect(result.error).toBeDefined();
     });
   });
 });

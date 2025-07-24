@@ -59,7 +59,7 @@ describe('ToastConnector', () => {
     it('should initialize with sandbox URL when environment is sandbox', () => {
       expect(axios.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          baseURL: 'https://api-sandbox.toasttab.com',
+          baseURL: 'https://ws-sandbox-api.toasttab.com',
         })
       );
     });
@@ -78,7 +78,7 @@ describe('ToastConnector', () => {
       
       expect(axios.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          baseURL: 'https://api.toasttab.com',
+          baseURL: 'https://ws-api.toasttab.com',
         })
       );
     });

@@ -12,7 +12,13 @@
     "format": "prettier --write \"src/**/*.ts\" \"api/**/*.ts\"",
     "test": "vitest",
     "test:watch": "vitest watch",
-    "test:square-flow": "tsx src/scripts/test-toast-flow.ts"
+    "test:square-flow": "tsx src/scripts/test-toast-flow.ts",
+    "test:perf": "vitest run src/performance/*.perf.ts",
+    "test:perf:api": "vitest run src/performance/api-endpoints.perf.ts",
+    "test:perf:data": "vitest run src/performance/data-processing.perf.ts",
+    "test:perf:realtime": "vitest run src/performance/realtime.perf.ts",
+    "test:perf:db": "vitest run src/performance/database.perf.ts",
+    "perf:report": "tsx src/performance/run-performance-tests.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.17.2",
