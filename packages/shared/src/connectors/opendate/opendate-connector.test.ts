@@ -30,7 +30,6 @@ describe('OpenDateConnector', () => {
   let connector: OpenDateConnector;
   let mockSupabase: ReturnType<typeof createMockSupabaseClient>;
   let mockAxiosInstance: any;
-  let responseInterceptorSuccess: any;
   let responseInterceptorError: any;
 
   beforeEach(() => {
@@ -50,8 +49,7 @@ describe('OpenDateConnector', () => {
           use: vi.fn(),
         },
         response: {
-          use: vi.fn((success, error) => {
-            responseInterceptorSuccess = success;
+          use: vi.fn((_success, error) => {
             responseInterceptorError = error;
           }),
         },
