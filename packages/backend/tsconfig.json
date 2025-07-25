@@ -10,7 +10,7 @@
     "moduleResolution": "node"
   },
   "include": ["src/**/*", "api/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"],
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts", "**/*.perf.ts", "src/performance/**", "src/performance.bak/**"],
   "references": [
     { "path": "../shared" }
   ]

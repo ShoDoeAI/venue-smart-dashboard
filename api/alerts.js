@@ -1,67 +1,52 @@
-const { createClient } = require('@supabase/supabase-js');
-
-module.exports = async (req, res) => {
-  // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  // Only allow GET and POST methods
-  if (req.method !== 'GET' && req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  try {
-    // For now, return mock alerts since AlertGenerator requires compilation
-    const mockAlerts = [
-      {
-        id: '1',
-        type: 'low_ticket_sales',
-        severity: 'medium',
-        title: 'Low Ticket Sales',
-        message: 'Ticket sales are 30% below average for upcoming events',
-        created_at: new Date().toISOString(),
-        resolved_at: null,
-        action_suggestions: [
-          {
-            action: 'create_promo_code',
-            description: 'Create a 20% discount code for the next 48 hours',
-            estimated_impact: 'Could increase sales by 15-25%',
-          },
-        ],
-      },
-    ];
-
-    if (req.method === 'GET') {
-      return res.status(200).json({
-        success: true,
-        alerts: mockAlerts,
-        count: mockAlerts.length,
-      });
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = handler;
+const alert_generator_1 = require("../src/services/alert-generator");
+async function handler(req, res) {
+    // Only allow GET and POST methods
+    if (req.method !== 'GET' && req.method !== 'POST') {
+        res.status(405).json({ error: 'Method not allowed' });
+        return;
     }
-
-    if (req.method === 'POST') {
-      const { action, alertId } = req.body;
-
-      if (action === 'resolve' && alertId) {
-        return res.status(200).json({
-          success: true,
-          message: 'Alert resolved successfully',
+    try {
+        // const supabase = createClient<Database>(
+        //   process.env.SUPABASE_URL!,
+        //   process.env.SUPABASE_SERVICE_KEY!
+        // );
+        const alertGenerator = new alert_generator_1.AlertGenerator();
+        if (req.method === 'GET') {
+            // Get active alerts
+            const alerts = await alertGenerator.getActiveAlerts();
+            const sortedAlerts = alertGenerator.sortByPriority(alerts);
+            res.status(200).json({
+                success: true,
+                alerts: sortedAlerts,
+                count: sortedAlerts.length,
+            });
+            return;
+        }
+        if (req.method === 'POST') {
+            const { action, alertId } = req.body;
+            if (action === 'resolve' && alertId) {
+                await alertGenerator.resolveAlert(alertId);
+                res.status(200).json({
+                    success: true,
+                    message: 'Alert resolved successfully',
+                });
+                return;
+            }
+            res.status(400).json({
+                error: 'Invalid action or missing alertId',
+            });
+            return;
+        }
+    }
+    catch (error) {
+        console.error('Error handling alerts:', error);
+        res.status(500).json({
+            error: error instanceof Error ? error.message : 'Internal server error',
         });
-      }
-
-      return res.status(400).json({
-        error: 'Invalid action or missing alertId',
-      });
+        return;
     }
-  } catch (error) {
-    console.error('Error handling alerts:', error);
-    return res.status(500).json({
-      error: error.message || 'Internal server error',
-    });
-  }
-};
+}
+//# sourceMappingURL=alerts.js.map

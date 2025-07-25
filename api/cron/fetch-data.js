@@ -1,71 +1,150 @@
-const axios = require('axios');
-
-// Toast credentials
-const TOAST_CLIENT_ID = process.env.TOAST_CLIENT_ID || 'mT5Nsj9fT2XhQ9p0OvaONnqpt1IPkrh7';
-const TOAST_CLIENT_SECRET = process.env.TOAST_CLIENT_SECRET || '-PvyQasB-AopTOeL1ogLmQ5s5ZH1AbvwKdv2Shbe0NghzbmPvWyQ5O56akh6VNn4';
-const TOAST_LOCATION_ID = process.env.TOAST_LOCATION_ID || 'bfb355cb-55e4-4f57-af16-d0d18c11ad3c';
-
-module.exports = async (req, res) => {
-  console.log('Cron job: Fetching data from APIs...');
-  
-  try {
-    // Authenticate with Toast
-    const authResponse = await axios.post(
-      'https://ws-api.toasttab.com/authentication/v1/authentication/login',
-      {
-        clientId: TOAST_CLIENT_ID,
-        clientSecret: TOAST_CLIENT_SECRET,
-        userAccessType: 'TOAST_MACHINE_CLIENT',
-      }
-    );
-    
-    const token = authResponse.data.token.accessToken;
-    
-    // Fetch today's orders
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    
-    const ordersResponse = await axios.get(
-      `https://ws-api.toasttab.com/orders/v2/ordersBulk?startDate=${today.toISOString()}&endDate=${tomorrow.toISOString()}&pageSize=1000`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Toast-Restaurant-External-ID': TOAST_LOCATION_ID,
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.default = handler;
+const supabase_js_1 = require("@supabase/supabase-js");
+const data_orchestrator_1 = require("../../src/services/data-orchestrator");
+/**
+ * Vercel Cron job to fetch data from all integrated APIs
+ * Runs every 3 hours: 0 star/3 star star star
+ */
+async function handler(req, res) {
+    // Verify this is being called by Vercel Cron
+    const authHeader = req.headers.authorization;
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const startTime = Date.now();
+    console.log(`[CRON] Starting data fetch at ${new Date().toISOString()}`);
+    try {
+        // Initialize Supabase client
+        const supabase = (0, supabase_js_1.createClient)(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+        // Get all active venues
+        const { data: venues, error: venuesError } = await supabase
+            .from('venues')
+            .select('id, name')
+            .eq('is_active', true);
+        if (venuesError) {
+            throw new Error(`Failed to fetch venues: ${venuesError.message}`);
         }
-      }
-    );
-    
-    const orders = ordersResponse.data || [];
-    let totalRevenue = 0;
-    
-    orders.forEach(order => {
-      if (order.checks) {
-        order.checks.forEach(check => {
-          totalRevenue += (check.totalAmount || 0) / 100;
+        if (!venues || venues.length === 0) {
+            console.log('[CRON] No active venues found');
+            return res.status(200).json({
+                message: 'No active venues to process',
+                duration: Date.now() - startTime,
+            });
+        }
+        console.log(`[CRON] Found ${venues.length} active venue(s)`);
+        // Initialize orchestrator
+        const orchestrator = new data_orchestrator_1.DataOrchestrator(supabase);
+        // Process each venue in parallel
+        const results = await Promise.allSettled(venues.map(async (venue) => {
+            console.log(`[CRON] Processing venue: ${venue.name} (${venue.id})`);
+            try {
+                // Get API statuses
+                const apiStatuses = await orchestrator.getApiStatuses(venue.id);
+                // Determine which APIs need updates
+                const apisToFetch = [];
+                if (apiStatuses.toast.needsUpdate)
+                    apisToFetch.push('toast');
+                if (apiStatuses.eventbrite.needsUpdate)
+                    apisToFetch.push('eventbrite');
+                if (apiStatuses.opendate?.needsUpdate)
+                    apisToFetch.push('opendate');
+                if (apisToFetch.length === 0) {
+                    console.log(`[CRON] Skipping ${venue.name} - all APIs recently updated`);
+                    return {
+                        venueId: venue.id,
+                        venueName: venue.name,
+                        skipped: true,
+                        reason: 'All APIs recently updated',
+                    };
+                }
+                // Fetch data from APIs that need updates
+                const result = await orchestrator.fetchAllData({
+                    venueId: venue.id,
+                    apis: apisToFetch,
+                    dateRange: {
+                        start: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+                        end: new Date(),
+                    },
+                });
+                return {
+                    venueId: venue.id,
+                    venueName: venue.name,
+                    ...result,
+                };
+            }
+            catch (error) {
+                throw error;
+            }
+        }));
+        // Summarize results
+        const summary = {
+            totalVenues: venues.length,
+            processed: 0,
+            skipped: 0,
+            failed: 0,
+            results: [],
+        };
+        results.forEach((result, index) => {
+            if (result.status === 'fulfilled') {
+                const data = result.value;
+                if (data.skipped) {
+                    summary.skipped++;
+                }
+                else {
+                    summary.processed++;
+                }
+                summary.results.push(data);
+            }
+            else {
+                summary.failed++;
+                summary.results.push({
+                    venueId: venues[index].id,
+                    venueName: venues[index].name,
+                    error: result.reason.message || 'Unknown error',
+                });
+            }
         });
-      }
-    });
-    
-    console.log(`Fetched ${orders.length} orders, total revenue: $${totalRevenue.toFixed(2)}`);
-    
-    // Store in database (simplified for now)
-    res.status(200).json({
-      success: true,
-      message: 'Data fetched successfully',
-      data: {
-        orders: orders.length,
-        revenue: totalRevenue,
-        timestamp: new Date().toISOString()
-      }
-    });
-    
-  } catch (error) {
-    console.error('Cron error:', error.response?.data || error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-};
+        const duration = Date.now() - startTime;
+        console.log(`[CRON] Data fetch completed in ${duration}ms`);
+        console.log(`[CRON] Summary: ${summary.processed} processed, ${summary.skipped} skipped, ${summary.failed} failed`);
+        // Log to cron_logs table
+        await supabase.from('cron_logs').insert({
+            job_name: 'fetch-data',
+            status: summary.failed > 0 ? 'partial_success' : 'success',
+            duration_ms: duration,
+            metadata: summary,
+            executed_at: new Date().toISOString(),
+        });
+        return res.status(200).json({
+            success: true,
+            duration,
+            summary,
+        });
+    }
+    catch (error) {
+        const duration = Date.now() - startTime;
+        console.error('[CRON] Data fetch failed:', error);
+        // Log error to cron_logs table
+        try {
+            const supabase = (0, supabase_js_1.createClient)(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+            await supabase.from('cron_logs').insert({
+                job_name: 'fetch-data',
+                status: 'failed',
+                duration_ms: duration,
+                error_message: error instanceof Error ? error.message : 'Unknown error',
+                executed_at: new Date().toISOString(),
+            });
+        }
+        catch (logError) {
+            console.error('[CRON] Failed to log error:', logError);
+        }
+        return res.status(500).json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+            duration,
+        });
+    }
+}
+//# sourceMappingURL=fetch-data.js.map
