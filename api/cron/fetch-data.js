@@ -1,6 +1,4 @@
 "use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = handler;
 const supabase_js_1 = require("@supabase/supabase-js");
 const data_orchestrator_1 = require("../../src/services/data-orchestrator");
 /**
@@ -147,4 +145,6 @@ async function handler(req, res) {
         });
     }
 }
+
+module.exports = handler;
 //# sourceMappingURL=fetch-data.js.map
