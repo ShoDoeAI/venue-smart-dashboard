@@ -119,7 +119,7 @@ export default function DashboardV2() {
   }
 
   // Use real API data
-  const hourlyRevenue = dashboardData?.kpis?.hourlyBreakdown?.map((hour: any) => ({
+  const hourlyRevenue = (dashboardData as any)?.kpis?.hourlyBreakdown?.map((hour: any) => ({
     hour: `${hour.hour}:00`,
     revenue: hour.revenue,
     transactions: hour.transactions
