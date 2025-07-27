@@ -160,6 +160,7 @@ export default async function handler(
     return res.status(500).json({
       success: false,
       error: error.message || 'Unknown error',
+      details: error.response?.data || error.response?.statusText || 'No additional details',
       timestamp: new Date().toISOString()
     });
   }
