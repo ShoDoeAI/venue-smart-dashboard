@@ -89,11 +89,12 @@ export default async function handler(
     if (transactions.length > 0) {
       const { data: saved, error: saveError } = await supabase
         .from('simple_transactions')
-        .upsert(transactions, { onConflict: 'source,transaction_id' })
+        .upsert(transactions)
         .select();
 
       if (saveError) {
-        throw new Error(`Failed to save transactions: ${saveError.message}`);
+        console.error('Save error:', saveError);
+        throw new Error(`Failed to save transactions: ${saveError.message || JSON.stringify(saveError)}`);
       }
 
       console.log(`Saved ${saved?.length || 0} transactions`);
