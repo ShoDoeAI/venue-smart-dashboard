@@ -36,7 +36,8 @@ export default async function handler(
         params: {
           startDate: today.toISOString(),
           endDate: new Date().toISOString(),
-          pageSize: 1000
+          pageSize: 100,
+          page: 1
         },
         headers: {
           Authorization: `Bearer ${token}`,
