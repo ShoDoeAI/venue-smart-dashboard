@@ -318,9 +318,9 @@ export class KPICalculator {
                              opendateToday.transactions.length;
     
     const todayCustomers = new Set([
-      ...toastToday.transactions.map(t => t.customer_id || t.customer_email),
-      ...eventbriteToday.transactions.map(t => t.customer_id || t.customer_email),
-      ...opendateToday.transactions.map(t => t.customer_id || t.customer_email),
+      ...toastToday.transactions.map(t => t.customer_email || t.customer_name || t.customer_id),
+      ...eventbriteToday.transactions.map(t => t.customer_email || t.customer_id),
+      ...opendateToday.transactions.map(t => t.customer_email || t.customer_id),
     ].filter(Boolean)).size;
 
     const lastHourRevenue = toastHour.revenue + eventbriteHour.revenue + opendateHour.revenue;
@@ -356,6 +356,25 @@ export class KPICalculator {
   // Helper methods
 
   private async fetchToastTransactions(_venueId: string, start: Date, end: Date) {
+    // First try simple_transactions table
+    const { data: simpleData, error: simpleError } = await this.supabase
+      .from('simple_transactions')
+      .select('*')
+      .eq('source', 'toast')
+      .gte('transaction_date', start.toISOString())
+      .lte('transaction_date', end.toISOString());
+
+    if (!simpleError && simpleData && simpleData.length > 0) {
+      // Use simple transactions (amount already in dollars)
+      const revenue = simpleData.reduce((sum, tx) => sum + (tx.amount || 0), 0);
+      return { 
+        transactions: simpleData, 
+        revenue,
+        inventory: null
+      };
+    }
+
+    // Fallback to original toast_transactions table
     const { data, error } = await this.supabase
       .from('toast_transactions')
       .select('*')
