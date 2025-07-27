@@ -135,13 +135,17 @@ export default async function handler(
     }
 
     if (transactions.length > 0) {
-      const { error: txError } = await supabase
+      const { data: savedTx, error: txError } = await supabase
         .from('toast_transactions')
-        .upsert(transactions);
+        .upsert(transactions)
+        .select();
       
       if (txError) {
         console.error('Error saving transactions:', txError);
+        throw new Error(`Failed to save transactions: ${txError.message}`);
       }
+      
+      console.log(`Saved ${savedTx?.length || 0} transactions`);
     }
 
     return res.status(200).json({
