@@ -10,8 +10,6 @@
     "moduleResolution": "node"
   },
   "include": ["src/**/*", "api/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts"],
-  "references": [
-    { "path": "../shared" }
-  ]
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "**/*.spec.ts", "**/*.perf.ts"],
+  "references": [{ "path": "../shared" }]
 }
