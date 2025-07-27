@@ -87,13 +87,17 @@ export default async function handler(
 
     // Save to simple_transactions table
     if (transactions.length > 0) {
+      console.log(`Attempting to save ${transactions.length} transactions`);
+      console.log('Sample transaction:', JSON.stringify(transactions[0], null, 2));
+      
       const { data: saved, error: saveError } = await supabase
         .from('simple_transactions')
-        .upsert(transactions)
+        .insert(transactions)
         .select();
 
       if (saveError) {
         console.error('Save error:', saveError);
+        console.error('Error details:', JSON.stringify(saveError, null, 2));
         throw new Error(`Failed to save transactions: ${saveError.message || JSON.stringify(saveError)}`);
       }
 
