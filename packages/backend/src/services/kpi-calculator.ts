@@ -359,15 +359,16 @@ export class KPICalculator {
     const { data, error } = await this.supabase
       .from('toast_transactions')
       .select('*')
-      .gte('transaction_date', start.toISOString())
-      .lte('transaction_date', end.toISOString());
+      .gte('created_at', start.toISOString())
+      .lte('created_at', end.toISOString());
 
     if (error) {
       console.error('Error fetching Toast transactions:', error);
       return { transactions: [], revenue: 0, inventory: null };
     }
 
-    const revenue = data?.reduce((sum, tx) => sum + (tx.total_amount || 0), 0) || 0;
+    // Convert from cents to dollars
+    const revenue = data?.reduce((sum, tx) => sum + ((tx.total_amount || 0) / 100), 0) || 0;
     
     return { 
       transactions: data || [], 
