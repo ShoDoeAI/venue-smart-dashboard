@@ -251,21 +251,16 @@ export class DataOrchestrator {
     locationId?: string,
     dateRange?: { start: Date; end: Date }
   ) {
-    // Get Toast credentials
-    const { data: credentials, error } = await this.supabase
-      .from('api_credentials')
-      .select('*')
-      .eq('venue_id', venueId)
-      .eq('service', 'toast')
-      .single();
-
-    if (error || !credentials) {
-      throw new Error('Toast credentials not found');
-    }
+    // Use environment variables directly - this is a single-venue app
+    const credentials = {
+      client_id: process.env.TOAST_CLIENT_ID || 'mT5Nsj9fT2XhQ9p0OvaONnqpt1IPkrh7',
+      client_secret: process.env.TOAST_CLIENT_SECRET || '-PvyQasB-AopTOeL1ogLmQ5s5ZH1AbvwKdv2Shbe0NghzbmPvWyQ5O56akh6VNn4',
+      location_id: process.env.TOAST_LOCATION_ID || 'bfb355cb-55e4-4f57-af16-d0d18c11ad3c'
+    };
 
     // Initialize connector
     const connector = new ToastConnector(
-      credentials,
+      credentials as any,
       {
         timeout: 30000,
         maxRetries: 3,
@@ -327,21 +322,20 @@ export class DataOrchestrator {
     venueId: string,
     dateRange?: { start: Date; end: Date }
   ) {
-    // Get Eventbrite credentials
-    const { data: credentials, error } = await this.supabase
-      .from('api_credentials')
-      .select('*')
-      .eq('venue_id', venueId)
-      .eq('service', 'eventbrite')
-      .single();
+    // Use environment variables directly - this is a single-venue app
+    const credentials = {
+      oauth_token: process.env.EVENTBRITE_OAUTH_TOKEN || '',
+      organization_id: process.env.EVENTBRITE_ORG_ID || ''
+    };
 
-    if (error || !credentials) {
-      throw new Error('Eventbrite credentials not found');
+    if (!credentials.oauth_token) {
+      console.log('Eventbrite OAuth token not configured, skipping');
+      return { recordCount: 0 };
     }
 
     // Initialize connector
     const connector = new EventbriteConnector(
-      credentials,
+      credentials as any,
       {
         timeout: 30000,
         maxRetries: 3,
@@ -393,21 +387,19 @@ export class DataOrchestrator {
     venueId: string,
     dateRange?: { start: Date; end: Date }
   ) {
-    // Get OpenDate credentials
-    const { data: credentials, error } = await this.supabase
-      .from('api_credentials')
-      .select('*')
-      .eq('venue_id', venueId)
-      .eq('service', 'opendate')
-      .single();
+    // Use environment variables directly - this is a single-venue app
+    const credentials = {
+      api_key: process.env.OPENDATE_API_KEY || ''
+    };
 
-    if (error || !credentials) {
-      throw new Error('OpenDate.io credentials not found');
+    if (!credentials.api_key) {
+      console.log('OpenDate API key not configured, skipping');
+      return { recordCount: 0 };
     }
 
     // Initialize connector
     const connector = new OpenDateConnector(
-      credentials,
+      credentials as any,
       {
         timeout: 30000,
         maxRetries: 3,

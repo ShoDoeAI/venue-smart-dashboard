@@ -20,13 +20,14 @@ export default async function handler(
     const { data: credentials, error } = await supabase
       .from('api_credentials')
       .upsert({
-        venue_id: 'bfb355cb-55e4-4f57-af16-d0d18c11ad3c',
         service: 'toast',
-        client_id: process.env.TOAST_CLIENT_ID || 'mT5Nsj9fT2XhQ9p0OvaONnqpt1IPkrh7',
-        client_secret: process.env.TOAST_CLIENT_SECRET || '-PvyQasB-AopTOeL1ogLmQ5s5ZH1AbvwKdv2Shbe0NghzbmPvWyQ5O56akh6VNn4',
-        sandbox_mode: false,
-        is_active: true,
-        last_verified_at: new Date().toISOString()
+        credentials: {
+          client_id: process.env.TOAST_CLIENT_ID || 'mT5Nsj9fT2XhQ9p0OvaONnqpt1IPkrh7',
+          client_secret: process.env.TOAST_CLIENT_SECRET || '-PvyQasB-AopTOeL1ogLmQ5s5ZH1AbvwKdv2Shbe0NghzbmPvWyQ5O56akh6VNn4',
+          location_id: 'bfb355cb-55e4-4f57-af16-d0d18c11ad3c',
+          venue_id: 'bfb355cb-55e4-4f57-af16-d0d18c11ad3c'
+        },
+        is_active: true
       } as any)
       .select()
       .single();
