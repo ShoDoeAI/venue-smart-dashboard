@@ -95,24 +95,39 @@ export default async function handler(
 
     // Save individual transactions
     const transactions = [];
+    const snapshotTimestamp = new Date().toISOString();
+    
     for (const order of orders) {
       if (order.checks) {
         for (const check of order.checks) {
           transactions.push({
-            venue_id: venueId,
-            source: 'toast',
+            snapshot_timestamp: snapshotTimestamp,
             transaction_id: check.guid,
-            transaction_date: order.paidDate || order.createdDate,
+            location_id: locationId,
+            created_at: order.createdDate || new Date().toISOString(),
+            total_amount: check.totalAmount || 0, // Already in cents
+            tax_amount: check.taxAmount || 0,
+            tip_amount: 0, // Would need to extract from payments
+            discount_amount: 0, // Would need to extract from appliedDiscounts
+            service_charge_amount: 0, // Would need to extract
+            source_type: 'POS',
+            status: order.voided ? 'VOIDED' : 'COMPLETED',
+            receipt_number: check.displayNumber,
             customer_id: check.customer?.guid || null,
             customer_name: check.customer ? 
               `${check.customer.firstName || ''} ${check.customer.lastName || ''}`.trim() : null,
-            total_amount: (check.totalAmount || 0) / 100,
-            items: check.selections || [],
+            customer_email: check.customer?.email || null,
+            team_member_id: order.server?.guid || null,
+            device_id: order.createdDevice?.id || null,
+            business_date: order.businessDate?.toString() || null,
+            revenue_center_id: order.revenueCenter?.guid || null,
             metadata: {
               orderId: order.guid,
-              checkNumber: check.displayNumber,
-              server: order.server
-            }
+              orderNumber: order.displayNumber,
+              source: order.source,
+              diningOption: order.diningOption,
+              numberOfGuests: order.numberOfGuests
+            } as any
           });
         }
       }
