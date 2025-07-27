@@ -54,7 +54,7 @@ export class AIContextAggregator {
   private async getVenueDetails(venueId: string) {
     const { data, error } = await this.supabase
       .from('venues')
-      .select('id, name, type')
+      .select('*')
       .eq('id', venueId)
       .single();
 
@@ -65,7 +65,7 @@ export class AIContextAggregator {
     return {
       id: data.id,
       name: data.name,
-      type: data.type || 'restaurant',
+      type: 'restaurant', // Default to restaurant
     };
   }
 
