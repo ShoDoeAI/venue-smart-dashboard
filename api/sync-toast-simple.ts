@@ -120,15 +120,11 @@ export default async function handler(
             customer_email: check.customer?.email || null,
             team_member_id: order.server?.guid || null,
             device_id: order.createdDevice?.id || null,
-            business_date: order.businessDate?.toString() || null,
-            revenue_center_id: order.revenueCenter?.guid || null,
-            metadata: {
-              orderId: order.guid,
-              orderNumber: order.displayNumber,
-              source: order.source,
-              diningOption: order.diningOption,
-              numberOfGuests: order.numberOfGuests
-            } as any
+            item_count: check.selections?.length || 0,
+            unique_item_count: new Set(check.selections?.map((s: any) => s.item?.guid)).size || 0,
+            itemizations: check.selections || [],
+            payment_details: check.payments || [],
+            refunds: check.refunds || []
           });
         }
       }
