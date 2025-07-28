@@ -1,175 +1,188 @@
-# VenueSync - AI-Powered Venue Management Dashboard
+# Supabase CLI
 
-Unified venue operations platform aggregating data from multiple service APIs with AI-powered insights via Claude.
+[![Coverage Status](https://coveralls.io/repos/github/supabase/cli/badge.svg?branch=main)](https://coveralls.io/github/supabase/cli?branch=main) [![Bitbucket Pipelines](https://img.shields.io/bitbucket/pipelines/supabase-cli/setup-cli/master?style=flat-square&label=Bitbucket%20Canary)](https://bitbucket.org/supabase-cli/setup-cli/pipelines) [![Gitlab Pipeline Status](https://img.shields.io/gitlab/pipeline-status/sweatybridge%2Fsetup-cli?label=Gitlab%20Canary)
+](https://gitlab.com/sweatybridge/setup-cli/-/pipelines)
 
-## 🚀 Quick Links
+[Supabase](https://supabase.io) is an open source Firebase alternative. We're building the features of Firebase using enterprise-grade open source tools.
 
-- [**Quick Start Guide**](QUICKSTART.md) - Get running in 15 minutes
-- [**Testing Guide**](TESTING.md) - Complete testing documentation
-- [**Deployment Guide**](DEPLOYMENT.md) - Deploy to production with Vercel
-- [**Dashboard Demo**](dashboard-demo.html) - See it in action
+This repository contains all the functionality for Supabase CLI.
 
-## Overview
+- [x] Running Supabase locally
+- [x] Managing database migrations
+- [x] Creating and deploying Supabase Functions
+- [x] Generating types directly from your database schema
+- [x] Making authenticated HTTP requests to [Management API](https://supabase.com/docs/reference/api/introduction)
 
-VenueSync provides real-time visibility into all aspects of venue operations by:
+## Getting started
 
-- Aggregating data from Toast POS, Eventbrite, OpenDate.io, and more
-- Calculating key performance indicators and generating alerts
-- Providing natural language insights through Claude AI integration
-- Enabling action execution across platforms with confirmation
-- Beautiful React dashboard with real-time updates
+### Install the CLI
 
-## Tech Stack
-
-- **TypeScript** (strict mode)
-- **React + Vite** (frontend)
-- **Vercel Functions** (backend)
-- **Supabase** (PostgreSQL database)
-- **Claude API** (AI insights)
-- **pnpm** (package manager)
-
-## Project Structure
-
-```
-venue-smart-dashboard/
-├── packages/
-│   ├── shared/      # Shared types and utilities
-│   ├── backend/     # Vercel Functions
-│   └── frontend/    # React application
-├── docs/
-│   ├── prd.md      # Product Requirements
-│   └── schema.md   # Database schema
-├── CLAUDE.md       # AI assistant instructions
-└── tasks.md        # Development tasks
-```
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 20+ (use nvm: `nvm use`)
-- pnpm 8+ (`curl -fsSL https://get.pnpm.io/install.sh | sh -`)
-- Supabase account
-- API keys for integrated services
-
-### Installation
-
-1. Clone the repository:
+Available via [NPM](https://www.npmjs.com) as dev dependency. To install:
 
 ```bash
-git clone https://github.com/ShoDoeAI/venue-smart-dashboard.git
-cd venue-smart-dashboard
+npm i supabase --save-dev
 ```
 
-2. Install dependencies:
+To install the beta release channel:
 
 ```bash
-pnpm install
+npm i supabase@beta --save-dev
 ```
 
-3. Copy environment variables:
+When installing with yarn 4, you need to disable experimental fetch with the following nodejs config.
+
+```
+NODE_OPTIONS=--no-experimental-fetch yarn add supabase
+```
+
+> **Note**
+> For Bun versions below v1.0.17, you must add `supabase` as a [trusted dependency](https://bun.sh/guides/install/trusted) before running `bun add -D supabase`.
+
+<details>
+  <summary><b>macOS</b></summary>
+
+Available via [Homebrew](https://brew.sh). To install:
+
+```sh
+brew install supabase/tap/supabase
+```
+
+To install the beta release channel:
+
+```sh
+brew install supabase/tap/supabase-beta
+brew link --overwrite supabase-beta
+```
+
+To upgrade:
+
+```sh
+brew upgrade supabase
+```
+
+</details>
+
+<details>
+  <summary><b>Windows</b></summary>
+
+Available via [Scoop](https://scoop.sh). To install:
+
+```powershell
+scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+scoop install supabase
+```
+
+To upgrade:
+
+```powershell
+scoop update supabase
+```
+
+</details>
+
+<details>
+  <summary><b>Linux</b></summary>
+
+Available via [Homebrew](https://brew.sh) and Linux packages.
+
+#### via Homebrew
+
+To install:
+
+```sh
+brew install supabase/tap/supabase
+```
+
+To upgrade:
+
+```sh
+brew upgrade supabase
+```
+
+#### via Linux packages
+
+Linux packages are provided in [Releases](https://github.com/supabase/cli/releases). To install, download the `.apk`/`.deb`/`.rpm`/`.pkg.tar.zst` file depending on your package manager and run the respective commands.
+
+```sh
+sudo apk add --allow-untrusted <...>.apk
+```
+
+```sh
+sudo dpkg -i <...>.deb
+```
+
+```sh
+sudo rpm -i <...>.rpm
+```
+
+```sh
+sudo pacman -U <...>.pkg.tar.zst
+```
+
+</details>
+
+<details>
+  <summary><b>Other Platforms</b></summary>
+
+You can also install the CLI via [go modules](https://go.dev/ref/mod#go-install) without the help of package managers.
+
+```sh
+go install github.com/supabase/cli@latest
+```
+
+Add a symlink to the binary in `$PATH` for easier access:
+
+```sh
+ln -s "$(go env GOPATH)/bin/cli" /usr/bin/supabase
+```
+
+This works on other non-standard Linux distros.
+
+</details>
+
+<details>
+  <summary><b>Community Maintained Packages</b></summary>
+
+Available via [pkgx](https://pkgx.sh/). Package script [here](https://github.com/pkgxdev/pantry/blob/main/projects/supabase.com/cli/package.yml).
+To install in your working directory:
 
 ```bash
-cp .env.example .env
+pkgx install supabase
 ```
 
-4. Configure your `.env.local` file with actual API keys:
-   - Copy Supabase credentials from `.env.txt` or your Supabase dashboard
-   - Add Toast API credentials (optional - test endpoint works without them)
-   - Add other API keys as needed
+Available via [Nixpkgs](https://nixos.org/). Package script [here](https://github.com/NixOS/nixpkgs/blob/master/pkgs/development/tools/supabase-cli/default.nix).
 
-### Development
+</details>
 
-Run all packages in development mode:
+### Run the CLI
 
 ```bash
-pnpm dev
+supabase bootstrap
 ```
 
-This will start:
-
-- Frontend at http://localhost:3000 (Data Viewer UI)
-- Backend at http://localhost:3001 (Vercel Functions)
-
-Run specific package:
+Or using npx:
 
 ```bash
-# Backend only
-pnpm --filter @venuesync/backend dev
-
-# Frontend only
-pnpm --filter @venuesync/frontend dev
+npx supabase bootstrap
 ```
 
-### Testing the Integration
+The bootstrap command will guide you through the process of setting up a Supabase project using one of the [starter](https://github.com/supabase-community/supabase-samples/blob/main/samples.json) templates.
 
-1. Open http://localhost:3000 in your browser
-2. Click "Fetch Toast Data" to test the integration
-3. View transactions, snapshots, and daily summaries in the tabs
-4. The API endpoint http://localhost:3001/api/test-toast returns mock data if Toast credentials are not configured
+## Docs
 
-### Testing
+Command & config reference can be found [here](https://supabase.com/docs/reference/cli/about).
 
-Run all tests:
+## Breaking changes
 
-```bash
-pnpm test
+We follow semantic versioning for changes that directly impact CLI commands, flags, and configurations.
+
+However, due to dependencies on other service images, we cannot guarantee that schema migrations, seed.sql, and generated types will always work for the same CLI major version. If you need such guarantees, we encourage you to pin a specific version of CLI in package.json.
+
+## Developing
+
+To run from source:
+
+```sh
+# Go >= 1.22
+go run . help
 ```
-
-Run tests in watch mode:
-
-```bash
-pnpm test:watch
-```
-
-Test Toast data flow:
-
-```bash
-pnpm --filter @venuesync/backend test:square-flow
-```
-
-### Building
-
-Build all packages:
-
-```bash
-pnpm build
-```
-
-### Code Quality
-
-Run linting:
-
-```bash
-pnpm lint
-```
-
-Format code:
-
-```bash
-pnpm format
-```
-
-Type checking:
-
-```bash
-pnpm typecheck
-```
-
-## Documentation
-
-- [Product Requirements](docs/prd.md)
-- [Database Schema](docs/schema.md)
-- [Development Tasks](tasks.md)
-
-## Contributing
-
-1. Create a feature branch
-2. Make your changes with tests
-3. Ensure all checks pass
-4. Create a PR and wait for CodeRabbit review
-5. Address feedback before merging
-
-## License
-
-MIT
