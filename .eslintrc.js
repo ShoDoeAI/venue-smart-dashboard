@@ -4,7 +4,7 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 2022,
     sourceType: 'module',
-    project: ['./tsconfig.json', './packages/*/tsconfig.json'],
+    project: ['./tsconfig.json', './packages/*/tsconfig.json', './api/tsconfig.json'],
   },
   plugins: ['@typescript-eslint', 'import'],
   extends: [
@@ -35,7 +35,7 @@ module.exports = {
     'import/resolver': {
       typescript: {
         alwaysTryTypes: true,
-        project: ['./tsconfig.json', './packages/*/tsconfig.json'],
+        project: ['./tsconfig.json', './packages/*/tsconfig.json', './api/tsconfig.json'],
       },
     },
   },
@@ -58,5 +58,5 @@ module.exports = {
       },
     },
   ],
-  ignorePatterns: ['dist', 'build', '.vercel', 'node_modules', '*.js'],
+  ignorePatterns: ['dist', 'build', '.vercel', 'node_modules', '*.js', '.eslintrc.js'],
 }

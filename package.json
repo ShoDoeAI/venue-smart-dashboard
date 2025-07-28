@@ -63,6 +63,8 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.17.2",
     "@supabase/supabase-js": "^2.52.0",
-    "axios": "^1.10.0"
+    "@types/pg": "^8.15.4",
+    "axios": "^1.10.0",
+    "pg": "^8.16.3"
   }
 }

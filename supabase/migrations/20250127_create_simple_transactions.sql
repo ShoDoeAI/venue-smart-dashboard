@@ -21,6 +21,9 @@ ON simple_transactions(transaction_date);
 CREATE INDEX IF NOT EXISTS idx_simple_transactions_source 
 ON simple_transactions(source);
 
+-- Disable Row Level Security (this is a single-venue app)
+ALTER TABLE simple_transactions DISABLE ROW LEVEL SECURITY;
+
 -- Grant permissions
 GRANT ALL ON simple_transactions TO authenticated;
 GRANT ALL ON simple_transactions TO service_role;
