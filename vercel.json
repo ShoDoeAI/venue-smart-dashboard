@@ -9,6 +9,9 @@
     },
     "api/*.ts": {
       "maxDuration": 30
+    },
+    "api/sync-toast-1500.js": {
+      "maxDuration": 60
     }
   },
   "rewrites": [
