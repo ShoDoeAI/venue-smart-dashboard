@@ -115,7 +115,8 @@ async function processOrderBatch(orders, snapshotTimestamp) {
           }
 
           checksCreated++;
-          totalRevenue += (check.totalAmount || 0) / 100;
+          // Toast API returns amounts in dollars, not cents
+          totalRevenue += check.totalAmount || 0;
 
           // 3. Process payments
           if (check.payments && Array.isArray(check.payments)) {
