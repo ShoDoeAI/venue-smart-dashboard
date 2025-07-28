@@ -54,13 +54,13 @@ module.exports = async (req, res) => {
       `Fetching Toast data from ${startDate.toISOString()} to ${endDate.toISOString()}...`,
     );
 
-    // Fetch orders from Toast
+    // Fetch orders from Toast (Toast limits pageSize to max 100)
     const response = await axios.get(`https://ws-api.toasttab.com/orders/v2/ordersBulk`, {
       headers,
       params: {
         startDate: startDate.toISOString(),
         endDate: endDate.toISOString(),
-        pageSize: 10000, // Get all orders
+        pageSize: 100, // Toast API limit
       },
     });
 
