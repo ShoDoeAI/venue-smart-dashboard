@@ -45,25 +45,29 @@
 
 2. Update cron job to use the same logic
 
-## Next Steps
+## Next Steps - Using Normalized Tables (Option 1)
 
-1. **Decide on data model**:
-   - Normalized (toast_orders → toast_checks → toast_payments) - Better for detailed reporting
-   - Flattened (toast_transactions) - Simpler but less flexible
+**Decision: We will use the normalized table structure (toast_orders → toast_checks → toast_payments)**
 
-2. **Update the chosen approach**:
-   - If normalized: Update ToastConnector to match sync-toast-1500.js
-   - If flattened: Update sync-toast-1500.js to match ToastConnector
+1. **Update ToastConnector to match sync-toast-1500.js**:
+   - Modify saveTransactions() to save to toast_orders, toast_checks, toast_payments
+   - Remove the flat transaction transformation logic
+   - Follow the same data structure as the sync script
 
-3. **Update all endpoints**:
-   - Revenue endpoints
-   - Dashboard endpoints
-   - KPI calculations
+2. **Update all endpoints to query normalized tables**:
+   - Revenue endpoints should query toast_checks for totals
+   - Dashboard endpoints should aggregate from toast_checks/toast_payments
+   - KPI calculations should use the normalized structure
+
+3. **Deprecate toast_transactions table**:
+   - Stop using this table in all code
+   - Consider removing it in a future migration
 
 4. **Test end-to-end**:
-   - Run sync
-   - Check revenue endpoints
-   - Verify dashboard displays data
+   - Run ToastConnector via the cron job
+   - Verify data populates toast_orders, toast_checks, toast_payments
+   - Check revenue endpoints show correct data
+   - Verify dashboard displays Toast data
 
 ## Current Table Usage
 
