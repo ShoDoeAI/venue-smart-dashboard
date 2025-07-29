@@ -32,24 +32,41 @@ async function processOrderBatch(orders, snapshotTimestamp) {
 
   for (const order of orders) {
     try {
+      // Extract server names from the server object
+      const serverFirstName = order.server?.firstName || null;
+      const serverLastName = order.server?.lastName || null;
+
       // 1. Insert into toast_orders
       const orderData = {
         snapshot_timestamp: snapshotTimestamp,
         order_guid: order.guid,
         location_id: TOAST_LOCATION_ID,
-        order_number: order.displayNumber,
-        created_date: order.createdDate,
-        paid_date: order.paidDate,
-        paid_business_date: order.paidBusinessDate,
-        server_guid: order.server?.guid || null,
-        server_name: order.server ? `${order.server.firstName} ${order.server.lastName}` : null,
-        source: order.source || 'POS',
+        external_id: order.externalId || null,
+        display_number: order.displayNumber || null,
+        order_number: order.orderNumber || null,
+        source: order.source || null,
+        business_date: order.businessDate || null,
+        revenue_center_guid: order.revenueCenter?.guid || null,
+        revenue_center_name: order.revenueCenter?.name || null,
+        created_date: order.createdDate || null,
+        modified_date: order.modifiedDate || null,
+        opened_date: order.openedDate || null,
+        closed_date: order.closedDate || null,
+        paid_date: order.paidDate || null,
+        deleted_date: order.deletedDate || null,
         voided: order.voided || false,
-        void_date: order.voidDate,
-        revenue_center_guid: order.revenueCenter?.guid,
-        dining_option_guid: order.diningOption?.guid,
-        dining_option_name: order.diningOption?.name,
-        raw_data: order,
+        void_date: order.voidDate || null,
+        void_business_date: order.voidBusinessDate || null,
+        approval_status: order.approvalStatus || null,
+        guest_count: order.guestCount || null,
+        dining_option_guid: order.diningOption?.guid || null,
+        dining_option_name: order.diningOption?.name || null,
+        server_guid: order.server?.guid || null,
+        server_first_name: serverFirstName,
+        server_last_name: serverLastName,
+        server_external_id: order.server?.externalId || null,
+        delivery_info: order.deliveryInfo || null,
+        curbside_pickup_info: order.curbsidePickupInfo || null,
       };
 
       const { error: orderError } = await supabase
@@ -70,23 +87,27 @@ async function processOrderBatch(orders, snapshotTimestamp) {
             snapshot_timestamp: snapshotTimestamp,
             check_guid: check.guid,
             order_guid: order.guid,
-            check_number: check.displayNumber,
-            opened_date: check.openedDate,
-            closed_date: check.closedDate,
+            tab_name: check.tabName || null,
+            // Store dollar amounts directly (no conversion needed)
             amount: check.amount || 0,
             tax_amount: check.taxAmount || 0,
-            tax_exempt: check.taxExempt || false,
+            tip_amount: check.tipAmount || 0,
+            total_amount: check.totalAmount || 0,
             applied_discount_amount: check.appliedDiscountAmount || 0,
-            applied_service_charges: check.appliedServiceCharges || [],
-            customer_guid: check.customer?.guid,
-            customer_first_name: check.customer?.firstName,
-            customer_last_name: check.customer?.lastName,
-            customer_email: check.customer?.email,
-            customer_phone: check.customer?.phone,
+            created_date: check.createdDate || null,
+            opened_date: check.openedDate || null,
+            closed_date: check.closedDate || null,
             voided: check.voided || false,
-            void_date: check.voidDate,
-            tab_name: check.tabName,
-            raw_data: check,
+            void_date: check.voidDate || null,
+            payment_status: check.paymentStatus || null,
+            customer_guid: check.customer?.guid || null,
+            customer_first_name: check.customer?.firstName || null,
+            customer_last_name: check.customer?.lastName || null,
+            customer_phone: check.customer?.phone || null,
+            customer_email: check.customer?.email || null,
+            customer_company_name: check.customer?.companyName || null,
+            applied_service_charges: check.appliedServiceCharges || [],
+            applied_discounts: check.appliedDiscounts || [],
           };
 
           const { error: checkError } = await supabase
@@ -99,7 +120,8 @@ async function processOrderBatch(orders, snapshotTimestamp) {
           }
 
           checksCreated++;
-          totalRevenue += (check.totalAmount || 0) / 100;
+          // Toast API returns amounts in dollars already
+          totalRevenue += check.totalAmount || 0;
 
           // 3. Process payments
           if (check.payments && Array.isArray(check.payments)) {
@@ -109,21 +131,22 @@ async function processOrderBatch(orders, snapshotTimestamp) {
                 payment_guid: payment.guid,
                 check_guid: check.guid,
                 order_guid: order.guid,
+                // Store dollar amounts directly (no conversion needed)
                 amount: payment.amount || 0,
                 tip_amount: payment.tipAmount || 0,
-                amount_tendered: payment.amountTendered,
-                type: payment.type,
-                card_type: payment.cardType,
-                last_4_digits: payment.last4Digits,
-                external_payment_guid: payment.externalPaymentGuid,
-                paid_date: payment.paidDate,
-                paid_business_date: payment.paidBusinessDate,
+                amount_tendered: payment.amountTendered || null,
+                type: payment.type || null,
+                card_type: payment.cardType || null,
+                last_4_digits: payment.last4Digits || null,
+                external_payment_guid: payment.externalPaymentGuid || null,
+                paid_date: payment.paidDate || null,
+                paid_business_date: payment.paidBusinessDate || null,
                 house: payment.house || false,
-                refund_status: payment.refundStatus,
+                refund_status: payment.refundStatus || null,
                 voided: payment.voided || false,
-                void_date: payment.voidDate,
-                refund: payment.refund,
-                mca_repayment_amount: payment.mcaRepaymentAmount,
+                void_date: payment.voidDate || null,
+                refund: payment.refund || null,
+                mca_repayment_amount: payment.mcaRepaymentAmount || null,
               };
 
               const { error: paymentError } = await supabase
