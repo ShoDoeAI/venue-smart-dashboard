@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Load environment variables
-require('dotenv').config();
+require('dotenv').config({ path: '.env.local' });
 
 // Import and run the sync function
 const syncToast = require('./api/sync-toast-1500.js');

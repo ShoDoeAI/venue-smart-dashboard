@@ -174,8 +174,8 @@ export default async function handler(
       snapshotId: snapshot.id,
       stats: {
         transactionCount: transactions.length,
-        totalRevenue: totalRevenue / 100, // Convert cents to dollars
-        averageTransaction: avgTransaction / 100,
+        totalRevenue: totalRevenue, // Already in dollars
+        averageTransaction: avgTransaction,
         dateRange: {
           start: startTime.toISOString(),
           end: endTime.toISOString(),
