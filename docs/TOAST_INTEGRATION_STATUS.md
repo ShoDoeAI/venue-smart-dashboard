@@ -49,6 +49,8 @@
 
 **Decision: We will use the normalized table structure (toast_orders → toast_checks → toast_payments)**
 
+### Immediate Goals
+
 1. **Update ToastConnector to match sync-toast-1500.js**:
    - Modify saveTransactions() to save to toast_orders, toast_checks, toast_payments
    - Remove the flat transaction transformation logic
@@ -68,6 +70,22 @@
    - Verify data populates toast_orders, toast_checks, toast_payments
    - Check revenue endpoints show correct data
    - Verify dashboard displays Toast data
+
+### Historical Data Sync Goals
+
+5. **Capture Historical Data (1 Year)**:
+   - Create a historical sync endpoint/script that can fetch the last year of Toast data
+   - Use the same normalized table structure
+   - Handle large data volumes with proper pagination and timeouts
+   - Consider running as a one-time backfill job or scheduled monthly job
+   - Ensure snapshot_timestamp allows distinguishing historical vs real-time data
+
+6. **Historical Sync Implementation**:
+   - Modify sync-toast-1500.js to accept custom date ranges
+   - Add parameter for number of days to sync (default 90, max 365)
+   - Implement chunking strategy for large date ranges
+   - Add progress tracking for long-running syncs
+   - Consider rate limiting to avoid Toast API throttling
 
 ## Current Table Usage
 
