@@ -42,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let paymentCount = payments?.length || 0;
 
     payments?.forEach(p => {
-      totalRevenue += (p.amount + (p.tip_amount || 0)) / 100;
+      totalRevenue += (p.amount + (p.tip_amount || 0)); // Already in dollars
     });
 
     // 5. Get sync status
@@ -70,7 +70,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           server: `${orders[0].server_first_name} ${orders[0].server_last_name}`
         } : null,
         latest_payment: payments?.[0] ? {
-          amount: `$${((payments[0].amount + (payments[0].tip_amount || 0)) / 100).toFixed(2)}`,
+          amount: `$${((payments[0].amount + (payments[0].tip_amount || 0))).toFixed(2)}`,
           type: payments[0].type,
           date: payments[0].paid_date
         } : null

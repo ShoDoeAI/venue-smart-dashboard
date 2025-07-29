@@ -52,13 +52,13 @@ module.exports = async (req, res) => {
       checksByBusinessDate = data || [];
     }
 
-    // Calculate revenues
+    // Calculate revenues (amounts are already in dollars)
     const revenueByCreated =
-      (checksByCreated || []).reduce((sum, check) => sum + (check.total_amount || 0), 0) / 100;
+      (checksByCreated || []).reduce((sum, check) => sum + (check.total_amount || 0), 0);
     const revenueByClosed =
-      (checksByClosed || []).reduce((sum, check) => sum + (check.total_amount || 0), 0) / 100;
+      (checksByClosed || []).reduce((sum, check) => sum + (check.total_amount || 0), 0);
     const revenueByBusinessDate =
-      checksByBusinessDate.reduce((sum, check) => sum + (check.total_amount || 0), 0) / 100;
+      checksByBusinessDate.reduce((sum, check) => sum + (check.total_amount || 0), 0);
 
     return res.status(200).json({
       success: true,
@@ -84,13 +84,13 @@ module.exports = async (req, res) => {
       sampleChecks: {
         created: checksByCreated?.slice(0, 3).map((c) => ({
           ...c,
-          dollars: c.total_amount / 100,
-          formatted: `$${(c.total_amount / 100).toFixed(2)}`,
+          dollars: c.total_amount,
+          formatted: `$${(c.total_amount).toFixed(2)}`,
         })),
         closed: checksByClosed?.slice(0, 3).map((c) => ({
           ...c,
-          dollars: c.total_amount / 100,
-          formatted: `$${(c.total_amount / 100).toFixed(2)}`,
+          dollars: c.total_amount,
+          formatted: `$${(c.total_amount).toFixed(2)}`,
         })),
       },
     });

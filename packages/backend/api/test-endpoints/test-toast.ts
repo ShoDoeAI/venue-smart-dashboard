@@ -133,7 +133,7 @@ export default async function handler(
 
     const transactions = transactionsResult.data || [];
 
-    // Calculate stats
+    // Calculate stats (amounts are already in dollars)
     const totalRevenue = transactions.reduce((sum, tx) => sum + tx.total_amount, 0);
     const avgTransaction = transactions.length > 0 
       ? totalRevenue / transactions.length 
@@ -153,8 +153,8 @@ export default async function handler(
       },
       stats: {
         transactionCount: transactions.length,
-        totalRevenue: totalRevenue / 100,
-        averageTransaction: avgTransaction / 100,
+        totalRevenue: totalRevenue, // Already in dollars
+        averageTransaction: avgTransaction, // Already in dollars
         customerCount: customersResult.data?.data.length || 0,
         teamMemberCount: teamMembersResult.data?.data.length || 0,
         dateRange: {
@@ -164,7 +164,7 @@ export default async function handler(
       },
       sampleTransactions: transactions.slice(0, 5).map(tx => ({
         id: tx.transaction_id,
-        amount: tx.total_amount / 100,
+        amount: tx.total_amount, // Already in dollars
         created_at: tx.created_at,
         status: tx.status,
         customer_name: tx.customer_name,

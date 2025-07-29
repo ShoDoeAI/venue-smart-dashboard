@@ -63,119 +63,162 @@ export interface ToastMoney {
 // Order types
 export interface ToastOrder {
   guid: string;
+  entityType?: 'Order';
+  externalId?: string | null;
   businessDate: number;
-  checks: ToastCheck[];
-  createdDate: string;
-  modifiedDate: string;
-  deletedDate?: string;
+  checks?: ToastCheck[];
+  createdDate?: string;
+  modifiedDate?: string;
+  deletedDate?: string | null;
   openedDate?: string;
-  closedDate?: string;
-  server?: ToastEmployee;
+  closedDate?: string | null;
+  paidDate?: string | null;
+  source?: string; // API, In Store, etc.
+  server?: ToastEntityReference;
   voided?: boolean;
-  voidDate?: string;
+  voidDate?: string | null;
   voidBusinessDate?: number;
+  deleted?: boolean;
   approvalStatus?: string;
-  guestCount?: number;
-  name?: string;
-  estimatedFulfillmentDate?: string;
+  numberOfGuests?: number;
+  estimatedFulfillmentDate?: string | null;
+  promisedDate?: string | null;
   duration?: number;
-  revenueCenter?: {
-    guid: string;
-    name: string;
-  };
+  revenueCenter?: ToastEntityReference;
+  diningOption?: ToastEntityReference;
+  deliveryInfo?: ToastDeliveryInfo | null;
+  curbsidePickupInfo?: ToastCurbsidePickupInfo | null;
+  requiredPrepTime?: string;
+}
+
+// Entity reference type
+export interface ToastEntityReference {
+  guid: string;
+  entityType: string;
+  externalId?: string | null;
 }
 
 // Check types
 export interface ToastCheck {
   guid: string;
-  amount: number;
+  entityType?: 'Check';
+  externalId?: string | null;
+  displayNumber?: string;
+  amount: number; // Amount in dollars before tax
+  totalAmount: number; // Total amount in dollars including tax
+  taxAmount?: number; // Tax amount in dollars
   tipAmount?: number;
-  totalAmount?: number;
-  taxAmount?: number;
-  appliedDiscountAmount?: number;
-  customer?: ToastCustomer;
+  tabName?: string | null;
+  taxExempt?: boolean;
+  customer?: ToastCustomer | null;
   selections?: ToastSelection[];
   payments?: ToastPayment[];
-  voided?: boolean;
-  voidDate?: string;
-  openedDate?: string;
-  closedDate?: string;
-  paymentStatus?: string;
-  tabName?: string;
+  appliedDiscounts?: ToastAppliedDiscount[];
   appliedServiceCharges?: ToastServiceCharge[];
+  voided?: boolean;
+  voidDate?: string | null;
+  openedDate?: string;
+  closedDate?: string | null;
+  paidDate?: string | null;
+  paymentStatus?: string;
+  voidBusinessDate?: number;
+  deleted?: boolean;
+  deletedDate?: string | null;
+  modifiedDate?: string;
+  appliedLoyaltyInfo?: any;
 }
 
 // Payment types  
 export interface ToastPayment {
   guid: string;
-  amount: number;
-  tipAmount?: number;
+  entityType?: 'OrderPayment';
+  externalId?: string | null;
+  amount: number; // Amount in dollars
+  tipAmount?: number; // Tip in dollars
   amountTendered?: number;
-  type?: string;
-  cardType?: string;
+  type?: string; // CREDIT, CASH, OTHER, etc.
+  cardType?: string; // VISA, MASTERCARD, etc.
   last4Digits?: string;
-  externalPaymentGuid?: string;
+  cardEntryMode?: string;
+  paymentStatus?: string;
   paidDate?: string;
   paidBusinessDate?: number;
-  house?: boolean;
+  refundStatus?: string;
+  houseAccount?: any;
+  otherPayment?: ToastEntityReference;
   voidInfo?: {
     voidDate?: string;
-    voidUser?: ToastEmployee;
-  };
-  refundStatus?: string;
+    voidUser?: ToastEntityReference;
+  } | null;
+  refund?: any;
   mcaRepaymentAmount?: number;
+  originalProcessingFee?: number;
+  cashDrawer?: any;
+  createdDevice?: { id: string | null };
+  lastModifiedDevice?: { id: string | null };
 }
 
 // Menu item selection
 export interface ToastSelection {
   guid: string;
-  itemGroup: {
-    guid: string;
-    name: string;
-  };
-  item: {
-    guid: string;
-    name: string;
-  };
+  entityType?: 'MenuItemSelection';
+  externalId?: string | null;
+  itemGroup: ToastEntityReference;
+  item: ToastEntityReference;
   quantity: number;
-  price?: number;
-  tax?: number;
+  price?: number; // Price in dollars after discounts
+  preDiscountPrice?: number; // Price in dollars before discounts
+  tax?: number; // Tax amount in dollars
   displayName?: string;
-  modifiers?: ToastModifier[];
-  appliedDiscounts?: ToastDiscount[];
+  deferred?: boolean;
+  voidDate?: string | null;
+  voidReason?: any;
   voided?: boolean;
-  voidDate?: string;
-  voidBusinessDate?: number;
-  voidReason?: {
-    guid: string;
-    name: string;
-  };
   fulfillmentStatus?: string;
-  salesCategory?: {
-    guid: string;
-    name: string;
-  };
+  modifiers?: ToastModifier[];
+  appliedDiscounts?: ToastAppliedDiscount[];
+  appliedTaxes?: ToastAppliedTax[];
+  salesCategory?: ToastEntityReference | null;
   selectionType?: string;
-  deferredPrice?: number;
-  preDiscountPrice?: number;
-  optionGroupPricingMode?: string;
+  seatNumber?: number;
+  diningOption?: ToastEntityReference;
+  voidBusinessDate?: number;
+  createdDate?: string;
+  modifiedDate?: string;
+  preModifier?: any;
+  openPriceAmount?: number;
+  receiptLinePrice?: number;
+  optionGroup?: ToastEntityReference | null;
+  unitOfMeasure?: string;
+  taxInclusion?: string;
 }
 
 export interface ToastModifier {
   guid: string;
-  name: string;
-  price?: number;
+  entityType?: 'MenuItemSelection';
+  externalId?: string | null;
+  optionGroup?: ToastEntityReference;
+  displayName?: string;
+  item?: ToastEntityReference;
   quantity?: number;
+  price?: number;
   displayMode?: string;
 }
 
-export interface ToastDiscount {
+export interface ToastAppliedDiscount {
   guid: string;
+  entityType?: 'AppliedCustomDiscount';
+  externalId?: string | null;
   name: string;
   discountAmount?: number;
-  discountPercent?: number;
-  trigger?: string;
-  promoCode?: string;
+  nonTaxDiscountAmount?: number;
+  discount?: ToastEntityReference;
+  triggers?: any[];
+  appliedPromoCode?: string | null;
+  comboItems?: any[];
+  approver?: any;
+  processingState?: any;
+  loyaltyDetails?: any;
 }
 
 export interface ToastServiceCharge {
@@ -183,6 +226,15 @@ export interface ToastServiceCharge {
   name: string;
   amount: number;
   gratuity?: boolean;
+}
+
+export interface ToastAppliedTax {
+  entityType?: 'AppliedTaxRate';
+  taxRate: ToastEntityReference;
+  name: string;
+  rate: number;
+  taxAmount: number;
+  type: string;
 }
 
 // Customer types
@@ -198,6 +250,8 @@ export interface ToastCustomer {
 // Employee types
 export interface ToastEmployee {
   guid: string;
+  entityType?: 'RestaurantUser';
+  externalId?: string | null;
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -207,7 +261,7 @@ export interface ToastEmployee {
   externalEmployeeId?: string;
   createdDate?: string;
   modifiedDate?: string;
-  deletedDate?: string;
+  deletedDate?: string | null;
   disabled?: boolean;
   jobReferences?: Array<{
     guid: string;
@@ -324,6 +378,30 @@ export interface ToastErrorResponse {
   }>;
 }
 
+// Delivery info
+export interface ToastDeliveryInfo {
+  address1?: string;
+  address2?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  latitude?: number;
+  longitude?: number;
+  notes?: string;
+  deliveredDate?: string | null;
+  dispatchedDate?: string | null;
+  deliveryEmployee?: ToastEntityReference | null;
+}
+
+// Curbside pickup info
+export interface ToastCurbsidePickupInfo {
+  guid?: string;
+  entityType?: 'CurbsidePickup';
+  notes?: string;
+  transportColor?: string;
+  transportDescription?: string;
+}
+
 // Response types
 export interface PaginatedResponse<T> {
   data: T[];
@@ -332,37 +410,10 @@ export interface PaginatedResponse<T> {
   totalCount?: number;
 }
 
-// Legacy types for compatibility (will be refactored)
-export interface ToastListPaymentsResponse {
-  payments?: ToastPayment[];
-  cursor?: string;
-  errors?: ToastError[];
-}
-
-export interface ToastListOrdersResponse {
-  orders?: ToastOrder[];
-  cursor?: string;
-  errors?: ToastError[];
-}
-
-export interface ToastListCustomersResponse {
-  customers?: ToastCustomer[];
-  cursor?: string;
-  errors?: ToastError[];
-}
-
-export interface ToastSearchTeamMembersResponse {
-  team_members?: ToastEmployee[];
-  cursor?: string;
-  errors?: ToastError[];
-}
-
-export interface ToastError {
-  category: string;
-  code: string;
-  detail?: string;
-  field?: string;
-}
+// Toast API typically returns arrays directly for bulk endpoints
+export type ToastOrdersResponse = ToastOrder[];
+export type ToastLocationsResponse = ToastLocation[];
+export type ToastEmployeesResponse = ToastEmployee[];
 
 export interface ToastConnectorConfig {
   clientId: string;

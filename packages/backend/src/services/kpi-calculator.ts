@@ -386,8 +386,8 @@ export class KPICalculator {
       return { transactions: [], revenue: 0, inventory: null };
     }
 
-    // Convert from cents to dollars
-    const revenue = data?.reduce((sum, tx) => sum + ((tx.total_amount || 0) / 100), 0) || 0;
+    // Amounts are already in dollars
+    const revenue = data?.reduce((sum, tx) => sum + (tx.total_amount || 0), 0) || 0;
     
     return { 
       transactions: data || [], 

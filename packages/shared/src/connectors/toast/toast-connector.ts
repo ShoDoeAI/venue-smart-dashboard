@@ -16,7 +16,11 @@ import type {
   ToastAuthResponse,
   ToastCredentials,
   ToastOrder,
+  ToastCheck,
   ToastPayment,
+  ToastSelection,
+  ToastServiceCharge,
+  ToastAppliedDiscount,
   ToastCustomer,
   ToastEmployee,
   TransformedToastTransaction,
@@ -238,7 +242,7 @@ export class ToastConnector extends BaseConnector {
 
   private transformTransaction(
     order: ToastOrder,
-    check: ToastOrder['checks'][0],
+    check: ToastCheck,
     payment: ToastPayment
   ): TransformedToastTransaction {
     const itemizations = check.selections || [];
@@ -246,14 +250,12 @@ export class ToastConnector extends BaseConnector {
     return {
       transaction_id: payment.guid,
       location_id: this.toastCredentials.locationGuid,
-      created_at: order.createdDate,
-      total_amount: Math.round(payment.amount * 100), // Convert to cents
-      tax_amount: Math.round((check.taxAmount || 0) * 100),
-      tip_amount: Math.round((payment.tipAmount || 0) * 100),
-      discount_amount: Math.round((check.appliedDiscountAmount || 0) * 100),
-      service_charge_amount: Math.round(
-        (check.appliedServiceCharges?.reduce((sum, sc) => sum + sc.amount, 0) || 0) * 100
-      ),
+      created_at: order.createdDate || order.openedDate || new Date().toISOString(),
+      total_amount: payment.amount || 0, // Toast API returns dollars
+      tax_amount: check.taxAmount || 0,
+      tip_amount: payment.tipAmount || 0,
+      discount_amount: check.appliedDiscounts?.reduce((sum: number, discount: ToastAppliedDiscount) => sum + (discount.discountAmount || 0), 0) || 0,
+      service_charge_amount: check.appliedServiceCharges?.reduce((sum: number, sc: ToastServiceCharge) => sum + sc.amount, 0) || 0,
       source_type: payment.type || undefined,
       status: payment.refundStatus || 'COMPLETED',
       receipt_number: order.guid,
@@ -265,7 +267,7 @@ export class ToastConnector extends BaseConnector {
       customer_email: check.customer?.email || undefined,
       team_member_id: order.server?.guid || undefined,
       device_id: undefined,
-      item_count: itemizations.reduce((sum, item) => sum + item.quantity, 0),
+      item_count: itemizations.reduce((sum: number, item: ToastSelection) => sum + item.quantity, 0),
       unique_item_count: itemizations.length,
       itemizations: itemizations.length > 0 ? itemizations : undefined,
       payment_details: {
