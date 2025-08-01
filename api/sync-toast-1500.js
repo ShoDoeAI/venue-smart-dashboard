@@ -228,10 +228,13 @@ module.exports = async (req, res) => {
       'Toast-Restaurant-External-ID': TOAST_LOCATION_ID,
     };
 
-    // Date range: last 90 days to ensure we get enough data
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 90);
+    // Date range: use provided dates or default to last 90 days
+    const endDate = req.body?.endDate ? new Date(req.body.endDate) : new Date();
+    const startDate = req.body?.startDate ? new Date(req.body.startDate) : (() => {
+      const date = new Date();
+      date.setDate(date.getDate() - 90);
+      return date;
+    })();
 
     console.log(`Starting sync for ${targetOrderCount} orders (${maxPages} pages max)`);
     console.log(`Date range: ${startDate.toISOString()} to ${endDate.toISOString()}`);
@@ -261,8 +264,8 @@ module.exports = async (req, res) => {
         await sleep(500);
       }
 
-      // Check if we're approaching timeout (50 second limit for safety)
-      if (Date.now() - startTime > 50000) {
+      // Check if we're approaching timeout (120 second limit for local run)
+      if (Date.now() - startTime > 120000) {
         console.log('Approaching timeout limit, stopping pagination');
         break;
       }

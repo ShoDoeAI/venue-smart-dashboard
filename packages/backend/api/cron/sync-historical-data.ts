@@ -69,21 +69,17 @@ export default async function handler(
     // Initialize Toast connector
     const connectorCredentials: ConnectorCredentials = {
       id: credentials.id,
-      venue_id: venue.id,
-      service_name: 'toast',
+      service: 'toast',
       credentials: credentials.credentials,
-      is_active: true,
+      isActive: true,
       created_at: credentials.created_at,
       updated_at: credentials.updated_at,
     };
 
     const connectorConfig: ConnectorConfig = {
       timeout: 60000,
-      retryConfig: {
-        maxRetries: 3,
-        strategy: 'exponential',
-        baseDelay: 1000,
-      },
+      maxRetries: 3,
+      retryDelay: 1000,
     };
 
     const toastConnector = new ToastConnector(connectorCredentials, connectorConfig, supabase);
@@ -143,35 +139,52 @@ export default async function handler(
             const paymentsMap = new Map();
             
             // Group transactions by their base components
+            // For now, we'll create synthetic base records from the transformed data
             for (const tx of result.data) {
-              const rawData = tx.raw_data || {};
+              // Create a synthetic order
+              const orderGuid = `order_${tx.transaction_id}`;
+              ordersMap.set(orderGuid, {
+                order_guid: orderGuid,
+                location_id: tx.location_id,
+                created_date: tx.created_at,
+                paid_date: tx.created_at,
+                order_number: tx.receipt_number,
+                voided: false,
+                is_historical: true,
+                snapshot_timestamp: new Date().toISOString(),
+              });
               
-              // Store order with historical flag
-              if (rawData.order && rawData.order.order_guid) {
-                ordersMap.set(rawData.order.order_guid, {
-                  ...rawData.order,
-                  is_historical: true,
-                  snapshot_timestamp: new Date().toISOString(),
-                });
-              }
+              // Create a synthetic check
+              const checkGuid = `check_${tx.transaction_id}`;
+              checksMap.set(checkGuid, {
+                check_guid: checkGuid,
+                order_guid: orderGuid,
+                amount: tx.total_amount - tx.tip_amount,
+                tax_amount: tx.tax_amount,
+                tip_amount: tx.tip_amount,
+                applied_discount_amount: tx.discount_amount,
+                customer_guid: tx.customer_id,
+                customer_first_name: tx.customer_name?.split(' ')[0],
+                customer_last_name: tx.customer_name?.split(' ').slice(1).join(' '),
+                customer_email: tx.customer_email,
+                voided: false,
+                is_historical: true,
+                snapshot_timestamp: new Date().toISOString(),
+              });
               
-              // Store check with historical flag
-              if (rawData.check && rawData.check.check_guid) {
-                checksMap.set(rawData.check.check_guid, {
-                  ...rawData.check,
-                  is_historical: true,
-                  snapshot_timestamp: new Date().toISOString(),
-                });
-              }
-              
-              // Store payment with historical flag
-              if (rawData.payment && rawData.payment.payment_guid) {
-                paymentsMap.set(rawData.payment.payment_guid, {
-                  ...rawData.payment,
-                  is_historical: true,
-                  snapshot_timestamp: new Date().toISOString(),
-                });
-              }
+              // Create a synthetic payment
+              paymentsMap.set(tx.transaction_id, {
+                payment_guid: tx.transaction_id,
+                check_guid: checkGuid,
+                order_guid: orderGuid,
+                amount: tx.total_amount - tx.tip_amount,
+                tip_amount: tx.tip_amount,
+                type: tx.source_type,
+                paid_date: tx.created_at,
+                voided: false,
+                is_historical: true,
+                snapshot_timestamp: new Date().toISOString(),
+              });
             }
 
             // Save to base tables

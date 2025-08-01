@@ -10,7 +10,7 @@ const syncToast = require('./api/sync-toast-1500.js');
 const mockReq = {
   method: 'POST',
   body: {
-    limit: 1500, // Fetch 1500 orders
+    limit: 500, // Fetch 500 orders
   },
 };
 
