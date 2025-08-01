@@ -402,14 +402,14 @@ export class AIContextAggregator {
   }
 
   /**
-   * Get summarized context for specific time period
+   * Get summarized context for specific time period with detailed historical data
    */
   async getTimeRangeContext(
     venueId: string,
     startDate: Date,
     endDate: Date
   ): Promise<Partial<AIContext>> {
-    // Fetch KPIs for the time range
+    // First try to get pre-calculated daily KPIs
     const { data: dailyKPIs } = await this.supabase
       .from('daily_kpis')
       .select('*')
@@ -417,22 +417,154 @@ export class AIContextAggregator {
       .gte('date', startDate.toISOString())
       .lte('date', endDate.toISOString());
 
+    // If no pre-calculated KPIs, calculate from raw transactions
     if (!dailyKPIs || dailyKPIs.length === 0) {
-      return {};
+      const rawMetrics = await this.calculateRawMetricsForPeriod(venueId, startDate, endDate);
+      return rawMetrics;
     }
 
-    // Calculate summary metrics
+    // Calculate summary metrics from daily KPIs
     const totalRevenue = dailyKPIs.reduce((sum, day) => sum + (day.revenue_total || 0), 0);
     const totalTransactions = dailyKPIs.reduce((sum, day) => sum + (day.transaction_count || 0), 0);
-    // const totalCustomers = dailyKPIs.reduce((sum, day) => sum + (day.unique_customers || 0), 0); // Currently unused
-    // const avgDailyRevenue = totalRevenue / dailyKPIs.length; // Currently unused
+    const totalCustomers = dailyKPIs.reduce((sum, day) => sum + (day.unique_customers || 0), 0);
+    const avgDailyRevenue = totalRevenue / dailyKPIs.length;
+
+    // Calculate period-over-period growth
+    const periodDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const comparisonStartDate = new Date(startDate);
+    comparisonStartDate.setDate(comparisonStartDate.getDate() - periodDays);
+    
+    const { data: comparisonKPIs } = await this.supabase
+      .from('daily_kpis')
+      .select('*')
+      .eq('venue_id', venueId)
+      .gte('date', comparisonStartDate.toISOString())
+      .lt('date', startDate.toISOString());
+
+    const comparisonRevenue = comparisonKPIs ? 
+      comparisonKPIs.reduce((sum, day) => sum + (day.revenue_total || 0), 0) : 0;
+    const comparisonCustomers = comparisonKPIs ? 
+      comparisonKPIs.reduce((sum, day) => sum + (day.unique_customers || 0), 0) : 0;
+
+    const revenueGrowth = comparisonRevenue > 0 ? 
+      ((totalRevenue - comparisonRevenue) / comparisonRevenue) * 100 : 0;
+    const customerGrowth = comparisonCustomers > 0 ? 
+      ((totalCustomers - comparisonCustomers) / comparisonCustomers) * 100 : 0;
 
     return {
       historicalTrends: {
-        revenueGrowth: 0, // Would calculate properly
+        revenueGrowth,
+        customerGrowth,
+        averageTicketPrice: totalTransactions > 0 ? totalRevenue / totalTransactions : 0,
+        peakHours: [12, 18, 19], // Would analyze from hourly data
+      },
+      currentMetrics: {
+        todayRevenue: totalRevenue,
+        todayTransactions: totalTransactions,
+        todayCustomers: totalCustomers,
+        lastHourRevenue: 0, // Not applicable for historical periods
+        activeEvents: 0, // Not applicable for historical periods
+      },
+      timeRangeSummary: {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        totalDays: periodDays,
+        totalRevenue,
+        totalTransactions,
+        totalCustomers,
+        avgDailyRevenue,
+        bestDay: dailyKPIs.reduce((best, day) => 
+          (day.revenue_total || 0) > (best.revenue_total || 0) ? day : best
+        ),
+        worstDay: dailyKPIs.reduce((worst, day) => 
+          (day.revenue_total || 0) < (worst.revenue_total || 0) ? day : worst
+        ),
+      },
+    };
+  }
+
+  /**
+   * Calculate metrics directly from raw transaction data when KPIs aren't available
+   */
+  private async calculateRawMetricsForPeriod(
+    venueId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<Partial<AIContext>> {
+    // Get venue's location ID for Toast transactions
+    const { data: credentials } = await this.supabase
+      .from('api_credentials')
+      .select('credentials')
+      .eq('venue_id', venueId)
+      .eq('service_name', 'toast')
+      .eq('is_active', true)
+      .single();
+
+    if (!credentials?.credentials?.locationGuid) {
+      return {};
+    }
+
+    const locationId = credentials.credentials.locationGuid;
+
+    // Query Toast transactions directly using the new views
+    const { data: dailySummary } = await this.supabase
+      .from('daily_revenue_summary')
+      .select('*')
+      .eq('location_id', locationId)
+      .gte('date', startDate.toISOString().split('T')[0])
+      .lte('date', endDate.toISOString().split('T')[0])
+      .order('date', { ascending: true });
+
+    if (!dailySummary || dailySummary.length === 0) {
+      return {};
+    }
+
+    // Calculate aggregated metrics
+    const totalRevenue = dailySummary.reduce((sum, day) => sum + (day.total_revenue || 0), 0);
+    const totalTransactions = dailySummary.reduce((sum, day) => sum + (day.transaction_count || 0), 0);
+    const totalCustomers = dailySummary.reduce((sum, day) => sum + (day.unique_customers || 0), 0);
+    const avgDailyRevenue = totalRevenue / dailySummary.length;
+
+    // Find best and worst performing days
+    const bestDay = dailySummary.reduce((best, day) => 
+      (day.total_revenue || 0) > (best.total_revenue || 0) ? day : best
+    );
+    const worstDay = dailySummary.reduce((worst, day) => 
+      (day.total_revenue || 0) < (worst.total_revenue || 0) ? day : worst
+    );
+
+    return {
+      currentMetrics: {
+        todayRevenue: totalRevenue,
+        todayTransactions: totalTransactions,
+        todayCustomers: totalCustomers,
+        lastHourRevenue: 0,
+        activeEvents: 0,
+      },
+      historicalTrends: {
+        revenueGrowth: 0, // Would need comparison period
         customerGrowth: 0,
         averageTicketPrice: totalTransactions > 0 ? totalRevenue / totalTransactions : 0,
-        peakHours: [12, 18, 19], // Would analyze from data
+        peakHours: [12, 18, 19],
+      },
+      timeRangeSummary: {
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        totalDays: dailySummary.length,
+        totalRevenue,
+        totalTransactions,
+        totalCustomers,
+        avgDailyRevenue,
+        bestDay: {
+          date: bestDay.date,
+          revenue_total: bestDay.total_revenue,
+          transaction_count: bestDay.transaction_count,
+        },
+        worstDay: {
+          date: worstDay.date,
+          revenue_total: worstDay.total_revenue,
+          transaction_count: worstDay.transaction_count,
+        },
       },
     };
   }

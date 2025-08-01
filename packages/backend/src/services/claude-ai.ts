@@ -34,6 +34,30 @@ export interface AIContext {
     actionType: string;
     description: string;
   }>;
+  // Enhanced fields for historical queries
+  isHistoricalQuery?: boolean;
+  queryTimeRange?: string;
+  queryStartDate?: string;
+  queryEndDate?: string;
+  timeRangeSummary?: {
+    startDate: string;
+    endDate: string;
+    totalDays: number;
+    totalRevenue: number;
+    totalTransactions: number;
+    totalCustomers: number;
+    avgDailyRevenue: number;
+    bestDay: {
+      date: string;
+      revenue_total: number;
+      transaction_count: number;
+    };
+    worstDay: {
+      date: string;
+      revenue_total: number;
+      transaction_count: number;
+    };
+  };
 }
 
 export interface AIQuery {
