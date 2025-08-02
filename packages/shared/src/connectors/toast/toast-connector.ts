@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import axios, { AxiosInstance } from 'axios';
 
+import { API_ENDPOINTS } from '../../constants';
 import type { Database } from '../../types/database.generated';
 import { BaseConnector } from '../base-connector';
 import type { 
@@ -9,7 +10,6 @@ import type {
   PaginatedResponse,
   ConnectorCredentials
 } from '../types';
-import { API_ENDPOINTS } from '../../constants';
 
 import type {
   ToastAuthToken,

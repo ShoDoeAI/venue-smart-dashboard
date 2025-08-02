@@ -1,21 +1,26 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { z } from 'zod';
+
+import {
+  metaPageInsightsSchema,
+  metaApiResponseSchema,
+} from '../../schemas/meta';
+import type { Database } from '../../types/database.generated';
 import { BaseConnector } from '../base-connector';
 import type { ConnectorConfig, FetchResult, ConnectorError, ConnectorCredentials } from '../types';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../../types/database.generated';
+
 import type {
   MetaCredentials,
   MetaPageInsights,
   MetaPageMetrics,
   MetaPost,
+  MetaPostInsights,
   MetaAudienceDemographics,
   MetaAnalytics,
   TransformedMetaData,
 } from './types';
-import {
-  metaPageInsightsSchema,
-  metaApiResponseSchema,
-} from '../../schemas/meta';
-import { z } from 'zod';
+
+
 
 /**
  * Meta Business Suite Connector
@@ -60,13 +65,13 @@ export class MetaConnector extends BaseConnector {
   async validateCredentials(): Promise<boolean> {
     try {
       const result = await this.fetchWithRetry(
-        () => this.makeApiRequest(
+        () => this.makeApiRequest<{ error?: unknown }>(
           `/${this.metaCredentials.pageId}?access_token=${this.metaCredentials.accessToken}`,
           { headers: this.headers }
         ),
         'validateCredentials'
       );
-      return result.success && result.data && !result.data?.error;
+      return Boolean(result.success && result.data && !('error' in result.data && result.data.error));
     } catch {
       return false;
     }
@@ -117,7 +122,7 @@ export class MetaConnector extends BaseConnector {
 
       const result = await this.fetchWithRetry(
         () => this.makeApiRequest(
-          `/${this.metaCredentials.pageId}/insights?${params}`,
+          `/${this.metaCredentials.pageId}/insights?${params.toString()}`,
           { headers: this.headers }
         ),
         'fetchPageInsights'
@@ -177,7 +182,7 @@ export class MetaConnector extends BaseConnector {
 
       const result = await this.fetchWithRetry(
         () => this.makeApiRequest(
-          `/${this.metaCredentials.pageId}/posts?${params}`,
+          `/${this.metaCredentials.pageId}/posts?${params.toString()}`,
           { headers: this.headers }
         ),
         'fetchPosts'
@@ -194,7 +199,17 @@ export class MetaConnector extends BaseConnector {
       }
 
       const posts: MetaPost[] = [];
-      const rawPosts = result.data.data || [];
+      const rawPosts = (result.data as { data?: Array<{
+        id: string;
+        message?: string;
+        created_time: string;
+        updated_time?: string;
+        type?: string;
+        permalink?: string;
+        shares?: { count: number };
+        reactions?: { summary?: { total_count?: number } };
+        comments?: { summary?: { total_count?: number } };
+      }> }).data || [];
 
       // Process each post to match our schema
       for (const rawPost of rawPosts) {
@@ -203,7 +218,7 @@ export class MetaConnector extends BaseConnector {
           message: rawPost.message,
           createdTime: rawPost.created_time,
           updatedTime: rawPost.updated_time,
-          type: rawPost.type || 'status',
+          type: (rawPost.type as 'link' | 'status' | 'photo' | 'video' | 'offer') || 'status',
           permalink: rawPost.permalink,
           shares: rawPost.shares,
           reactions: rawPost.reactions?.summary ? {
@@ -223,7 +238,15 @@ export class MetaConnector extends BaseConnector {
         // Fetch insights for this post
         const insightsResult = await this.fetchPostInsights(post.id);
         if (insightsResult.success && insightsResult.data) {
-          post.insights = insightsResult.data;
+          post.insights = {
+            impressions: insightsResult.data.impressions || 0,
+            reach: insightsResult.data.reach || 0,
+            engagement: insightsResult.data.engagement || 0,
+            clicks: insightsResult.data.clicks || 0,
+            reactions: post.reactions?.total || 0,
+            comments: post.comments?.count || 0,
+            shares: post.shares?.count || 0,
+          };
         }
 
         posts.push(post);
@@ -251,7 +274,7 @@ export class MetaConnector extends BaseConnector {
   /**
    * Fetch insights for a specific post
    */
-  private async fetchPostInsights(postId: string): Promise<FetchResult<any>> {
+  private async fetchPostInsights(postId: string): Promise<FetchResult<Partial<MetaPostInsights>>> {
     const startTime = Date.now();
     try {
       const params = new URLSearchParams({
@@ -261,13 +284,13 @@ export class MetaConnector extends BaseConnector {
 
       const result = await this.fetchWithRetry(
         () => this.makeApiRequest(
-          `/${postId}/insights?${params}`,
+          `/${postId}/insights?${params.toString()}`,
           { headers: this.headers }
         ),
         'fetchPostInsights'
       );
 
-      if (!result.success || !result.data?.data) {
+      if (!result.success || !result.data || typeof result.data !== 'object' || !('data' in result.data)) {
         return { 
           success: false, 
           data: undefined, 
@@ -278,14 +301,18 @@ export class MetaConnector extends BaseConnector {
       }
 
       // Transform insights data
-      const insights: any = {
+      const insights: Partial<MetaPostInsights> = {
         impressions: 0,
         reach: 0,
         engagement: 0,
         clicks: 0,
+        reactions: 0,
+        comments: 0,
+        shares: 0,
       };
 
-      for (const insight of result.data.data) {
+      const responseData = result.data as { data: Array<{ name: string; values?: Array<{ value: number }> }> };
+      for (const insight of responseData.data) {
         const value = insight.values?.[0]?.value || 0;
         switch (insight.name) {
           case 'post_impressions':
@@ -336,13 +363,13 @@ export class MetaConnector extends BaseConnector {
 
       const result = await this.fetchWithRetry(
         () => this.makeApiRequest(
-          `/${this.metaCredentials.pageId}/insights?${params}`,
+          `/${this.metaCredentials.pageId}/insights?${params.toString()}`,
           { headers: this.headers }
         ),
         'fetchAudienceDemographics'
       );
 
-      if (!result.success || !result.data?.data) {
+      if (!result.success || !result.data || typeof result.data !== 'object' || !('data' in result.data)) {
         return { 
           success: false, 
           data: undefined, 
@@ -361,8 +388,9 @@ export class MetaConnector extends BaseConnector {
       };
 
       // Process insights data
-      for (const insight of result.data.data) {
-        const value = insight.values?.[0]?.value || {};
+      const responseData = result.data as { data: Array<{ name: string; values?: Array<{ value: unknown }> }> };
+      for (const insight of responseData.data) {
+        const value = (insight.values?.[0]?.value || {}) as Record<string, number>;
         switch (insight.name) {
           case 'page_fans_gender_age':
             demographics.ageGenderDistribution = value;
@@ -617,13 +645,13 @@ export class MetaConnector extends BaseConnector {
   /**
    * Helper method to make API requests
    */
-  private async makeApiRequest(
+  private async makeApiRequest<T = unknown>(
     endpoint: string,
     options?: RequestInit
-  ): Promise<any> {
+  ): Promise<T> {
     const url = endpoint.startsWith('http') ? endpoint : `${this.baseUrl}${endpoint}`;
     const response = await fetch(url, options);
-    const data = await response.json() as any;
+    const data = await response.json() as T & { error?: unknown };
     
     // Check for Facebook API errors
     if (data.error) {
@@ -636,7 +664,7 @@ export class MetaConnector extends BaseConnector {
   /**
    * Parse Meta API errors
    */
-  private parseError(error: any): ConnectorError {
+  private parseError(error: unknown): ConnectorError {
     const connectorError: ConnectorError = {
       code: 'UNKNOWN',
       message: 'Unknown error occurred',
@@ -644,11 +672,12 @@ export class MetaConnector extends BaseConnector {
       retryable: false,
     };
 
-    if (error) {
-      connectorError.message = error.message || connectorError.message;
+    if (error && typeof error === 'object' && 'message' in error && 'code' in error) {
+      const fbError = error as { message?: string; code?: number };
+      connectorError.message = fbError.message || connectorError.message;
       
       // Map Facebook error codes
-      switch (error.code) {
+      switch (fbError.code) {
         case 190:
           connectorError.code = 'AUTH_FAILED';
           connectorError.message = 'Invalid access token';
@@ -681,7 +710,7 @@ export class MetaConnector extends BaseConnector {
   protected handleError(error: unknown, context?: string): ConnectorError {
     // Check if it's a Facebook API error
     if (typeof error === 'object' && error !== null && 'message' in error && 'code' in error) {
-      return this.parseError(error as any);
+      return this.parseError(error);
     }
     
     // Check for Zod validation errors

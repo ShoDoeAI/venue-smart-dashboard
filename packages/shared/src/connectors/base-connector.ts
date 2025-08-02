@@ -2,6 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 
 import type { Database } from '../types/database.generated';
 
+import { CircuitBreaker } from './circuit-breaker';
 import {
   ConnectorConfig,
   ConnectorCredentials,
@@ -14,7 +15,6 @@ import {
   RetryConfig,
   RetryStrategy,
 } from './types';
-import { CircuitBreaker } from './circuit-breaker';
 
 export abstract class BaseConnector {
   protected config: ConnectorConfig;

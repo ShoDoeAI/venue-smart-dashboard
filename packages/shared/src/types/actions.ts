@@ -23,7 +23,7 @@ export interface BaseAction {
   reason?: string;
   impact?: string;
   confidence?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -230,13 +230,13 @@ export interface ActionExecutionResult {
   success: boolean;
   executedAt: string;
   duration: number;
-  result?: any;
+  result?: unknown;
   error?: {
     code: string;
     message: string;
-    details?: any;
+    details?: unknown;
   };
-  rollbackData?: any;
+  rollbackData?: unknown;
 }
 
 /**
@@ -269,7 +269,7 @@ export interface ActionRollback {
   actionId: string;
   service: ActionService;
   actionType: string;
-  rollbackData: any;
+  rollbackData: unknown;
   canRollback: boolean;
   rollbackDeadline?: string;
 }
@@ -315,7 +315,7 @@ export interface ActionTemplate {
   category: 'revenue' | 'capacity' | 'marketing' | 'inventory';
   service: ActionService;
   actionType: string;
-  defaultParameters: Record<string, any>;
+  defaultParameters: Record<string, unknown>;
   conditions?: Array<{
     metric: string;
     operator: 'gt' | 'lt' | 'eq' | 'gte' | 'lte';

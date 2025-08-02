@@ -9,9 +9,21 @@
  * For official API documentation, contact support@wisk.ai
  */
 
-import axios, { AxiosInstance, AxiosError } from 'axios';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import axios, { AxiosInstance, AxiosError } from 'axios';
 
+import {
+  WiskCredentialsSchema,
+  // WiskInventoryItemsResponseSchema,
+  WiskStockMovementsResponseSchema,
+  WiskSuppliersResponseSchema,
+  WiskPurchaseOrdersResponseSchema,
+  WiskRecipesResponseSchema,
+  WiskLocationsResponseSchema,
+  WiskWasteEntriesResponseSchema,
+  WiskTransactionSchema,
+  WiskAnalyticsResponseSchema,
+} from '../../schemas/wisk';
 import { BaseConnector } from '../base-connector';
 import type { 
   ConnectorCredentials, 
@@ -35,20 +47,6 @@ import type {
   WiskApiResponse,
   WiskInventoryAnalytics,
 } from './types';
-
-import {
-  WiskCredentialsSchema,
-  // WiskInventoryItemsResponseSchema,
-  WiskStockMovementsResponseSchema,
-  WiskSuppliersResponseSchema,
-  WiskPurchaseOrdersResponseSchema,
-  WiskRecipesResponseSchema,
-  WiskLocationsResponseSchema,
-  WiskWasteEntriesResponseSchema,
-  WiskTransactionSchema,
-  WiskAnalyticsResponseSchema,
-} from '../../schemas/wisk';
-
 import { WISK_API_ENDPOINTS } from './types';
 
 export class WiskConnector extends BaseConnector {

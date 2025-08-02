@@ -1,11 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import axios from 'axios';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { 
   createMockSupabaseClient, 
   createMockCredentials, 
   createMockConfig
 } from '../test-utils';
+
 import { OpenDateConnector } from './opendate-connector';
 import type { 
   OpenDateArtist, 

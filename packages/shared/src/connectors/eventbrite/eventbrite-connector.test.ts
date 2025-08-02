@@ -1,11 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import axios from 'axios';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { 
   createMockSupabaseClient, 
   createMockCredentials, 
   createMockConfig
 } from '../test-utils';
+
 import { EventbriteConnector } from './eventbrite-connector';
 import type { EventbriteEvent, EventbriteAttendee } from './types';
 

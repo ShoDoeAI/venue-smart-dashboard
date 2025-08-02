@@ -1,12 +1,12 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import axios from 'axios';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 import { 
   createMockSupabaseClient, 
   createMockCredentials, 
   createMockConfig
 } from '../test-utils';
-import { WiskConnector } from './wisk-connector';
+
 import type { 
   WiskInventoryItem, 
   WiskStockMovement, 
@@ -17,6 +17,7 @@ import type {
   WiskWasteEntry,
   WiskInventoryAnalytics
 } from './types';
+import { WiskConnector } from './wisk-connector';
 
 vi.mock('axios', () => ({
   default: {

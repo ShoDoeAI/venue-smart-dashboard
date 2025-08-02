@@ -1,7 +1,17 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { z } from 'zod';
+
+import {
+  audienceRepublicCampaignSchema,
+  audienceRepublicContactSchema,
+  audienceRepublicEventSchema,
+  audienceRepublicAnalyticsSchema,
+  audienceRepublicApiResponseSchema,
+} from '../../schemas/audience-republic';
+import type { Database } from '../../types/database.generated';
 import { BaseConnector } from '../base-connector';
 import type { ConnectorConfig, FetchResult, ConnectorError, ConnectorCredentials } from '../types';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../../types/database.generated';
+
 import type {
   AudienceRepublicCredentials,
   AudienceRepublicCampaign,
@@ -10,14 +20,8 @@ import type {
   AudienceRepublicAnalytics,
   TransformedAudienceRepublicData,
 } from './types';
-import {
-  audienceRepublicCampaignSchema,
-  audienceRepublicContactSchema,
-  audienceRepublicEventSchema,
-  audienceRepublicAnalyticsSchema,
-  audienceRepublicApiResponseSchema,
-} from '../../schemas/audience-republic';
-import { z } from 'zod';
+
+
 
 /**
  * Audience Republic Connector
@@ -98,7 +102,7 @@ export class AudienceRepublicConnector extends BaseConnector {
         ...(endDate && { end_date: endDate.toISOString() }),
       });
 
-      const result = await this.makeApiRequest(`/campaigns?${params}`);
+      const result = await this.makeApiRequest(`/campaigns?${params.toString()}`);
 
       if (!result.success || !result.data) {
         return this.createErrorResult(result.error || new Error('No data received'), startTime);
@@ -135,7 +139,7 @@ export class AudienceRepublicConnector extends BaseConnector {
         offset: offset.toString(),
       });
 
-      const result = await this.makeApiRequest(`/contacts?${params}`);
+      const result = await this.makeApiRequest(`/contacts?${params.toString()}`);
 
       if (!result.success || !result.data) {
         return this.createErrorResult(result.error || new Error('No data received'), startTime);
@@ -172,7 +176,7 @@ export class AudienceRepublicConnector extends BaseConnector {
         ...(endDate && { end_date: endDate.toISOString() }),
       });
 
-      const result = await this.makeApiRequest(`/events?${params}`);
+      const result = await this.makeApiRequest(`/events?${params.toString()}`);
 
       if (!result.success || !result.data) {
         return this.createErrorResult(result.error || new Error('No data received'), startTime);
@@ -209,7 +213,7 @@ export class AudienceRepublicConnector extends BaseConnector {
         end_date: endDate.toISOString(),
       });
 
-      const result = await this.makeApiRequest(`/analytics?${params}`);
+      const result = await this.makeApiRequest(`/analytics?${params.toString()}`);
 
       if (!result.success || !result.data) {
         return this.createErrorResult(result.error || new Error('No data received'), startTime);
@@ -333,7 +337,7 @@ export class AudienceRepublicConnector extends BaseConnector {
   /**
    * Create error result with proper typing
    */
-  private createErrorResult(error: unknown, startTime: number): FetchResult<any> {
+  private createErrorResult<T = unknown>(error: unknown, startTime: number): FetchResult<T> {
     const connectorError: ConnectorError = {
       code: 'UNKNOWN',
       message: error instanceof Error ? error.message : 'Unknown error occurred',

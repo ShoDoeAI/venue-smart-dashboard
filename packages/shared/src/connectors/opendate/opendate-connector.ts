@@ -7,9 +7,20 @@
  * API Documentation: https://opendate.readme.io
  */
 
-import axios, { AxiosInstance, AxiosError } from 'axios';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import axios, { AxiosInstance, AxiosError } from 'axios';
 
+import {
+  OpenDateCredentialsSchema,
+  OpenDateArtistsResponseSchema,
+  OpenDateConfirmsResponseSchema,
+  OpenDateOrdersResponseSchema,
+  OpenDateFansResponseSchema,
+  OpenDateVenuesResponseSchema,
+  OpenDateSettlementsResponseSchema,
+  OpenDateAnalyticsResponseSchema,
+  OpenDateTransactionSchema,
+} from '../../schemas/opendate';
 import { BaseConnector } from '../base-connector';
 import type { 
   ConnectorCredentials, 
@@ -34,19 +45,6 @@ import type {
   OpenDateFanFilters
   // OpenDateApiResponse
 } from './types';
-
-import {
-  OpenDateCredentialsSchema,
-  OpenDateArtistsResponseSchema,
-  OpenDateConfirmsResponseSchema,
-  OpenDateOrdersResponseSchema,
-  OpenDateFansResponseSchema,
-  OpenDateVenuesResponseSchema,
-  OpenDateSettlementsResponseSchema,
-  OpenDateAnalyticsResponseSchema,
-  OpenDateTransactionSchema,
-} from '../../schemas/opendate';
-
 import { OPENDATE_API_ENDPOINTS } from './types';
 
 export class OpenDateConnector extends BaseConnector {

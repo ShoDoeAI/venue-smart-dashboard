@@ -73,7 +73,7 @@ export interface AudienceRepublicContact {
   firstName?: string;
   lastName?: string;
   tags: string[];
-  customFields: Record<string, any>;
+  customFields: Record<string, unknown>;
   subscriptions: ContactSubscription[];
   engagement: ContactEngagement;
   createdAt: string;
@@ -185,7 +185,7 @@ export interface AudienceRepublicWebhook {
 export interface WebhookEvent {
   id: string;
   type: string;
-  data: Record<string, any>;
+  data: Record<string, unknown>;
   createdAt: string;
 }
 
@@ -203,7 +203,7 @@ export interface AudienceRepublicApiResponse<T> {
 export interface AudienceRepublicError {
   code: string;
   message: string;
-  details?: Record<string, any>;
+  details?: Record<string, unknown>;
 }
 
 // Transform to VenueSync transaction format

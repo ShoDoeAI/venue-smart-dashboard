@@ -1,7 +1,19 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { z } from 'zod';
+
+import {
+  openTableReservationSchema,
+  openTableRestaurantSchema,
+  openTableAvailabilitySchema,
+  openTableGuestSchema,
+  openTableReviewSchema,
+  openTableAnalyticsSchema,
+  openTableWaitlistEntrySchema,
+} from '../../schemas/opentable';
+import type { Database } from '../../types/database.generated';
 import { BaseConnector } from '../base-connector';
 import type { ConnectorConfig, FetchResult, ConnectorCredentials, ConnectorError } from '../types';
-import type { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '../../types/database.generated';
+
 import type {
   OpenTableCredentials,
   OpenTableReservation,
@@ -13,16 +25,8 @@ import type {
   OpenTableWaitlistEntry,
   TransformedOpenTableData,
 } from './types';
-import {
-  openTableReservationSchema,
-  openTableRestaurantSchema,
-  openTableAvailabilitySchema,
-  openTableGuestSchema,
-  openTableReviewSchema,
-  openTableAnalyticsSchema,
-  openTableWaitlistEntrySchema,
-} from '../../schemas/opentable';
-import { z } from 'zod';
+
+
 
 /**
  * OpenTable Connector (Placeholder)
