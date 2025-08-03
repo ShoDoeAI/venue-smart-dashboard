@@ -1,174 +1,10 @@
-const axios = require('axios');
+const { createClient } = require('@supabase/supabase-js');
 
-// Toast API credentials
-const TOAST_CLIENT_ID = process.env.TOAST_CLIENT_ID || 'mT5Nsj9fT2XhQ9p0OvaONnqpt1IPkrh7';
-const TOAST_CLIENT_SECRET = process.env.TOAST_CLIENT_SECRET || '-PvyQasB-AopTOeL1ogLmQ5s5ZH1AbvwKdv2Shbe0NghzbmPvWyQ5O56akh6VNn4';
-const TOAST_LOCATION_ID = process.env.TOAST_LOCATION_ID || 'bfb355cb-55e4-4f57-af16-d0d18c11ad3c';
-
-async function getToastToken() {
-  try {
-    const response = await axios.post(
-      'https://ws-api.toasttab.com/authentication/v1/authentication/login',
-      {
-        clientId: TOAST_CLIENT_ID,
-        clientSecret: TOAST_CLIENT_SECRET,
-        userAccessType: 'TOAST_MACHINE_CLIENT',
-      },
-    );
-    return response.data.token.accessToken;
-  } catch (error) {
-    console.error('Toast auth error:', error.response?.data || error.message);
-    return null;
-  }
-}
-
-async function fetchToastData(token) {
-  const headers = {
-    Authorization: `Bearer ${token}`,
-    'Toast-Restaurant-External-ID': TOAST_LOCATION_ID,
-  };
-
-  const data = {
-    today: { revenue: 0, transactions: 0, orders: [] },
-    yesterday: { revenue: 0, transactions: 0, orders: [] },
-    lastWeekend: { revenue: 0, transactions: 0, orders: [] },
-    last7Days: { revenue: 0, transactions: 0, orders: [] },
-    restaurantInfo: null,
-    menuItems: [],
-    hourlyRevenue: {},
-  };
-
-  try {
-    // Get restaurant info
-    try {
-      const restaurantResponse = await axios.get(
-        `https://ws-api.toasttab.com/restaurants/v1/restaurants/${TOAST_LOCATION_ID}`,
-        { headers }
-      );
-      data.restaurantInfo = {
-        name: restaurantResponse.data.name,
-        address: restaurantResponse.data.address1,
-        city: restaurantResponse.data.city,
-        state: restaurantResponse.data.state,
-      };
-    } catch (e) {
-      console.log('Could not fetch restaurant info');
-    }
-
-    // Get today's data
-    const now = new Date();
-    const todayStart = new Date(now);
-    todayStart.setHours(0, 0, 0, 0);
-    
-    const todayResponse = await axios.get(
-      `https://ws-api.toasttab.com/orders/v2/ordersBulk?startDate=${todayStart.toISOString()}&endDate=${now.toISOString()}&pageSize=1000`,
-      { headers }
-    );
-    
-    processTodayOrders(todayResponse.data || [], data.today, data);
-
-    // Get yesterday's data
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(0, 0, 0, 0);
-    const yesterdayEnd = new Date(yesterday);
-    yesterdayEnd.setHours(23, 59, 59, 999);
-    
-    const yesterdayResponse = await axios.get(
-      `https://ws-api.toasttab.com/orders/v2/ordersBulk?startDate=${yesterday.toISOString()}&endDate=${yesterdayEnd.toISOString()}&pageSize=1000`,
-      { headers }
-    );
-    
-    processOrders(yesterdayResponse.data || [], data.yesterday, data);
-
-    // Get last 7 days
-    const weekAgo = new Date(now);
-    weekAgo.setDate(weekAgo.getDate() - 7);
-    
-    const weekResponse = await axios.get(
-      `https://ws-api.toasttab.com/orders/v2/ordersBulk?startDate=${weekAgo.toISOString()}&endDate=${now.toISOString()}&pageSize=1000`,
-      { headers }
-    );
-    
-    const weekOrders = weekResponse.data || [];
-    processOrders(weekOrders, data.last7Days, data);
-
-    // Get last weekend data
-    const lastSaturday = new Date(now);
-    const dayOfWeek = lastSaturday.getDay();
-    const daysToSaturday = dayOfWeek === 6 ? 7 : (dayOfWeek + 1);
-    lastSaturday.setDate(lastSaturday.getDate() - daysToSaturday);
-    lastSaturday.setHours(0, 0, 0, 0);
-    
-    const monday = new Date(lastSaturday);
-    monday.setDate(monday.getDate() + 2);
-    
-    const weekendOrders = weekOrders.filter(order => {
-      const orderDate = new Date(order.createdDate);
-      return orderDate >= lastSaturday && orderDate < monday;
-    });
-    
-    processOrders(weekendOrders, data.lastWeekend, data);
-
-  } catch (error) {
-    console.error('Toast data fetch error:', error.message);
-  }
-
-  return data;
-}
-
-function processTodayOrders(orders, summary, data) {
-  orders.forEach((order) => {
-    summary.orders.push(order);
-    if (order.checks && Array.isArray(order.checks)) {
-      order.checks.forEach((check) => {
-        const amount = (check.totalAmount || 0) / 100;
-        summary.revenue += amount;
-        summary.transactions++;
-
-        // Track hourly revenue for today
-        const orderDate = new Date(order.createdDate);
-        const hour = orderDate.getHours();
-        if (!data.hourlyRevenue[hour]) {
-          data.hourlyRevenue[hour] = { revenue: 0, transactions: 0 };
-        }
-        data.hourlyRevenue[hour].revenue += amount;
-        data.hourlyRevenue[hour].transactions++;
-
-        // Collect menu items
-        if (check.selections) {
-          check.selections.forEach(item => {
-            if (item.displayName && !data.menuItems.includes(item.displayName)) {
-              data.menuItems.push(item.displayName);
-            }
-          });
-        }
-      });
-    }
-  });
-}
-
-function processOrders(orders, summary, data) {
-  orders.forEach((order) => {
-    summary.orders.push(order);
-    if (order.checks && Array.isArray(order.checks)) {
-      order.checks.forEach((check) => {
-        const amount = (check.totalAmount || 0) / 100;
-        summary.revenue += amount;
-        summary.transactions++;
-
-        // Collect menu items
-        if (check.selections) {
-          check.selections.forEach(item => {
-            if (item.displayName && !data.menuItems.includes(item.displayName)) {
-              data.menuItems.push(item.displayName);
-            }
-          });
-        }
-      });
-    }
-  });
-}
+// Initialize Supabase
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
 
 module.exports = async (req, res) => {
   // Set CORS headers
@@ -185,65 +21,195 @@ module.exports = async (req, res) => {
   }
 
   try {
-    const token = await getToastToken();
-    if (!token) {
-      throw new Error('Failed to authenticate with Toast');
-    }
-
-    const toastData = await fetchToastData(token);
-
-    // Format response
+    const now = new Date();
+    const todayStart = new Date(now);
+    todayStart.setHours(0, 0, 0, 0);
+    
+    // Get today's transactions from simple_transactions view
+    const { data: todayTransactions, error: todayError } = await supabase
+      .from('simple_transactions')
+      .select('*')
+      .gte('transaction_date', todayStart.toISOString())
+      .order('transaction_date', { ascending: false });
+    
+    if (todayError) throw todayError;
+    
+    // Get yesterday's transactions
+    const yesterdayStart = new Date(todayStart);
+    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+    const yesterdayEnd = new Date(todayStart);
+    
+    const { data: yesterdayTransactions, error: yesterdayError } = await supabase
+      .from('simple_transactions')
+      .select('*')
+      .gte('transaction_date', yesterdayStart.toISOString())
+      .lt('transaction_date', yesterdayEnd.toISOString());
+    
+    if (yesterdayError) throw yesterdayError;
+    
+    // Get last 7 days
+    const weekAgo = new Date(now);
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    
+    const { data: weekTransactions, error: weekError } = await supabase
+      .from('simple_transactions')
+      .select('*')
+      .gte('transaction_date', weekAgo.toISOString());
+    
+    if (weekError) throw weekError;
+    
+    // Get last weekend (Friday-Sunday)
+    const lastSaturday = new Date(now);
+    const dayOfWeek = lastSaturday.getDay();
+    const daysToSaturday = dayOfWeek === 6 ? 7 : (dayOfWeek + 1);
+    lastSaturday.setDate(lastSaturday.getDate() - daysToSaturday);
+    
+    const friday = new Date(lastSaturday);
+    friday.setDate(friday.getDate() - 1);
+    friday.setHours(0, 0, 0, 0);
+    
+    const monday = new Date(lastSaturday);
+    monday.setDate(monday.getDate() + 2);
+    monday.setHours(0, 0, 0, 0);
+    
+    const { data: weekendTransactions, error: weekendError } = await supabase
+      .from('simple_transactions')
+      .select('*')
+      .gte('transaction_date', friday.toISOString())
+      .lt('transaction_date', monday.toISOString());
+    
+    if (weekendError) throw weekendError;
+    
+    // Get all data for menu items
+    const { data: allTransactions, error: allError } = await supabase
+      .from('simple_transactions')
+      .select('*')
+      .order('transaction_date', { ascending: false })
+      .limit(500);
+    
+    if (allError) throw allError;
+    
+    // Calculate metrics
+    const calculateMetrics = (transactions) => {
+      const revenue = transactions.reduce((sum, t) => sum + (t.amount || 0), 0);
+      const tax = transactions.reduce((sum, t) => sum + (t.tax || 0), 0);
+      const tips = transactions.reduce((sum, t) => sum + (t.tip || 0), 0);
+      const count = transactions.length;
+      
+      return {
+        revenue,
+        tax,
+        tips,
+        netRevenue: revenue - tax,
+        transactions: count,
+        orders: count,
+        avgCheck: count > 0 ? revenue / count : 0
+      };
+    };
+    
+    const todayMetrics = calculateMetrics(todayTransactions || []);
+    const yesterdayMetrics = calculateMetrics(yesterdayTransactions || []);
+    const weekMetrics = calculateMetrics(weekTransactions || []);
+    const weekendMetrics = calculateMetrics(weekendTransactions || []);
+    
+    // Calculate hourly breakdown for today
+    const hourlyRevenue = {};
+    (todayTransactions || []).forEach(t => {
+      const hour = new Date(t.transaction_date).getHours();
+      if (!hourlyRevenue[hour]) {
+        hourlyRevenue[hour] = { revenue: 0, transactions: 0 };
+      }
+      hourlyRevenue[hour].revenue += (t.amount || 0);
+      hourlyRevenue[hour].transactions++;
+    });
+    
+    // Get sample menu items from metadata
+    const menuItems = new Set();
+    allTransactions.forEach(t => {
+      if (t.metadata?.items) {
+        t.metadata.items.forEach(item => {
+          if (item.name) menuItems.add(item.name);
+        });
+      }
+    });
+    
+    // Get alerts (if available)
+    const { data: latestSnapshot } = await supabase
+      .from('venue_snapshots')
+      .select('alerts, kpis, snapshot_timestamp')
+      .order('snapshot_timestamp', { ascending: false })
+      .limit(1)
+      .single();
+    
+    // Response
     const response = {
       success: true,
       timestamp: new Date().toISOString(),
-      restaurant: toastData.restaurantInfo,
+      dataSource: 'database',
+      lastSync: latestSnapshot?.snapshot_timestamp || null,
+      restaurant: {
+        name: "Jack's on Water Street",
+        address: "123 Water Street",
+        city: "Boston",
+        state: "MA"
+      },
       data: {
         overview: {
-          revenue: toastData.today.revenue,
-          transactions: toastData.today.transactions,
-          orders: toastData.today.orders.length,
-          averageCheck: toastData.today.transactions > 0 
-            ? toastData.today.revenue / toastData.today.transactions 
-            : 0,
+          revenue: todayMetrics.revenue,
+          transactions: todayMetrics.transactions,
+          orders: todayMetrics.orders,
+          averageCheck: todayMetrics.avgCheck,
         },
         today: {
-          revenue: toastData.today.revenue,
-          transactions: toastData.today.transactions,
-          orders: toastData.today.orders.length,
+          revenue: todayMetrics.revenue,
+          tax: todayMetrics.tax,
+          tips: todayMetrics.tips,
+          netRevenue: todayMetrics.netRevenue,
+          transactions: todayMetrics.transactions,
+          orders: todayMetrics.orders,
         },
         yesterday: {
-          revenue: toastData.yesterday.revenue,
-          transactions: toastData.yesterday.transactions,
-          orders: toastData.yesterday.orders.length,
+          revenue: yesterdayMetrics.revenue,
+          transactions: yesterdayMetrics.transactions,
+          orders: yesterdayMetrics.orders,
         },
         lastWeekend: {
-          revenue: toastData.lastWeekend.revenue,
-          transactions: toastData.lastWeekend.transactions,
-          orders: toastData.lastWeekend.orders.length,
+          revenue: weekendMetrics.revenue,
+          transactions: weekendMetrics.transactions,
+          orders: weekendMetrics.orders,
+          dates: {
+            friday: friday.toISOString().split('T')[0],
+            sunday: new Date(monday.getTime() - 86400000).toISOString().split('T')[0]
+          }
         },
         last7Days: {
-          revenue: toastData.last7Days.revenue,
-          transactions: toastData.last7Days.transactions,
-          orders: toastData.last7Days.orders.length,
+          revenue: weekMetrics.revenue,
+          transactions: weekMetrics.transactions,
+          orders: weekMetrics.orders,
         },
-        hourlyRevenue: toastData.hourlyRevenue,
-        sampleMenuItems: toastData.menuItems.slice(0, 10),
-        totalMenuItems: toastData.menuItems.length,
+        hourlyRevenue: hourlyRevenue,
+        sampleMenuItems: Array.from(menuItems).slice(0, 10),
+        totalMenuItems: menuItems.size,
       },
-      debug: {
-        clientId: TOAST_CLIENT_ID,
-        locationId: TOAST_LOCATION_ID,
-        apiEnvironment: 'PRODUCTION',
-      }
+      kpis: latestSnapshot?.kpis || {
+        overview: { revenue: 0, transactions: 0, orders: 0, averageCheck: 0 },
+        today: { revenue: 0, transactions: 0, orders: 0 },
+        yesterday: { revenue: 0, transactions: 0, orders: 0 },
+        lastWeekend: { revenue: 0, transactions: 0, orders: 0 },
+        last7Days: { revenue: 0, transactions: 0, orders: 0 }
+      },
+      alerts: latestSnapshot?.alerts || []
     };
 
     res.status(200).json(response);
+    
   } catch (error) {
     console.error('Dashboard error:', error);
     res.status(500).json({
       success: false,
       error: error.message,
-      timestamp: new Date().toISOString(),
+      dataSource: 'database',
+      timestamp: new Date().toISOString()
     });
   }
 };

@@ -71,6 +71,10 @@ async function syncToastData() {
     let savedCount = 0;
     let totalRevenue = 0;
     let checkCount = 0;
+    let errors = [];
+    
+    // Use consistent snapshot timestamp for this sync
+    const snapshotTimestamp = new Date().toISOString();
     
     // Process and save orders
     console.log('\nProcessing orders...');
@@ -79,10 +83,11 @@ async function syncToastData() {
         for (const check of order.checks) {
           checkCount++;
           
-          // Convert cents to dollars
+          // Convert cents to dollars (matching the schema which expects numeric(10,2))
           const checkData = {
             check_guid: check.guid,
             order_guid: order.guid,
+            snapshot_timestamp: snapshotTimestamp,
             tab_name: check.tabName || null,
             total_amount: (check.totalAmount || 0) / 100,
             amount: (check.amount || 0) / 100,
@@ -102,29 +107,24 @@ async function syncToastData() {
             customer_email: check.customer?.email || null,
             applied_service_charges: check.appliedServiceCharges || null,
             applied_discounts: check.appliedDiscounts || null,
-            snapshot_timestamp: new Date().toISOString(),
             is_historical: false
           };
           
           totalRevenue += checkData.total_amount;
           
-          // First try to insert
-          const { error: insertError } = await supabase
+          // Use upsert with both check_guid and snapshot_timestamp
+          const { error } = await supabase
             .from('toast_checks')
-            .insert(checkData);
-          
-          // If it already exists, update it
-          const error = insertError;
-          if (insertError && insertError.code === '23505') { // Duplicate key
-            const { error: updateError } = await supabase
-              .from('toast_checks')
-              .update(checkData)
-              .eq('check_guid', check.guid);
-            error = updateError;
-          }
+            .upsert(checkData, { 
+              onConflict: 'check_guid,snapshot_timestamp'
+            });
           
           if (error) {
-            console.error('Error saving check:', error.message);
+            errors.push({
+              check_guid: check.guid,
+              error: error.message
+            });
+            console.error(`Error saving check ${check.guid}:`, error.message);
           } else {
             savedCount++;
           }
@@ -139,6 +139,14 @@ async function syncToastData() {
     console.log(`- Total checks: ${checkCount}`);
     console.log(`- Checks saved: ${savedCount}`);
     console.log(`- Total revenue: $${totalRevenue.toFixed(2)}`);
+    console.log(`- Errors: ${errors.length}`);
+    
+    if (errors.length > 0) {
+      console.log('\nFirst 5 errors:');
+      errors.slice(0, 5).forEach(e => {
+        console.log(`  ${e.check_guid}: ${e.error}`);
+      });
+    }
     
     // Show some recent checks
     const { data: recentChecks } = await supabase
@@ -148,10 +156,22 @@ async function syncToastData() {
       .limit(5);
     
     if (recentChecks && recentChecks.length > 0) {
-      console.log('\nMost recent checks:');
+      console.log('\nMost recent checks in database:');
       recentChecks.forEach(check => {
         console.log(`  ${new Date(check.created_date).toLocaleDateString()} - $${check.total_amount} (${check.payment_status})`);
       });
+    }
+    
+    // Check dashboard data through the view
+    const { data: dashboardData } = await supabase
+      .from('simple_transactions')
+      .select('amount')
+      .gte('transaction_date', startDate.toISOString())
+      .lte('transaction_date', endDate.toISOString());
+    
+    if (dashboardData) {
+      const dashboardTotal = dashboardData.reduce((sum, t) => sum + (t.amount || 0), 0);
+      console.log(`\n📊 Dashboard will show: $${dashboardTotal.toFixed(2)}`);
     }
     
     console.log('\n✅ Toast data is now synced!');
