@@ -2,6 +2,7 @@ import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@venuesync/shared';
 import { KPICalculator } from './kpi-calculator';
 import type { AIContext } from './claude-ai';
+import { ToastAnalytics } from './toast-analytics';
 
 export interface AlertRule {
   id: string;
@@ -15,9 +16,11 @@ export interface AlertRule {
 
 export class AIContextAggregator {
   private kpiCalculator: KPICalculator;
+  private toastAnalytics: ToastAnalytics;
 
   constructor(private supabase: SupabaseClient<Database>) {
     this.kpiCalculator = new KPICalculator(supabase);
+    this.toastAnalytics = new ToastAnalytics(supabase);
   }
 
   /**
@@ -566,6 +569,130 @@ export class AIContextAggregator {
           transaction_count: worstDay.transaction_count,
         },
       },
+    };
+  }
+
+  /**
+   * Build enhanced context with Toast analytics based on query type
+   */
+  async buildEnhancedContext(
+    venueId: string,
+    queryType: 'revenue' | 'menu' | 'customers' | 'labor' | 'general',
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<AIContext & { toastAnalytics?: any }> {
+    // Get base context
+    const baseContext = await this.buildContext(venueId);
+    
+    // Get location ID for Toast data
+    const { data: credentials } = await this.supabase
+      .from('api_credentials')
+      .select('credentials')
+      .eq('venue_id', venueId)
+      .eq('service', 'toast')
+      .single();
+    
+    if (!credentials?.credentials?.locationGuid) {
+      return baseContext;
+    }
+    
+    const locationId = credentials.credentials.locationGuid;
+    const now = new Date();
+    const defaultStart = startDate || new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const defaultEnd = endDate || now;
+    
+    let toastAnalytics: any = {};
+    
+    switch (queryType) {
+      case 'revenue':
+        // Get comparative metrics
+        const comparative = await this.toastAnalytics.getComparativeMetrics(
+          locationId,
+          defaultStart,
+          defaultEnd,
+          'previous_period'
+        );
+        toastAnalytics.comparative = comparative;
+        
+        // Get hourly patterns
+        const { data: hourlyRevenue } = await this.supabase
+          .from('toast_checks')
+          .select('created_date, total_amount')
+          .gte('created_date', defaultStart.toISOString())
+          .lte('created_date', defaultEnd.toISOString())
+          .eq('voided', false);
+        
+        const hourlyPattern = new Map<number, number>();
+        hourlyRevenue?.forEach(check => {
+          const hour = new Date(check.created_date).getHours();
+          hourlyPattern.set(hour, (hourlyPattern.get(hour) || 0) + (check.total_amount || 0));
+        });
+        
+        toastAnalytics.hourlyPattern = Array.from(hourlyPattern.entries())
+          .sort((a, b) => a[0] - b[0])
+          .map(([hour, revenue]) => ({ hour, revenue }));
+        break;
+        
+      case 'menu':
+        // Get menu performance
+        const menuPerformance = await this.toastAnalytics.analyzeMenuPerformance(
+          locationId,
+          defaultStart,
+          defaultEnd
+        );
+        toastAnalytics.menuPerformance = menuPerformance;
+        
+        // Get pour cost analysis if asking about drinks
+        const pourCost = await this.toastAnalytics.analyzePourCost(
+          locationId,
+          defaultStart,
+          defaultEnd
+        );
+        toastAnalytics.pourCost = pourCost;
+        break;
+        
+      case 'customers':
+        // Get customer analysis
+        const customerAnalysis = await this.toastAnalytics.analyzeCustomers(
+          locationId,
+          defaultStart,
+          defaultEnd
+        );
+        toastAnalytics.customers = customerAnalysis;
+        break;
+        
+      case 'labor':
+        // Get labor analysis
+        const laborAnalysis = await this.toastAnalytics.analyzeLaborCost(
+          locationId,
+          defaultStart
+        );
+        toastAnalytics.labor = laborAnalysis;
+        break;
+        
+      case 'general':
+      default:
+        // Get a bit of everything for general context
+        const generalComparative = await this.toastAnalytics.getComparativeMetrics(
+          locationId,
+          defaultStart,
+          defaultEnd,
+          'previous_period'
+        );
+        toastAnalytics.comparative = generalComparative;
+        
+        const topItems = await this.toastAnalytics.analyzeMenuPerformance(
+          locationId,
+          defaultStart,
+          defaultEnd
+        );
+        toastAnalytics.topMenuItems = topItems.slice(0, 5);
+        break;
+    }
+    
+    return {
+      ...baseContext,
+      toastAnalytics
     };
   }
 

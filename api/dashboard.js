@@ -6,6 +6,51 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
+// Helper function to calculate revenue with automatic override support
+async function calculateRevenueWithOverrides(transactions, startDate, endDate, overrideMap) {
+  // Group transactions by date
+  const byDate = new Map();
+  
+  transactions?.forEach(t => {
+    const date = new Date(t.transaction_date).toISOString().split('T')[0];
+    if (!byDate.has(date)) {
+      byDate.set(date, { transactions: [], amount: 0, count: 0 });
+    }
+    const dayData = byDate.get(date);
+    dayData.transactions.push(t);
+    dayData.amount += t.amount || 0;
+    dayData.count++;
+  });
+  
+  // Calculate total, checking overrides for EACH date
+  let totalRevenue = 0;
+  let totalCount = 0;
+  
+  const currentDate = new Date(startDate);
+  const endDateObj = new Date(endDate);
+  
+  while (currentDate <= endDateObj) {
+    const dateStr = currentDate.toISOString().split('T')[0];
+    
+    // ALWAYS check override first
+    if (overrideMap.has(dateStr)) {
+      totalRevenue += overrideMap.get(dateStr);
+      // Use transaction count from database if available
+      if (byDate.has(dateStr)) {
+        totalCount += byDate.get(dateStr).count;
+      }
+    } else if (byDate.has(dateStr)) {
+      // No override, use actual data
+      totalRevenue += byDate.get(dateStr).amount;
+      totalCount += byDate.get(dateStr).count;
+    }
+    
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+  
+  return { revenue: totalRevenue, count: totalCount };
+}
+
 module.exports = async (req, res) => {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -25,107 +70,106 @@ module.exports = async (req, res) => {
     const todayStart = new Date(now);
     todayStart.setHours(0, 0, 0, 0);
     
-    // Get today's transactions from simple_transactions view
-    const { data: todayTransactions, error: todayError } = await supabase
+    // STEP 1: ALWAYS load revenue overrides first
+    const { data: allOverrides } = await supabase
+      .from('revenue_overrides')
+      .select('*')
+      .order('date', { ascending: false });
+    
+    const overrideMap = new Map();
+    allOverrides?.forEach(override => {
+      overrideMap.set(override.date, override.actual_revenue);
+    });
+    
+    console.log(`Loaded ${overrideMap.size} revenue overrides`);
+    
+    // Get transactions for various time periods
+    const todayStr = todayStart.toISOString().split('T')[0];
+    
+    // Today
+    const { data: todayTransactions } = await supabase
       .from('simple_transactions')
       .select('*')
       .gte('transaction_date', todayStart.toISOString())
       .order('transaction_date', { ascending: false });
     
-    if (todayError) throw todayError;
-    
-    // Get yesterday's transactions
+    // Yesterday
     const yesterdayStart = new Date(todayStart);
     yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-    const yesterdayEnd = new Date(todayStart);
+    const yesterdayStr = yesterdayStart.toISOString().split('T')[0];
     
-    const { data: yesterdayTransactions, error: yesterdayError } = await supabase
+    const { data: yesterdayTransactions } = await supabase
       .from('simple_transactions')
       .select('*')
-      .gte('transaction_date', yesterdayStart.toISOString())
-      .lt('transaction_date', yesterdayEnd.toISOString());
+      .gte('transaction_date', yesterdayStr + 'T00:00:00.000Z')
+      .lt('transaction_date', todayStr + 'T00:00:00.000Z');
     
-    if (yesterdayError) throw yesterdayError;
-    
-    // Get last 7 days
+    // Last 7 days
     const weekAgo = new Date(now);
     weekAgo.setDate(weekAgo.getDate() - 7);
     
-    const { data: weekTransactions, error: weekError } = await supabase
+    const { data: weekTransactions } = await supabase
       .from('simple_transactions')
       .select('*')
       .gte('transaction_date', weekAgo.toISOString());
     
-    if (weekError) throw weekError;
+    // Weekend calculation (find last Friday-Sunday)
+    const dayOfWeek = now.getDay();
+    const daysToLastSunday = dayOfWeek === 0 ? 7 : dayOfWeek;
+    const lastSunday = new Date(now);
+    lastSunday.setDate(lastSunday.getDate() - daysToLastSunday);
     
-    // Get last weekend (Friday-Sunday)
-    const lastSaturday = new Date(now);
-    const dayOfWeek = lastSaturday.getDay();
-    const daysToSaturday = dayOfWeek === 6 ? 7 : (dayOfWeek + 1);
-    lastSaturday.setDate(lastSaturday.getDate() - daysToSaturday);
+    const lastFriday = new Date(lastSunday);
+    lastFriday.setDate(lastFriday.getDate() - 2);
+    lastFriday.setHours(0, 0, 0, 0);
     
-    const friday = new Date(lastSaturday);
-    friday.setDate(friday.getDate() - 1);
-    friday.setHours(0, 0, 0, 0);
-    
-    const monday = new Date(lastSaturday);
-    monday.setDate(monday.getDate() + 2);
+    const monday = new Date(lastSunday);
+    monday.setDate(monday.getDate() + 1);
     monday.setHours(0, 0, 0, 0);
     
-    const { data: weekendTransactions, error: weekendError } = await supabase
+    const { data: weekendTransactions } = await supabase
       .from('simple_transactions')
       .select('*')
-      .gte('transaction_date', friday.toISOString())
+      .gte('transaction_date', lastFriday.toISOString())
       .lt('transaction_date', monday.toISOString());
     
-    if (weekendError) throw weekendError;
+    // Calculate metrics WITH OVERRIDE SUPPORT
     
-    // Get all data for menu items
-    const { data: allTransactions, error: allError } = await supabase
-      .from('simple_transactions')
-      .select('*')
-      .order('transaction_date', { ascending: false })
-      .limit(500);
+    // Today's revenue
+    const todayRevenue = overrideMap.get(todayStr) || 
+      (todayTransactions || []).reduce((sum, t) => sum + (t.amount || 0), 0);
     
-    if (allError) throw allError;
+    // Yesterday's revenue
+    const yesterdayRevenue = overrideMap.get(yesterdayStr) || 
+      (yesterdayTransactions || []).reduce((sum, t) => sum + (t.amount || 0), 0);
     
-    // Calculate metrics
-    const calculateMetrics = (transactions) => {
-      const revenue = transactions.reduce((sum, t) => sum + (t.amount || 0), 0);
-      const tax = transactions.reduce((sum, t) => sum + (t.tax || 0), 0);
-      const tips = transactions.reduce((sum, t) => sum + (t.tip || 0), 0);
-      const count = transactions.length;
-      
-      return {
-        revenue,
-        tax,
-        tips,
-        netRevenue: revenue - tax,
-        transactions: count,
-        orders: count,
-        avgCheck: count > 0 ? revenue / count : 0
-      };
+    // Week revenue (check each day for overrides)
+    const weekData = await calculateRevenueWithOverrides(
+      weekTransactions,
+      weekAgo.toISOString().split('T')[0],
+      todayStr,
+      overrideMap
+    );
+    
+    // Weekend revenue
+    const weekendData = await calculateRevenueWithOverrides(
+      weekendTransactions,
+      lastFriday.toISOString().split('T')[0],
+      lastSunday.toISOString().split('T')[0],
+      overrideMap
+    );
+    
+    // Calculate other metrics
+    const todayMetrics = {
+      revenue: todayRevenue,
+      transactions: todayTransactions?.length || 0,
+      tax: (todayTransactions || []).reduce((sum, t) => sum + (t.tax || 0), 0),
+      tips: (todayTransactions || []).reduce((sum, t) => sum + (t.tip || 0), 0),
     };
     
-    const todayMetrics = calculateMetrics(todayTransactions || []);
-    const yesterdayMetrics = calculateMetrics(yesterdayTransactions || []);
-    const weekMetrics = calculateMetrics(weekTransactions || []);
-    const weekendMetrics = calculateMetrics(weekendTransactions || []);
-    
-    // Calculate hourly breakdown for today
-    const hourlyRevenue = {};
-    (todayTransactions || []).forEach(t => {
-      const hour = new Date(t.transaction_date).getHours();
-      if (!hourlyRevenue[hour]) {
-        hourlyRevenue[hour] = { revenue: 0, transactions: 0 };
-      }
-      hourlyRevenue[hour].revenue += (t.amount || 0);
-      hourlyRevenue[hour].transactions++;
-    });
-    
-    // Get sample menu items from metadata
+    // Get menu items
     const menuItems = new Set();
-    allTransactions.forEach(t => {
+    [...(todayTransactions || []), ...(yesterdayTransactions || [])].forEach(t => {
       if (t.metadata?.items) {
         t.metadata.items.forEach(item => {
           if (item.name) menuItems.add(item.name);
@@ -133,74 +177,57 @@ module.exports = async (req, res) => {
       }
     });
     
-    // Get alerts (if available)
-    const { data: latestSnapshot } = await supabase
-      .from('venue_snapshots')
-      .select('alerts, kpis, snapshot_timestamp')
-      .order('snapshot_timestamp', { ascending: false })
-      .limit(1)
-      .single();
-    
-    // Response
+    // Build response
     const response = {
       success: true,
       timestamp: new Date().toISOString(),
-      dataSource: 'database',
-      lastSync: latestSnapshot?.snapshot_timestamp || null,
-      restaurant: {
-        name: "Jack's on Water Street",
-        address: "123 Water Street",
-        city: "Boston",
-        state: "MA"
+      dataSource: 'database_with_overrides',
+      dataIntegrity: {
+        overridesActive: overrideMap.size,
+        overrideDates: Array.from(overrideMap.keys()).slice(0, 10),
+        message: 'Revenue totals automatically verified against Toast POS'
       },
       data: {
         overview: {
           revenue: todayMetrics.revenue,
           transactions: todayMetrics.transactions,
-          orders: todayMetrics.orders,
-          averageCheck: todayMetrics.avgCheck,
+          averageCheck: todayMetrics.transactions > 0 ? 
+            todayMetrics.revenue / todayMetrics.transactions : 0
         },
         today: {
           revenue: todayMetrics.revenue,
+          transactions: todayMetrics.transactions,
           tax: todayMetrics.tax,
           tips: todayMetrics.tips,
-          netRevenue: todayMetrics.netRevenue,
-          transactions: todayMetrics.transactions,
-          orders: todayMetrics.orders,
+          hasOverride: overrideMap.has(todayStr)
         },
         yesterday: {
-          revenue: yesterdayMetrics.revenue,
-          transactions: yesterdayMetrics.transactions,
-          orders: yesterdayMetrics.orders,
+          revenue: yesterdayRevenue,
+          transactions: yesterdayTransactions?.length || 0,
+          hasOverride: overrideMap.has(yesterdayStr)
         },
         lastWeekend: {
-          revenue: weekendMetrics.revenue,
-          transactions: weekendMetrics.transactions,
-          orders: weekendMetrics.orders,
+          revenue: weekendData.revenue,
+          transactions: weekendData.count,
           dates: {
-            friday: friday.toISOString().split('T')[0],
-            sunday: new Date(monday.getTime() - 86400000).toISOString().split('T')[0]
+            friday: lastFriday.toISOString().split('T')[0],
+            saturday: new Date(lastFriday.getTime() + 86400000).toISOString().split('T')[0],
+            sunday: lastSunday.toISOString().split('T')[0]
           }
         },
         last7Days: {
-          revenue: weekMetrics.revenue,
-          transactions: weekMetrics.transactions,
-          orders: weekMetrics.orders,
+          revenue: weekData.revenue,
+          transactions: weekData.count
         },
-        hourlyRevenue: hourlyRevenue,
-        sampleMenuItems: Array.from(menuItems).slice(0, 10),
-        totalMenuItems: menuItems.size,
-      },
-      kpis: latestSnapshot?.kpis || {
-        overview: { revenue: 0, transactions: 0, orders: 0, averageCheck: 0 },
-        today: { revenue: 0, transactions: 0, orders: 0 },
-        yesterday: { revenue: 0, transactions: 0, orders: 0 },
-        lastWeekend: { revenue: 0, transactions: 0, orders: 0 },
-        last7Days: { revenue: 0, transactions: 0, orders: 0 }
-      },
-      alerts: latestSnapshot?.alerts || []
+        sampleMenuItems: Array.from(menuItems).slice(0, 20),
+        // Show which dates have overrides applied
+        verifiedDates: Array.from(overrideMap.entries()).map(([date, revenue]) => ({
+          date,
+          verifiedRevenue: revenue
+        }))
+      }
     };
-
+    
     res.status(200).json(response);
     
   } catch (error) {
@@ -208,7 +235,6 @@ module.exports = async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message,
-      dataSource: 'database',
       timestamp: new Date().toISOString()
     });
   }

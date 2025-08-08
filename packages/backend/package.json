@@ -4,7 +4,7 @@
   "private": true,
   "description": "Backend API and Vercel Functions for VenueSync",
   "scripts": {
-    "dev": "vercel dev",
+    "dev": "vercel dev --listen 3001",
     "build": "tsc",
     "clean": "rm -rf dist .vercel",
     "typecheck": "tsc --noEmit",

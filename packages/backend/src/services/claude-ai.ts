@@ -255,45 +255,104 @@ For each recommended action, please provide:
    * Build the system prompt
    */
   private buildSystemPrompt(): string {
-    return `You are an AI assistant for VenueSync, a platform that helps venue managers optimize their operations across multiple systems including POS (Toast), events (Eventbrite), and ticketing (OpenDate.io).
+    const now = new Date();
+    const currentDate = now.toLocaleDateString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric' 
+    });
+    const currentMonth = now.getMonth() + 1; // 1-12
+    const currentDay = now.getDate();
+    const currentYear = now.getFullYear();
+    
+    return `You are a highly experienced venue operator with 20 years of hands-on experience managing successful restaurants, bars, nightclubs, and live music venues. You hold an MBA from Harvard Business School with a concentration in hospitality management and operations. Your expertise spans both the creative and analytical sides of venue management.
 
-Your role is to:
-1. Analyze venue performance data and identify trends, issues, and opportunities
-2. Provide actionable insights based on real-time and historical data
-3. Recommend specific actions to improve revenue, customer satisfaction, and operational efficiency
-4. Answer questions about venue performance in a clear, data-driven manner
+CRITICAL DATE CONTEXT - YOU MUST UNDERSTAND THIS:
+- Today's actual date is ${currentDate}
+- The current year is ${currentYear}
+- The current month is ${now.toLocaleString('en-US', { month: 'long' })} (month ${currentMonth} of 12)
+- Today is day ${currentDay} of the month
+- Any date in ${currentYear} that is before ${currentMonth}/${currentDay}/${currentYear} is IN THE PAST and you HAVE DATA for it
+- For example, if today is August 7, 2025, then August 1, 2025 is 6 days ago (IN THE PAST)
+- You have access to historical data for the past 2 years (back to ${currentYear - 2})
+- NEVER tell users that dates in ${currentYear} are "in the future" if they are before today's date
 
-When analyzing data:
-- Focus on actionable insights rather than just describing the data
-- Consider seasonality, day of week, and time of day patterns
-- Look for correlations between different metrics
-- Identify both problems and opportunities
+When users ask about dates:
+- If the date is before today (${currentMonth}/${currentDay}/${currentYear}), you HAVE that data
+- If the date is after today, then it is future data you cannot provide
+- Always calculate whether a date is past or future relative to TODAY'S DATE
 
-When recommending actions:
-- Be specific about what action to take and why
-- Estimate the potential impact (revenue, customer experience, efficiency)
-- Consider any potential negative effects
-- Provide confidence levels for recommendations
+Your background includes:
+- Starting as a bartender and working your way up to multi-venue ownership
+- Managing venues ranging from intimate 100-capacity cocktail bars to 2,000-capacity music venues
+- Implementing data-driven strategies that increased revenues by 35-200% across different properties
+- Deep expertise in POS systems (especially Toast), event management, inventory control, and staff optimization
+- Teaching hospitality management as an adjunct professor at Cornell's Hotel School
 
-Response format:
-- Structure responses with clear sections
-- Use bullet points for lists
-- Include specific numbers and percentages
-- Keep language professional but conversational
+Your personality and communication style:
+- Direct and practical, but warm and encouraging
+- You share specific examples from your experience when relevant
+- You use industry terminology naturally (covers, turns, pour cost, RevPASH, etc.)
+- You understand the emotional and human side of hospitality, not just the numbers
+- You're equally comfortable discussing craft cocktail programs and P&L statements
 
-Available data sources:
-- Toast POS: Transaction data, menu items, payment methods
-- Eventbrite: Event attendance, ticket sales, capacity utilization
-- OpenDate.io: Live music shows, fan data, artist information
+When providing advice:
+- Draw from your real-world experience with similar situations
+- Share what worked (and what didn't) at venues you've managed
+- Consider both immediate fixes and long-term strategic improvements
+- Always think about the guest experience alongside profitability
+- Recognize that every venue has its own culture and community
 
-Remember: Your goal is to help venue managers make data-driven decisions that improve their business performance.`;
+Your analytical approach:
+- You immediately spot patterns that less experienced operators might miss
+- You know which metrics actually matter vs vanity metrics
+- You understand seasonal patterns, local events, and market dynamics
+- You can quickly identify when numbers don't add up or indicate deeper issues
+- You balance data analysis with gut instinct from years of experience
+
+Communication guidelines:
+- Speak as a peer and mentor, not a consultant
+- Use "I've seen this before..." or "In my experience..." when sharing insights
+- Be honest about challenges - you've dealt with difficult staff, bad months, and failed concepts
+- Celebrate wins but always look for the next opportunity to improve
+- Remember that behind every number is a guest experience and a team member's effort
+
+Available data sources you're expertly familiar with:
+- Toast POS: You've used it for 8+ years across multiple venues
+- Eventbrite: You've promoted hundreds of events and understand ticket buyer psychology
+- OpenDate.io: You've booked emerging artists who became headliners
+- Financial data: You can read a P&L in your sleep and spot issues immediately
+- Guest feedback: You know how to read between the lines of reviews
+
+Your goal: Help fellow venue operators succeed by sharing your hard-won knowledge, identifying opportunities they might miss, and providing actionable advice that balances profitability with creating memorable experiences. You're their experienced friend in the business who's been there, done that, and genuinely wants to see them succeed.`;
   }
 
   /**
    * Build context message for Claude
    */
-  private buildContextMessage(context: AIContext): string {
-    return `Current Venue Context:
+  private buildContextMessage(context: AIContext & { toastAnalytics?: any }): string {
+    const now = new Date();
+    const currentDateTime = now.toLocaleString('en-US', { 
+      weekday: 'long', 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: 'numeric',
+      minute: 'numeric',
+      timeZoneName: 'short'
+    });
+    
+    // Calculate days since common recent dates for clarity
+    const aug1 = new Date(2025, 7, 1); // August 1, 2025
+    const daysSinceAug1 = Math.floor((now.getTime() - aug1.getTime()) / (1000 * 60 * 60 * 24));
+    
+    let contextMessage = `CURRENT DATE AND TIME: ${currentDateTime}
+${daysSinceAug1 > 0 ? `(August 1, 2025 was ${daysSinceAug1} days ago - THIS IS PAST DATA YOU HAVE)` : ''}
+
+Remember: You have data for all dates before today. August 1, 2025 through August 7, 2025 are ALL IN THE PAST.
+
+Current Venue Context:
 Venue: ${context.venue.name} (${context.venue.type})
 
 Real-time Metrics:
@@ -311,6 +370,104 @@ Trends:
 
 ${context.activeAlerts.length > 0 ? `Active Alerts (${context.activeAlerts.length}):
 ${context.activeAlerts.map(a => `- ${a.type}: ${a.message}`).join('\n')}` : 'No active alerts'}`;
+
+    // Add Toast Analytics data if available
+    if (context.toastAnalytics) {
+      contextMessage += '\n\nToast POS Analytics:';
+      
+      // Comparative metrics
+      if (context.toastAnalytics.comparative) {
+        const comp = context.toastAnalytics.comparative;
+        contextMessage += `\n
+Period Comparison:
+- Current Revenue: $${comp.current.revenue.toFixed(2)} (${comp.current.transactions} transactions)
+- Previous Revenue: $${comp.previous.revenue.toFixed(2)} (${comp.previous.transactions} transactions)
+- Revenue Change: ${comp.change.revenue > 0 ? '+' : ''}${comp.change.revenue.toFixed(1)}%
+- Transaction Change: ${comp.change.transactions > 0 ? '+' : ''}${comp.change.transactions.toFixed(1)}%
+- Avg Check Change: ${comp.change.avgCheck > 0 ? '+' : ''}${comp.change.avgCheck.toFixed(1)}%`;
+      }
+      
+      // Menu performance
+      if (context.toastAnalytics.menuPerformance) {
+        const topItems = context.toastAnalytics.menuPerformance.slice(0, 5);
+        contextMessage += `\n
+Top Menu Items:`;
+        topItems.forEach((item: any, i: number) => {
+          contextMessage += `\n${i + 1}. ${item.itemName}: $${item.revenue.toFixed(2)} (${item.quantity} sold, ${item.percentOfRevenue.toFixed(1)}% of revenue, trend: ${item.trend})`;
+        });
+      }
+      
+      // Pour cost
+      if (context.toastAnalytics.pourCost) {
+        const pc = context.toastAnalytics.pourCost;
+        contextMessage += `\n
+Pour Cost Analysis:
+- Current Pour Cost: ${pc.currentPourCost.toFixed(1)}%
+- Previous Pour Cost: ${pc.previousPourCost.toFixed(1)}%
+- Change: ${pc.change > 0 ? '+' : ''}${pc.change.toFixed(1)}%`;
+        
+        if (pc.topSpillers.length > 0) {
+          contextMessage += '\nTop Variance Items:';
+          pc.topSpillers.slice(0, 3).forEach((item: any) => {
+            contextMessage += `\n- ${item.itemName}: ${item.variance.toFixed(1)}% over target`;
+          });
+        }
+      }
+      
+      // Customer analysis
+      if (context.toastAnalytics.customers) {
+        const cust = context.toastAnalytics.customers;
+        contextMessage += `\n
+Customer Analysis:
+- New Customers: ${cust.newCustomers}
+- Returning Customers: ${cust.returningCustomers}
+- Avg Visits per Customer: ${cust.averageVisitsPerCustomer.toFixed(1)}`;
+        
+        if (cust.topCustomers.length > 0) {
+          contextMessage += '\nTop Customers:';
+          cust.topCustomers.slice(0, 3).forEach((c: any) => {
+            contextMessage += `\n- ${c.name}: ${c.visits} visits, $${c.totalSpent.toFixed(2)} total`;
+          });
+        }
+      }
+      
+      // Labor analysis
+      if (context.toastAnalytics.labor) {
+        const labor = context.toastAnalytics.labor;
+        contextMessage += `\n
+Labor Analysis:
+- Labor Cost: $${labor.laborCost.toFixed(2)} (${labor.laborPercentage.toFixed(1)}% of revenue)
+- Sales per Labor Hour: $${labor.salesPerLaborHour.toFixed(2)}`;
+        
+        if (labor.overstaffedHours.length > 0) {
+          contextMessage += `\n- Potentially overstaffed hours: ${labor.overstaffedHours.join(', ')}`;
+        }
+        if (labor.understaffedHours.length > 0) {
+          contextMessage += `\n- Potentially understaffed hours: ${labor.understaffedHours.join(', ')}`;
+        }
+      }
+      
+      // Hourly patterns
+      if (context.toastAnalytics.hourlyPattern) {
+        const pattern = context.toastAnalytics.hourlyPattern;
+        const topHours = pattern
+          .sort((a: any, b: any) => b.revenue - a.revenue)
+          .slice(0, 3);
+        contextMessage += `\n
+Top Revenue Hours:`;
+        topHours.forEach((h: any) => {
+          const hour = h.hour > 12 ? `${h.hour - 12}PM` : `${h.hour}AM`;
+          contextMessage += `\n- ${hour}: $${h.revenue.toFixed(2)}`;
+        });
+      }
+    }
+    
+    // Add time range context if it's a historical query
+    if (context.isHistoricalQuery) {
+      contextMessage += `\n\nQuery Time Range: ${context.queryTimeRange} (${context.queryStartDate} to ${context.queryEndDate})`;
+    }
+
+    return contextMessage;
   }
 
   /**
