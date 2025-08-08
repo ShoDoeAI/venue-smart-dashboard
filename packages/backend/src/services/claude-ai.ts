@@ -107,8 +107,15 @@ export class ClaudeAI {
     private supabase: SupabaseClient<Database>,
     apiKey?: string
   ) {
+    const anthropicKey = apiKey || process.env.ANTHROPIC_API_KEY;
+    
+    if (!anthropicKey) {
+      console.error('ANTHROPIC_API_KEY is not set!');
+      throw new Error('Claude API key is required but not configured');
+    }
+    
     this.anthropic = new Anthropic({
-      apiKey: apiKey || process.env.ANTHROPIC_API_KEY!,
+      apiKey: anthropicKey,
     });
 
     this.systemPrompt = this.buildSystemPrompt();
@@ -138,12 +145,26 @@ export class ClaudeAI {
       ];
 
       // Call Claude API
+      console.log('Calling Claude API with:', {
+        model: 'claude-3-5-sonnet-20241022',
+        systemPromptLength: this.systemPrompt.length,
+        messagesCount: messages.length,
+        maxTokens: query.maxTokens || 4096
+      });
+      
       const response = await this.anthropic.messages.create({
         model: 'claude-3-5-sonnet-20241022',
         max_tokens: query.maxTokens || 4096,
         temperature: 0.7,
         system: this.systemPrompt,
         messages,
+      });
+      
+      console.log('Claude API response:', {
+        hasContent: !!response.content,
+        contentLength: response.content?.length,
+        firstContentType: response.content?.[0]?.type,
+        usage: response.usage
       });
 
       // Parse response
@@ -486,11 +507,29 @@ Top Revenue Hours:`;
    * Parse Claude's response into structured format
    */
   private parseResponse(content: Anthropic.ContentBlock): AIResponse {
+    console.log('Parsing Claude response:', {
+      contentType: content?.type,
+      hasText: !!(content as any)?.text
+    });
+    
+    if (!content) {
+      console.error('No content block received from Claude');
+      return { message: 'No response received from AI. Please check the API configuration.' };
+    }
+    
     if (content.type !== 'text') {
-      return { message: 'Unexpected response format' };
+      console.error('Unexpected content type:', content.type);
+      return { message: 'Unexpected response format from AI.' };
     }
 
     const text = content.text;
+    
+    if (!text || text.trim() === '') {
+      console.error('Empty text response from Claude');
+      return { message: 'Received empty response from AI. Please try again.' };
+    }
+    
+    console.log('Claude text response length:', text.length);
 
     // Extract suggested actions if present
     const suggestedActions = this.extractSuggestedActions(text);

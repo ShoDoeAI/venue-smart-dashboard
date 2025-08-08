@@ -233,10 +233,24 @@ export default async function handler(
     }
 
     // Query Claude with enhanced context
+    console.log('Querying Claude with context:', {
+      venueId: actualVenueId,
+      queryType,
+      dateRange: dateInfo?.timeRange,
+      hasToastData: !!context.toastAnalytics,
+      contextKeys: Object.keys(context)
+    });
+    
     const response = await claudeAI.query({
       message,
       context,
       conversationId: activeConversationId,
+    });
+    
+    console.log('Claude response:', {
+      hasMessage: !!response.message,
+      messageLength: response.message?.length,
+      messagePreview: response.message?.substring(0, 100)
     });
 
     // Format response with any data visualizations
