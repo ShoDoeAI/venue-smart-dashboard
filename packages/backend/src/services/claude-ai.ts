@@ -170,22 +170,34 @@ export class ClaudeAI {
    * Create a new conversation
    */
   async createConversation(venueId: string, title?: string): Promise<string> {
-    const { data, error } = await this.supabase
-      .from('ai_conversations')
-      .insert({
-        venue_id: venueId,
-        title: title || 'New Conversation',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .select('id')
-      .single();
+    try {
+      const { data, error } = await this.supabase
+        .from('ai_conversations')
+        .insert({
+          venue_id: venueId,
+          title: title || 'New Conversation',
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .select('id')
+        .single();
 
-    if (error) {
-      throw new Error(`Failed to create conversation: ${error.message}`);
+      if (error) {
+        console.error('Conversation creation error:', error);
+        // If table doesn't exist or other error, return a temporary ID
+        if (error.code === '42P01' || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+          console.warn('AI conversations table not found, using temporary conversation ID');
+          return `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        }
+        throw new Error(`Failed to create conversation: ${error.message}`);
+      }
+
+      return data.id;
+    } catch (err) {
+      console.error('Error in createConversation:', err);
+      // Return temporary ID to allow chat to continue
+      return `temp-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     }
-
-    return data.id;
   }
 
   /**
@@ -587,21 +599,31 @@ Top Revenue Hours:`;
    * Get conversation history
    */
   private async getConversationHistory(conversationId: string): Promise<Anthropic.MessageParam[]> {
-    const { data, error } = await this.supabase
-      .from('ai_messages')
-      .select('*')
-      .eq('conversation_id', conversationId)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      console.error('Failed to fetch conversation history:', error);
+    // Return empty history for temporary conversations
+    if (conversationId.startsWith('temp-')) {
       return [];
     }
 
-    return data.map(msg => ({
-      role: msg.role as 'user' | 'assistant',
-      content: msg.content,
-    }));
+    try {
+      const { data, error } = await this.supabase
+        .from('ai_messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Failed to fetch conversation history:', error);
+        return [];
+      }
+
+      return data.map(msg => ({
+        role: msg.role as 'user' | 'assistant',
+        content: msg.content,
+      }));
+    } catch (error) {
+      console.error('Error in getConversationHistory:', error);
+      return [];
+    }
   }
 
   /**
@@ -613,32 +635,43 @@ Top Revenue Hours:`;
     aiResponse: AIResponse,
     context: AIContext
   ): Promise<void> {
-    // Store user message
-    await this.supabase.from('ai_messages').insert({
-      conversation_id: conversationId,
-      role: 'user',
-      content: userMessage,
-      metadata: { context },
-      created_at: new Date().toISOString(),
-    });
+    // Skip storing if using temporary conversation ID
+    if (conversationId.startsWith('temp-')) {
+      console.log('Skipping conversation storage for temporary ID');
+      return;
+    }
 
-    // Store AI response
-    await this.supabase.from('ai_messages').insert({
-      conversation_id: conversationId,
-      role: 'assistant',
-      content: aiResponse.message,
-      metadata: {
-        suggestedActions: aiResponse.suggestedActions,
-        insights: aiResponse.insights,
-      },
-      created_at: new Date().toISOString(),
-    });
+    try {
+      // Store user message
+      await this.supabase.from('ai_messages').insert({
+        conversation_id: conversationId,
+        role: 'user',
+        content: userMessage,
+        metadata: { context },
+        created_at: new Date().toISOString(),
+      });
 
-    // Update conversation timestamp
-    await this.supabase
-      .from('ai_conversations')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', conversationId);
+      // Store AI response
+      await this.supabase.from('ai_messages').insert({
+        conversation_id: conversationId,
+        role: 'assistant',
+        content: aiResponse.message,
+        metadata: {
+          suggestedActions: aiResponse.suggestedActions,
+          insights: aiResponse.insights,
+        },
+        created_at: new Date().toISOString(),
+      });
+
+      // Update conversation timestamp
+      await this.supabase
+        .from('ai_conversations')
+        .update({ updated_at: new Date().toISOString() })
+        .eq('id', conversationId);
+    } catch (error) {
+      console.error('Error storing conversation:', error);
+      // Continue without throwing - don't break the chat
+    }
   }
 
   /**
