@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { ClaudeAI } from '../src/services/claude-ai';
-import { AIContextAggregator } from '../src/services/ai-context-aggregator';
+import { AIContextAggregatorFixed } from '../src/services/ai-context-aggregator-fixed';
 import type { Database } from '@venuesync/shared';
 
 // Query type detection
@@ -176,7 +176,7 @@ export default async function handler(
     );
 
     // Initialize services
-    const contextAggregator = new AIContextAggregator(supabase);
+    const contextAggregator = new AIContextAggregatorFixed(supabase);
     const claudeAI = new ClaudeAI(supabase);
 
     // Parse date from query

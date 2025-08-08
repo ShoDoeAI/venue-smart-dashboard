@@ -408,6 +408,23 @@ ${context.activeAlerts.map(a => `- ${a.type}: ${a.message}`).join('\n')}` : 'No 
     if (context.toastAnalytics) {
       contextMessage += '\n\nToast POS Analytics:';
       
+      // Period summary (most important!)
+      if (context.toastAnalytics.periodSummary) {
+        const ps = context.toastAnalytics.periodSummary;
+        contextMessage += `\n
+Revenue Summary for ${ps.startDate} to ${ps.endDate}:
+- Total Revenue: $${ps.totalRevenue.toFixed(2)}
+- Total Transactions: ${ps.totalTransactions}
+- Average Daily Revenue: $${ps.avgDailyRevenue.toFixed(2)}`;
+        
+        if (ps.dailyBreakdown && ps.dailyBreakdown.length > 0) {
+          contextMessage += '\n\nDaily Breakdown:';
+          ps.dailyBreakdown.forEach((day: any) => {
+            contextMessage += `\n- ${day.date}: $${day.revenue.toFixed(2)} (${day.transactions} transactions)${day.hasOverride ? ' [verified]' : ''}`;
+          });
+        }
+      }
+      
       // Comparative metrics
       if (context.toastAnalytics.comparative) {
         const comp = context.toastAnalytics.comparative;
