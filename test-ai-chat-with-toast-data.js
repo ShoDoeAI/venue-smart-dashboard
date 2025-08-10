@@ -5,7 +5,7 @@
 const axios = require('axios');
 require('dotenv').config({ path: '.env.local' });
 
-const CHAT_API_URL = 'https://venuesync.vercel.app/api/chat';
+const CHAT_API_URL = 'https://venue-smart-dashboard.vercel.app/api/chat';
 
 async function testAIChat() {
   console.log('🤖 Testing AI Chat with Toast Data\n');
