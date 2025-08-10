@@ -1,7 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { ClaudeAI } from '../src/services/claude-ai';
-import { AIContextAggregatorFixed } from '../src/services/ai-context-aggregator-fixed';
+import type { AIContext } from '../src/services/claude-ai';
+import { AIContextAggregatorToast } from '../src/services/ai-context-aggregator-toast';
 import type { Database } from '@venuesync/shared';
 
 // Query type detection
@@ -176,7 +177,7 @@ export default async function handler(
     );
 
     // Initialize services
-    const contextAggregator = new AIContextAggregatorFixed(supabase);
+    const contextAggregator = new AIContextAggregatorToast(supabase);
     const claudeAI = new ClaudeAI(supabase);
 
     // Parse date from query
@@ -200,7 +201,14 @@ export default async function handler(
     }
 
     // Build enhanced context based on query type
-    let context;
+    let context: AIContext & { 
+      toastAnalytics?: unknown;
+      isHistoricalQuery?: boolean;
+      queryTimeRange?: string;
+      queryStartDate?: string;
+      queryEndDate?: string;
+    };
+    
     if (dateInfo?.startDate && dateInfo?.endDate) {
       // If specific dates mentioned, get historical context
       context = await contextAggregator.buildEnhancedContext(
@@ -276,38 +284,56 @@ export default async function handler(
   }
 }
 
-// Generate visualization data based on context and query type
-function generateVisualizationData(context: any, queryType: string): any[] {
-  const visualizations: any[] = [];
+interface ChartVisualization {
+  type: 'line' | 'bar' | 'comparison';
+  title: string;
+  data: unknown;
+  xAxis?: string;
+  yAxis?: string;
+}
 
-  if (queryType === 'revenue' && context.toastAnalytics?.hourlyPattern) {
+// Generate visualization data based on context and query type
+function generateVisualizationData(context: AIContext & { toastAnalytics?: unknown }, queryType: string): ChartVisualization[] {
+  const visualizations: ChartVisualization[] = [];
+
+  const analytics = context.toastAnalytics as {
+    hourlyPattern?: unknown[];
+    menuPerformance?: unknown[];
+    comparative?: {
+      current: unknown;
+      previous: unknown;
+      change: unknown;
+    };
+  };
+
+  if (queryType === 'revenue' && analytics?.hourlyPattern) {
     visualizations.push({
       type: 'line',
       title: 'Revenue by Hour',
-      data: context.toastAnalytics.hourlyPattern,
+      data: analytics.hourlyPattern,
       xAxis: 'hour',
       yAxis: 'revenue',
     });
   }
 
-  if (queryType === 'menu' && context.toastAnalytics?.menuPerformance) {
+  if (queryType === 'menu' && analytics?.menuPerformance) {
     visualizations.push({
       type: 'bar',
       title: 'Top Menu Items by Revenue',
-      data: context.toastAnalytics.menuPerformance.slice(0, 10),
+      data: analytics.menuPerformance.slice(0, 10),
       xAxis: 'itemName',
       yAxis: 'revenue',
     });
   }
 
-  if (context.toastAnalytics?.comparative) {
+  if (analytics?.comparative) {
     visualizations.push({
       type: 'comparison',
       title: 'Period Comparison',
       data: {
-        current: context.toastAnalytics.comparative.current,
-        previous: context.toastAnalytics.comparative.previous,
-        change: context.toastAnalytics.comparative.change,
+        current: analytics.comparative.current,
+        previous: analytics.comparative.previous,
+        change: analytics.comparative.change,
       },
     });
   }
