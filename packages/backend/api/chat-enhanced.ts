@@ -109,8 +109,28 @@ function parseDateQuery(message: string): { startDate?: Date; endDate?: Date; ti
       return { startDate, endDate: today, timeRange: 'this month' };
     }},
     
-    // Specific month names
-    { regex: /(january|february|march|april|may|june|july|august|september|october|november|december)/i, handler: (match: RegExpMatchArray) => {
+    // Specific date like "August 1st" or "March 15th" - MUST come before month-only pattern
+    { regex: /(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s*,?\s*(\d{4}))?/i, 
+      handler: (match: RegExpMatchArray) => {
+        const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+        const monthIndex = monthNames.indexOf(match[1].toLowerCase());
+        const day = parseInt(match[2]);
+        const year = match[3] ? parseInt(match[3]) : 
+                     (monthIndex <= today.getMonth() ? today.getFullYear() : today.getFullYear() - 1);
+        
+        const date = new Date(year, monthIndex, day);
+        const endDate = new Date(date);
+        endDate.setDate(endDate.getDate() + 1);
+        
+        return { 
+          startDate: date, 
+          endDate: endDate, 
+          timeRange: `${match[1]} ${day}, ${year}` 
+        };
+    }},
+    
+    // Specific month names (only when not followed by a day)
+    { regex: /(january|february|march|april|may|june|july|august|september|october|november|december)(?!\s+\d)/i, handler: (match: RegExpMatchArray) => {
       const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
       const monthIndex = monthNames.indexOf(match[1].toLowerCase());
       const year = monthIndex <= today.getMonth() ? today.getFullYear() : today.getFullYear() - 1;
