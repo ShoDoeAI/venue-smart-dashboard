@@ -265,7 +265,8 @@ export default async function handler(
       queryType,
       dateRange: dateInfo?.timeRange,
       hasToastData: !!context.toastAnalytics,
-      contextKeys: Object.keys(context)
+      contextKeys: Object.keys(context),
+      version: '2.0' // Force new deployment
     });
     
     const response = await claudeAI.query({
