@@ -283,8 +283,13 @@ export default async function handler(
 
     // Format response with any data visualizations
     const enhancedResponse = {
-      ...response,
+      success: true,
+      response: response.message, // Frontend expects 'response' not 'message'
+      messageId: `msg-${Date.now()}`, // Generate a message ID
       conversationId: activeConversationId,
+      actions: response.suggestedActions,
+      insights: response.insights,
+      followUpQuestions: response.followUpQuestions,
       context: {
         queryType,
         timeRange: dateInfo?.timeRange,
