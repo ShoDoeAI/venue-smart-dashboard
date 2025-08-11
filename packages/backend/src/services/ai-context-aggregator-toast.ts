@@ -67,7 +67,9 @@ export class AIContextAggregatorToast {
     startDate?: Date,
     endDate?: Date
   ): Promise<AIContext & { toastAnalytics?: ToastAnalytics }> {
-    const now = new Date();
+    // Use Eastern Time for business date calculations
+    const easternTime = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
+    const now = new Date(easternTime);
     const defaultStart = startDate || new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const defaultEnd = endDate || now;
     
@@ -262,7 +264,9 @@ export class AIContextAggregatorToast {
       type: 'Restaurant & Bar'
     };
 
-    const now = new Date();
+    // Use Eastern Time for business date calculations
+    const easternTime = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
+    const now = new Date(easternTime);
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const todayBusinessDate = parseInt(todayStart.toISOString().split('T')[0].replace(/-/g, ''));
     
