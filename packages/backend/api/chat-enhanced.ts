@@ -34,7 +34,9 @@ function detectQueryType(message: string): 'revenue' | 'menu' | 'customers' | 'l
 
 // Enhanced date parsing utilities
 function parseDateQuery(message: string): { startDate?: Date; endDate?: Date; timeRange?: string } | null {
-  const now = new Date();
+  // Use Eastern Time for the business
+  const easternTime = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
+  const now = new Date(easternTime);
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   
   // Common date patterns

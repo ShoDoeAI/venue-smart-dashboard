@@ -288,12 +288,21 @@ For each recommended action, please provide:
    * Build the system prompt
    */
   private buildSystemPrompt(): string {
-    const now = new Date();
+    // Use Eastern Time for the business
+    const easternTime = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
+    const now = new Date(easternTime);
     const currentDate = now.toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
       month: 'long', 
-      day: 'numeric' 
+      day: 'numeric',
+      timeZone: 'America/New_York'
+    });
+    const currentTime = now.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: 'numeric',
+      timeZone: 'America/New_York',
+      timeZoneName: 'short'
     });
     const currentMonth = now.getMonth() + 1; // 1-12
     const currentDay = now.getDate();
@@ -301,10 +310,12 @@ For each recommended action, please provide:
     
     return `You are a highly experienced venue operator with 20 years of hands-on experience managing successful restaurants, bars, nightclubs, and live music venues. You hold an MBA from Harvard Business School with a concentration in hospitality management and operations. Your expertise spans both the creative and analytical sides of venue management.
 
-CRITICAL DATE CONTEXT - YOU MUST UNDERSTAND THIS:
-- Today's actual date is ${currentDate}
+CRITICAL DATE AND TIME CONTEXT - YOU MUST UNDERSTAND THIS:
+- Current date and time: ${currentDate} at ${currentTime} (Eastern Time - venue's local time)
+- The venue operates in Eastern Time Zone (EST/EDT)
+- Business hours typically run until 2 AM, so evening hours (9 PM) are peak business time
 - The current year is ${currentYear}
-- The current month is ${now.toLocaleString('en-US', { month: 'long' })} (month ${currentMonth} of 12)
+- The current month is ${now.toLocaleString('en-US', { month: 'long', timeZone: 'America/New_York' })} (month ${currentMonth} of 12)
 - Today is day ${currentDay} of the month
 - Any date in ${currentYear} that is before ${currentMonth}/${currentDay}/${currentYear} is IN THE PAST and you HAVE DATA for it
 - For example, if today is August 7, 2025, then August 1, 2025 is 6 days ago (IN THE PAST)
@@ -315,6 +326,7 @@ When users ask about dates:
 - If the date is before today (${currentMonth}/${currentDay}/${currentYear}), you HAVE that data
 - If the date is after today, then it is future data you cannot provide
 - Always calculate whether a date is past or future relative to TODAY'S DATE
+- Remember that venues operate late - 9 PM is prime business hours, not "early in the day"
 
 Your background includes:
 - Starting as a bartender and working your way up to multi-venue ownership
@@ -365,7 +377,9 @@ Your goal: Help fellow venue operators succeed by sharing your hard-won knowledg
    * Build context message for Claude
    */
   private buildContextMessage(context: AIContext & { toastAnalytics?: any }): string {
-    const now = new Date();
+    // Use Eastern Time for the business
+    const easternTime = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
+    const now = new Date(easternTime);
     const currentDateTime = now.toLocaleString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
@@ -373,6 +387,7 @@ Your goal: Help fellow venue operators succeed by sharing your hard-won knowledg
       day: 'numeric',
       hour: 'numeric',
       minute: 'numeric',
+      timeZone: 'America/New_York',
       timeZoneName: 'short'
     });
     
@@ -380,10 +395,11 @@ Your goal: Help fellow venue operators succeed by sharing your hard-won knowledg
     const aug1 = new Date(2025, 7, 1); // August 1, 2025
     const daysSinceAug1 = Math.floor((now.getTime() - aug1.getTime()) / (1000 * 60 * 60 * 24));
     
-    let contextMessage = `CURRENT DATE AND TIME: ${currentDateTime}
+    let contextMessage = `CURRENT DATE AND TIME: ${currentDateTime} (Venue's Local Time)
 ${daysSinceAug1 > 0 ? `(August 1, 2025 was ${daysSinceAug1} days ago - THIS IS PAST DATA YOU HAVE)` : ''}
 
-Remember: You have data for all dates before today. August 1, 2025 through August 7, 2025 are ALL IN THE PAST.
+Remember: You have data for all dates before today. August 1, 2025 through August 10, 2025 are ALL IN THE PAST.
+Business Context: 9 PM on Sunday is PEAK business hours, not "early in the day".
 
 Current Venue Context:
 Venue: ${context.venue.name} (${context.venue.type})
