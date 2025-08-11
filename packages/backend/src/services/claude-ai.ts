@@ -289,8 +289,7 @@ For each recommended action, please provide:
    */
   private buildSystemPrompt(): string {
     // Use Eastern Time for the business
-    const easternTime = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
-    const now = new Date(easternTime);
+    const now = new Date();
     const currentDate = now.toLocaleDateString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 
@@ -304,9 +303,23 @@ For each recommended action, please provide:
       timeZone: 'America/New_York',
       timeZoneName: 'short'
     });
-    const currentMonth = now.getMonth() + 1; // 1-12
-    const currentDay = now.getDate();
-    const currentYear = now.getFullYear();
+    
+    // Get proper Eastern Time components using Intl API
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: 'America/New_York',
+      year: 'numeric',
+      month: 'numeric',
+      day: 'numeric'
+    });
+    const parts = formatter.formatToParts(now);
+    const dateComponents: Record<string, string> = {};
+    parts.forEach(({ type, value }) => {
+      if (type !== 'literal') dateComponents[type] = value;
+    });
+    
+    const currentMonth = parseInt(dateComponents.month);
+    const currentDay = parseInt(dateComponents.day);
+    const currentYear = parseInt(dateComponents.year);
     
     return `You are a highly experienced venue operator with 20 years of hands-on experience managing successful restaurants, bars, nightclubs, and live music venues. You hold an MBA from Harvard Business School with a concentration in hospitality management and operations. Your expertise spans both the creative and analytical sides of venue management.
 
@@ -378,8 +391,7 @@ Your goal: Help fellow venue operators succeed by sharing your hard-won knowledg
    */
   private buildContextMessage(context: AIContext & { toastAnalytics?: any }): string {
     // Use Eastern Time for the business
-    const easternTime = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
-    const now = new Date(easternTime);
+    const now = new Date();
     const currentDateTime = now.toLocaleString('en-US', { 
       weekday: 'long', 
       year: 'numeric', 

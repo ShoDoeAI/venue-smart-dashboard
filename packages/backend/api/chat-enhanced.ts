@@ -34,10 +34,24 @@ function detectQueryType(message: string): 'revenue' | 'menu' | 'customers' | 'l
 
 // Enhanced date parsing utilities
 function parseDateQuery(message: string): { startDate?: Date; endDate?: Date; timeRange?: string } | null {
-  // Use Eastern Time for the business
-  const easternTime = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
-  const now = new Date(easternTime);
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  // Get proper Eastern Time components
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: 'numeric',
+    day: 'numeric'
+  });
+  const parts = formatter.formatToParts(now);
+  const dateComponents: Record<string, string> = {};
+  parts.forEach(({ type, value }) => {
+    if (type !== 'literal') dateComponents[type] = value;
+  });
+  
+  const year = parseInt(dateComponents.year);
+  const month = parseInt(dateComponents.month) - 1; // JavaScript months are 0-based
+  const day = parseInt(dateComponents.day);
+  const today = new Date(year, month, day);
   
   // Common date patterns
   const patterns = [

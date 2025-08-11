@@ -1,6 +1,7 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@venuesync/shared';
 import type { AIContext } from './claude-ai';
+import { getEasternBusinessDate, getEasternTodayStart, getEasternTimeComponents } from '../utils/timezone';
 
 interface ToastAnalytics {
   queryPeriod?: {
@@ -68,9 +69,9 @@ export class AIContextAggregatorToast {
     endDate?: Date
   ): Promise<AIContext & { toastAnalytics?: ToastAnalytics }> {
     // Use Eastern Time for business date calculations
-    const easternTime = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
-    const now = new Date(easternTime);
-    const defaultStart = startDate || new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const now = new Date();
+    const todayStart = getEasternTodayStart();
+    const defaultStart = startDate || todayStart;
     const defaultEnd = endDate || now;
     
     // Get base context with Toast data
@@ -265,10 +266,7 @@ export class AIContextAggregatorToast {
     };
 
     // Use Eastern Time for business date calculations
-    const easternTime = new Date().toLocaleString("en-US", {timeZone: "America/New_York"});
-    const now = new Date(easternTime);
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const todayBusinessDate = parseInt(todayStart.toISOString().split('T')[0].replace(/-/g, ''));
+    const todayBusinessDate = getEasternBusinessDate();
     
     // Get today's data from Toast
     const { data: todayOrders } = await this.supabase
