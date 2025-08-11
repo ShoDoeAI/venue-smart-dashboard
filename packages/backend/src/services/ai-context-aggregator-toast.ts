@@ -99,12 +99,20 @@ export class AIContextAggregatorToast {
     const endBusinessDate = parseInt(endDate.toISOString().split('T')[0].replace(/-/g, ''));
     
     // Get orders by business date
-    const { data: orders } = await this.supabase
+    // For single day queries, we want ONLY that day
+    const isSingleDay = startBusinessDate === endBusinessDate;
+    const query = this.supabase
       .from('toast_orders')
       .select('order_guid, business_date, created_date')
-      .gte('business_date', startBusinessDate)
-      .lte('business_date', endBusinessDate)
-      .order('business_date', { ascending: true });
+      .gte('business_date', startBusinessDate);
+    
+    if (isSingleDay) {
+      query.eq('business_date', startBusinessDate);
+    } else {
+      query.lt('business_date', endBusinessDate);
+    }
+    
+    const { data: orders } = await query.order('business_date', { ascending: true });
     
     if (!orders || orders.length === 0) {
       analytics.noDataFound = true;

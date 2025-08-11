@@ -73,7 +73,7 @@ function parseDateQuery(message: string): { startDate?: Date; endDate?: Date; ti
     { regex: /yesterday/i, handler: () => {
       const date = new Date(today);
       date.setDate(date.getDate() - 1);
-      return { startDate: date, endDate: new Date(date.getTime() + 24 * 60 * 60 * 1000), timeRange: 'yesterday' };
+      return { startDate: date, endDate: date, timeRange: 'yesterday' };
     }},
     
     { regex: /today/i, handler: () => {
@@ -119,12 +119,11 @@ function parseDateQuery(message: string): { startDate?: Date; endDate?: Date; ti
                      (monthIndex <= today.getMonth() ? today.getFullYear() : today.getFullYear() - 1);
         
         const date = new Date(year, monthIndex, day);
-        const endDate = new Date(date);
-        endDate.setDate(endDate.getDate() + 1);
+        // For single day queries, use the same date for start and end
         
         return { 
           startDate: date, 
-          endDate: endDate, 
+          endDate: date,  // Same date for single day
           timeRange: `${match[1]} ${day}, ${year}` 
         };
     }},
@@ -151,7 +150,7 @@ function parseDateQuery(message: string): { startDate?: Date; endDate?: Date; ti
     { regex: /(\d{4}-\d{2}-\d{2})/i, handler: (match: RegExpMatchArray) => {
       const date = new Date(match[1]);
       if (!isNaN(date.getTime())) {
-        return { startDate: date, endDate: new Date(date.getTime() + 24 * 60 * 60 * 1000), timeRange: match[1] };
+        return { startDate: date, endDate: date, timeRange: match[1] };
       }
       return null;
     }},
@@ -159,7 +158,7 @@ function parseDateQuery(message: string): { startDate?: Date; endDate?: Date; ti
     { regex: /(\d{1,2})\/(\d{1,2})\/(\d{4})/i, handler: (match: RegExpMatchArray) => {
       const date = new Date(parseInt(match[3]), parseInt(match[1]) - 1, parseInt(match[2]));
       if (!isNaN(date.getTime())) {
-        return { startDate: date, endDate: new Date(date.getTime() + 24 * 60 * 60 * 1000), timeRange: `${match[1]}/${match[2]}/${match[3]}` };
+        return { startDate: date, endDate: date, timeRange: `${match[1]}/${match[2]}/${match[3]}` };
       }
       return null;
     }},
