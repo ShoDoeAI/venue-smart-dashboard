@@ -34,9 +34,27 @@ async function getToastToken() {
   return data.token.accessToken;
 }
 
+// Get Eastern Time business date
+function getEasternBusinessDate(date = new Date()) {
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit'
+  });
+  
+  const parts = formatter.formatToParts(date);
+  const dateComponents = {};
+  parts.forEach(({ type, value }) => {
+    if (type !== 'literal') dateComponents[type] = value;
+  });
+  
+  return `${dateComponents.year}${dateComponents.month}${dateComponents.day}`;
+}
+
 async function syncToastDay(dateStr) {
-  const businessDate = dateStr.replace(/-/g, '');
-  const startOfDay = `${dateStr}T00:00:00.000Z`;
+  const businessDate = dateStr ? dateStr.replace(/-/g, '') : getEasternBusinessDate();
+  const startOfDay = `${dateStr || new Date().toISOString().split('T')[0]}T00:00:00.000Z`;
   const endOfDay = new Date(new Date(startOfDay).getTime() + 24 * 60 * 60 * 1000).toISOString();
   
   // Get Toast token
@@ -69,11 +87,12 @@ async function syncToastDay(dateStr) {
     }
   }
   
-  // Fetch from Toast
+  // Fetch from Toast - NO PAGE LIMIT!
   let allOrders = [];
   let page = 1;
+  let hasMore = true;
   
-  while (page <= 20) {
+  while (hasMore) {
     const url = `https://ws-api.toasttab.com/orders/v2/ordersBulk?` +
       `businessDate=${businessDate}&page=${page}&pageSize=100`;
     
@@ -84,18 +103,32 @@ async function syncToastDay(dateStr) {
       }
     });
     
-    if (!response.ok) break;
+    if (!response.ok) {
+      console.log(`Toast API error on page ${page}: ${response.status}`);
+      break;
+    }
     
     const orders = await response.json();
-    if (orders.length === 0) break;
+    console.log(`Page ${page}: ${orders.length} orders`);
+    
+    if (!orders || orders.length === 0) {
+      hasMore = false;
+      break;
+    }
     
     allOrders = allOrders.concat(orders);
-    if (orders.length < 100) break;
-    page++;
+    
+    // Continue if we got a full page
+    if (orders.length === 100) {
+      page++;
+    } else {
+      hasMore = false;
+    }
   }
   
-  // Process and save checks
+  // Process and save orders and checks
   const snapshotTimestamp = new Date().toISOString();
+  const businessDateInt = parseInt(businessDate);
   let savedCount = 0;
   let totalRevenue = 0;
   let checkCount = 0;
@@ -103,7 +136,22 @@ async function syncToastDay(dateStr) {
   let savedSelections = 0;
   const allSelections = [];
   
+  // First, clear existing orders for this date
+  await supabase
+    .from('toast_orders')
+    .delete()
+    .eq('business_date', businessDateInt);
+  
   for (const order of allOrders) {
+    // Save order to toast_orders table
+    await supabase
+      .from('toast_orders')
+      .insert({
+        order_guid: order.guid,
+        business_date: businessDateInt,
+        created_date: order.createdDate || order.openedDate,
+        order_data: order
+      });
     if (order.checks && Array.isArray(order.checks)) {
       for (const check of order.checks) {
         checkCount++;
