@@ -98,6 +98,21 @@ function parseDateQuery(message: string): { startDate?: Date; endDate?: Date; ti
       return { startDate: today, endDate: now, timeRange: 'today' };
     }},
     
+    // Relative day patterns (last Monday, last Friday, etc)
+    { regex: /last (monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i, handler: (match: RegExpMatchArray) => {
+      const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const targetDay = dayNames.indexOf(match[1].toLowerCase());
+      const date = new Date(today);
+      const currentDay = date.getDay();
+      
+      // Calculate days to go back
+      let daysBack = currentDay - targetDay;
+      if (daysBack <= 0) daysBack += 7;
+      
+      date.setDate(date.getDate() - daysBack);
+      return { startDate: date, endDate: date, timeRange: `last ${match[1]}` };
+    }},
+    
     // Week patterns
     { regex: /last week/i, handler: () => {
       const startDate = new Date(today);
@@ -127,11 +142,24 @@ function parseDateQuery(message: string): { startDate?: Date; endDate?: Date; ti
       return { startDate, endDate: today, timeRange: 'this month' };
     }},
     
-    // Specific date like "August 1st" or "March 15th" - MUST come before month-only pattern
-    { regex: /(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s*,?\s*(\d{4}))?/i, 
+    // Specific date like "August 1st" or "Aug 8th" - MUST come before month-only pattern
+    { regex: /(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s*,?\s*(\d{4}))?/i, 
       handler: (match: RegExpMatchArray) => {
-        const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
-        const monthIndex = monthNames.indexOf(match[1].toLowerCase());
+        const monthMap: Record<string, number> = {
+          'jan': 0, 'january': 0,
+          'feb': 1, 'february': 1,
+          'mar': 2, 'march': 2,
+          'apr': 3, 'april': 3,
+          'may': 4,
+          'jun': 5, 'june': 5,
+          'jul': 6, 'july': 6,
+          'aug': 7, 'august': 7,
+          'sep': 8, 'sept': 8, 'september': 8,
+          'oct': 9, 'october': 9,
+          'nov': 10, 'november': 10,
+          'dec': 11, 'december': 11
+        };
+        const monthIndex = monthMap[match[1].toLowerCase()];
         const day = parseInt(match[2]);
         const year = match[3] ? parseInt(match[3]) : 
                      (monthIndex <= today.getMonth() ? today.getFullYear() : today.getFullYear() - 1);

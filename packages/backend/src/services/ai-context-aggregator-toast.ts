@@ -56,6 +56,50 @@ interface ToastAnalytics {
     change: number;
     changePercent: number;
   };
+  // New: Day of week patterns
+  dayOfWeekAnalysis?: {
+    [key: string]: {
+      avgRevenue: number;
+      totalRevenue: number;
+      count: number;
+      percentOfWeek: number;
+    };
+  };
+  // New: Year over year comparison
+  yearOverYear?: {
+    currentPeriod: {
+      year: number;
+      revenue: number;
+      orders: number;
+      avgCheck: number;
+    };
+    previousPeriod: {
+      year: number;
+      revenue: number;
+      orders: number;
+      avgCheck: number;
+    };
+    growth: {
+      revenue: number;
+      orders: number;
+      avgCheck: number;
+    };
+  };
+  // New: Monthly trends
+  monthlyTrend?: Array<{
+    month: string;
+    year: number;
+    revenue: number;
+    orders: number;
+    avgDaily: number;
+  }>;
+  // New: Special events or anomalies
+  insights?: {
+    peakDays: string[];
+    slowDays: string[];
+    trends: string[];
+    recommendations: string[];
+  };
 }
 
 export class AIContextAggregatorToast {
@@ -271,6 +315,114 @@ export class AIContextAggregatorToast {
     if (sortedDays.length > 0) {
       analytics.bestDay = sortedDays[0];
       analytics.worstDay = sortedDays[sortedDays.length - 1];
+    }
+    
+    // Day of Week Analysis
+    if (dailyBreakdown.length >= 7) {
+      const dayOfWeekData: Record<string, { total: number; count: number; dates: string[] }> = {
+        'Mon': { total: 0, count: 0, dates: [] },
+        'Tue': { total: 0, count: 0, dates: [] },
+        'Wed': { total: 0, count: 0, dates: [] },
+        'Thu': { total: 0, count: 0, dates: [] },
+        'Fri': { total: 0, count: 0, dates: [] },
+        'Sat': { total: 0, count: 0, dates: [] },
+        'Sun': { total: 0, count: 0, dates: [] }
+      };
+      
+      dailyBreakdown.forEach(day => {
+        const dow = day.dayOfWeek;
+        if (dayOfWeekData[dow]) {
+          dayOfWeekData[dow].total += day.revenue;
+          dayOfWeekData[dow].count++;
+          dayOfWeekData[dow].dates.push(day.date);
+        }
+      });
+      
+      const weekTotal = Object.values(dayOfWeekData).reduce((sum, d) => sum + d.total, 0);
+      analytics.dayOfWeekAnalysis = {};
+      
+      Object.entries(dayOfWeekData).forEach(([day, data]) => {
+        if (data.count > 0) {
+          analytics.dayOfWeekAnalysis![day] = {
+            avgRevenue: data.total / data.count,
+            totalRevenue: data.total,
+            count: data.count,
+            percentOfWeek: (data.total / weekTotal) * 100
+          };
+        }
+      });
+    }
+    
+    // Year over Year Comparison (if querying same period last year)
+    if (queryType === 'revenue' && dailyBreakdown.length > 0) {
+      const currentYear = new Date(endDate).getFullYear();
+      const startLastYear = new Date(startDate);
+      startLastYear.setFullYear(currentYear - 1);
+      const endLastYear = new Date(endDate);
+      endLastYear.setFullYear(currentYear - 1);
+      
+      // Get last year's data
+      const { data: lastYearOverrides } = await this.supabase
+        .from('revenue_overrides')
+        .select('*')
+        .gte('date', startLastYear.toISOString().split('T')[0])
+        .lte('date', endLastYear.toISOString().split('T')[0]);
+      
+      if (lastYearOverrides && lastYearOverrides.length > 0) {
+        const lastYearRevenue = lastYearOverrides.reduce((sum, d) => sum + (d.actual_revenue || 0), 0);
+        const lastYearOrders = lastYearOverrides.reduce((sum, d) => sum + (d.check_count || 0), 0);
+        
+        analytics.yearOverYear = {
+          currentPeriod: {
+            year: currentYear,
+            revenue: totalRevenue,
+            orders: totalOrders,
+            avgCheck: totalOrders > 0 ? totalRevenue / totalOrders : 0
+          },
+          previousPeriod: {
+            year: currentYear - 1,
+            revenue: lastYearRevenue,
+            orders: lastYearOrders,
+            avgCheck: lastYearOrders > 0 ? lastYearRevenue / lastYearOrders : 0
+          },
+          growth: {
+            revenue: lastYearRevenue > 0 ? ((totalRevenue - lastYearRevenue) / lastYearRevenue) * 100 : 0,
+            orders: lastYearOrders > 0 ? ((totalOrders - lastYearOrders) / lastYearOrders) * 100 : 0,
+            avgCheck: 0 // Will calculate below
+          }
+        };
+        
+        // Calculate average check growth
+        const currentAvg = analytics.yearOverYear.currentPeriod.avgCheck;
+        const previousAvg = analytics.yearOverYear.previousPeriod.avgCheck;
+        if (previousAvg > 0) {
+          analytics.yearOverYear.growth.avgCheck = ((currentAvg - previousAvg) / previousAvg) * 100;
+        }
+      }
+    }
+    
+    // Generate Insights
+    analytics.insights = {
+      peakDays: sortedDays.slice(0, 3).map(d => `${d.date} (${d.dayOfWeek}): $${d.revenue.toFixed(2)}`),
+      slowDays: sortedDays.slice(-3).map(d => `${d.date} (${d.dayOfWeek}): $${d.revenue.toFixed(2)}`),
+      trends: [],
+      recommendations: []
+    };
+    
+    // Add trend insights
+    if (analytics.dayOfWeekAnalysis) {
+      const bestDayOfWeek = Object.entries(analytics.dayOfWeekAnalysis)
+        .sort((a, b) => b[1].avgRevenue - a[1].avgRevenue)[0];
+      analytics.insights.trends.push(`${bestDayOfWeek[0]} is your strongest day averaging $${bestDayOfWeek[1].avgRevenue.toFixed(2)}`);
+    }
+    
+    if (analytics.yearOverYear) {
+      const yoyGrowth = analytics.yearOverYear.growth.revenue;
+      if (yoyGrowth > 0) {
+        analytics.insights.trends.push(`Revenue up ${yoyGrowth.toFixed(1)}% vs same period last year`);
+      } else if (yoyGrowth < 0) {
+        analytics.insights.trends.push(`Revenue down ${Math.abs(yoyGrowth).toFixed(1)}% vs same period last year`);
+      }
     }
     
     // Calculate week over week if applicable

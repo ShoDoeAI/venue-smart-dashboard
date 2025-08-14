@@ -464,6 +464,44 @@ ${context.activeAlerts.map(a => `- ${a.type}: ${a.message}`).join('\n')}` : 'No 
         contextMessage += '\n';
       }
       
+      // Day of Week Analysis
+      if (ta.dayOfWeekAnalysis) {
+        contextMessage += '\nDay of Week Analysis:';
+        Object.entries(ta.dayOfWeekAnalysis).forEach(([day, data]: [string, any]) => {
+          contextMessage += `\n- ${day}: Avg $${data.avgRevenue.toFixed(2)} (${data.percentOfWeek.toFixed(1)}% of weekly revenue)`;
+        });
+        contextMessage += '\n';
+      }
+      
+      // Year over Year Comparison
+      if (ta.yearOverYear) {
+        const yoy = ta.yearOverYear;
+        contextMessage += `\nYear-over-Year Comparison:
+- ${yoy.currentPeriod.year}: $${yoy.currentPeriod.revenue.toFixed(2)} (${yoy.currentPeriod.orders} orders, avg $${yoy.currentPeriod.avgCheck.toFixed(2)})
+- ${yoy.previousPeriod.year}: $${yoy.previousPeriod.revenue.toFixed(2)} (${yoy.previousPeriod.orders} orders, avg $${yoy.previousPeriod.avgCheck.toFixed(2)})
+- Revenue Growth: ${yoy.growth.revenue >= 0 ? '+' : ''}${yoy.growth.revenue.toFixed(1)}%
+- Order Growth: ${yoy.growth.orders >= 0 ? '+' : ''}${yoy.growth.orders.toFixed(1)}%
+- Avg Check Growth: ${yoy.growth.avgCheck >= 0 ? '+' : ''}${yoy.growth.avgCheck.toFixed(1)}%\n`;
+      }
+      
+      // Insights
+      if (ta.insights) {
+        contextMessage += '\nKey Insights:';
+        if (ta.insights.trends.length > 0) {
+          contextMessage += '\nTrends:';
+          ta.insights.trends.forEach((trend: string) => {
+            contextMessage += `\n- ${trend}`;
+          });
+        }
+        if (ta.insights.peakDays.length > 0) {
+          contextMessage += '\nTop 3 Days:';
+          ta.insights.peakDays.forEach((day: string) => {
+            contextMessage += `\n- ${day}`;
+          });
+        }
+        contextMessage += '\n';
+      }
+      
       // Period summary (most important!)
       if (context.toastAnalytics.periodSummary) {
         const ps = context.toastAnalytics.periodSummary;
