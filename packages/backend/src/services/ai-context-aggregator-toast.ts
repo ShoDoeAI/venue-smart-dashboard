@@ -97,6 +97,29 @@ export class AIContextAggregatorToast {
       }
     };
     
+    // IMPORTANT: Use revenue_overrides table for accurate data (same as dashboard)
+    const { data: overrides } = await this.supabase
+      .from('revenue_overrides')
+      .select('*')
+      .gte('date', startDate.toISOString().split('T')[0])
+      .lte('date', endDate.toISOString().split('T')[0])
+      .order('date', { ascending: true });
+    
+    const overrideMap = new Map<string, { revenue: number; checkCount: number }>();
+    overrides?.forEach(override => {
+      overrideMap.set(override.date, { 
+        revenue: override.actual_revenue,
+        checkCount: override.check_count 
+      });
+    });
+    
+    // Get simple transactions for dates without overrides
+    const { data: transactions } = await this.supabase
+      .from('simple_transactions')
+      .select('*')
+      .gte('transaction_date', startDate.toISOString())
+      .lte('transaction_date', endDate.toISOString());
+    
     // Convert dates to business date format (YYYYMMDD)
     const startBusinessDate = parseInt(startDate.toISOString().split('T')[0].replace(/-/g, ''));
     const endBusinessDate = parseInt(endDate.toISOString().split('T')[0].replace(/-/g, ''));
@@ -144,6 +167,26 @@ export class AIContextAggregatorToast {
       current.setDate(current.getDate() + 1);
     }
     
+    // Apply revenue overrides first (these are verified accurate)
+    overrideMap.forEach((data, date) => {
+      if (dailyMap.has(date)) {
+        const day = dailyMap.get(date)!;
+        day.revenue = data.revenue;
+        day.checks = data.checkCount;
+      }
+    });
+    
+    // Add transaction data for dates without overrides
+    transactions?.forEach(transaction => {
+      const dateStr = new Date(transaction.transaction_date).toISOString().split('T')[0];
+      if (dailyMap.has(dateStr) && !overrideMap.has(dateStr)) {
+        const day = dailyMap.get(dateStr)!;
+        day.revenue += transaction.amount || 0;
+        day.orders++;
+        day.checks++;
+      }
+    });
+    
     // Count orders by business date
     orders.forEach(order => {
       const dateStr = String(order.business_date).replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
@@ -152,12 +195,13 @@ export class AIContextAggregatorToast {
       }
     });
     
-    // Add check revenue
+    // Add check revenue for dates without overrides
     checks?.forEach(check => {
       const order = orders.find(o => o.order_guid === check.order_guid);
       if (order) {
         const dateStr = String(order.business_date).replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3');
-        if (dailyMap.has(dateStr)) {
+        // Only update if we don't have an override for this date
+        if (dailyMap.has(dateStr) && !overrideMap.has(dateStr)) {
           const day = dailyMap.get(dateStr)!;
           day.revenue += check.total_amount || 0;
           day.checks++;

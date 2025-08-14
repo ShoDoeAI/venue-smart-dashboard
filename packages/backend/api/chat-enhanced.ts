@@ -340,6 +340,14 @@ function generateVisualizationData(context: AIContext & { toastAnalytics?: unkno
   const analytics = context.toastAnalytics as {
     hourlyPattern?: unknown[];
     menuPerformance?: unknown[];
+    dailyBreakdown?: Array<{
+      date: string;
+      revenue: number;
+      orders: number;
+      checks: number;
+      dayOfWeek: string;
+    }>;
+    totalRevenue?: number;
     comparative?: {
       current: unknown;
       previous: unknown;
@@ -347,7 +355,33 @@ function generateVisualizationData(context: AIContext & { toastAnalytics?: unkno
     };
   };
 
-  if (queryType === 'revenue' && analytics?.hourlyPattern) {
+  // Add daily breakdown visualization for revenue queries with multiple days
+  if (queryType === 'revenue' && analytics?.dailyBreakdown && analytics.dailyBreakdown.length > 1) {
+    visualizations.push({
+      type: 'bar',
+      title: `Total Revenue: $${analytics.totalRevenue?.toFixed(2) || '0.00'}`,
+      data: analytics.dailyBreakdown.map(day => ({
+        date: day.date,
+        dayLabel: `${day.dayOfWeek} ${day.date.split('-')[1]}/${day.date.split('-')[2]}`,
+        revenue: day.revenue,
+        checks: day.checks
+      })),
+      xAxis: 'dayLabel',
+      yAxis: 'revenue',
+    });
+  } else if (queryType === 'revenue' && analytics?.dailyBreakdown && analytics.dailyBreakdown.length === 1) {
+    // Single day - show hourly pattern if available
+    if (analytics?.hourlyPattern) {
+      visualizations.push({
+        type: 'line',
+        title: `${analytics.dailyBreakdown[0].date} Revenue: $${analytics.totalRevenue?.toFixed(2) || '0.00'}`,
+        data: analytics.hourlyPattern,
+        xAxis: 'hour',
+        yAxis: 'revenue',
+      });
+    }
+  } else if (queryType === 'revenue' && analytics?.hourlyPattern) {
+    // Fallback to hourly pattern
     visualizations.push({
       type: 'line',
       title: 'Revenue by Hour',
