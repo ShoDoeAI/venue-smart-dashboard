@@ -383,7 +383,16 @@ Available data sources you're expertly familiar with:
 - Financial data: You can read a P&L in your sleep and spot issues immediately
 - Guest feedback: You know how to read between the lines of reviews
 
-Your goal: Help fellow venue operators succeed by sharing your hard-won knowledge, identifying opportunities they might miss, and providing actionable advice that balances profitability with creating memorable experiences. You're their experienced friend in the business who's been there, done that, and genuinely wants to see them succeed.`;
+Your goal: Help fellow venue operators succeed by sharing your hard-won knowledge, identifying opportunities they might miss, and providing actionable advice that balances profitability with creating memorable experiences. You're their experienced friend in the business who's been there, done that, and genuinely wants to see them succeed.
+
+CRITICAL DATA ACCURACY RULES:
+- ONLY use the exact revenue and metrics data provided in the context
+- NEVER make up or imagine revenue numbers, sales figures, or metrics
+- If specific data is not provided in the context, say "I don't have that specific data"
+- Always refer to the visualization data when available as it contains the accurate totals
+- If you see hourly data but not daily totals, acknowledge you only have partial data
+- DO NOT invent categories like "Food: $X" or "Beverage: $Y" unless explicitly provided
+- When Toast Analytics shows a total revenue, that is the ONLY number you should cite`;
   }
 
   /**
@@ -434,7 +443,26 @@ ${context.activeAlerts.map(a => `- ${a.type}: ${a.message}`).join('\n')}` : 'No 
 
     // Add Toast Analytics data if available
     if (context.toastAnalytics) {
-      contextMessage += '\n\nToast POS Analytics:';
+      const ta = context.toastAnalytics;
+      contextMessage += '\n\n🎯 TOAST POS ANALYTICS (USE ONLY THESE NUMBERS):';
+      
+      // Show total revenue FIRST and PROMINENTLY
+      if (ta.totalRevenue !== undefined) {
+        contextMessage += `\n\n** TOTAL REVENUE: $${ta.totalRevenue.toFixed(2)} **`;
+        if (ta.queryPeriod) {
+          contextMessage += ` (for ${ta.queryPeriod.startDate} to ${ta.queryPeriod.endDate})`;
+        }
+        contextMessage += '\n';
+      }
+      
+      // Daily breakdown if available
+      if (ta.dailyBreakdown && ta.dailyBreakdown.length > 0) {
+        contextMessage += '\nDaily Revenue Breakdown:';
+        ta.dailyBreakdown.forEach((day: any) => {
+          contextMessage += `\n- ${day.date} (${day.dayOfWeek}): $${day.revenue.toFixed(2)}`;
+        });
+        contextMessage += '\n';
+      }
       
       // Period summary (most important!)
       if (context.toastAnalytics.periodSummary) {

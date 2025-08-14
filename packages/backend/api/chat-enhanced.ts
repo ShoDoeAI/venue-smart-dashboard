@@ -1,9 +1,11 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@venuesync/shared';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+import { AIContextAggregatorToast } from '../src/services/ai-context-aggregator-toast';
 import { ClaudeAI } from '../src/services/claude-ai';
 import type { AIContext } from '../src/services/claude-ai';
-import { AIContextAggregatorToast } from '../src/services/ai-context-aggregator-toast';
-import type { Database } from '@venuesync/shared';
+
 
 // Query type detection
 function detectQueryType(message: string): 'revenue' | 'menu' | 'customers' | 'labor' | 'general' {
@@ -68,7 +70,7 @@ function parseDateQuery(message: string): { startDate?: Date; endDate?: Date; ti
     
     { regex: /this weekend/i, handler: () => {
       const dayOfWeek = now.getDay();
-      let friday = new Date(today);
+      const friday = new Date(today);
       let sunday = new Date(today);
       
       if (dayOfWeek === 0) { // Sunday

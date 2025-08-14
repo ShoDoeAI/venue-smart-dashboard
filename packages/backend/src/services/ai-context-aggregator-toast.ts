@@ -1,7 +1,9 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@venuesync/shared';
+
+import { getEasternBusinessDate, getEasternTodayStart } from '../utils/timezone';
+
 import type { AIContext } from './claude-ai';
-import { getEasternBusinessDate, getEasternTodayStart, getEasternTimeComponents } from '../utils/timezone';
 
 interface ToastAnalytics {
   queryPeriod?: {
@@ -135,7 +137,7 @@ export class AIContextAggregatorToast {
     if (isSingleDay) {
       query.eq('business_date', startBusinessDate);
     } else {
-      query.lt('business_date', endBusinessDate);
+      query.lte('business_date', endBusinessDate);
     }
     
     const { data: orders } = await query.order('business_date', { ascending: true });
