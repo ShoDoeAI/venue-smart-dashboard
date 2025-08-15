@@ -1,6 +1,5 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import type { Database } from '@venuesync/shared';
-import type {
+import type { Database ,
   VenueSyncAction,
   ActionConfirmationRequest,
   ToastAction,
@@ -317,7 +316,7 @@ export class ActionConfirmationService {
     const alternatives: ActionConfirmationRequest['alternatives'] = [];
 
     if (action.service === 'toast' && action.actionType === 'update_item_price') {
-      const params = (action as ToastUpdateItemPriceAction).parameters;
+      const params = (action).parameters;
       
       // Suggest smaller price change
       if (params.priceChangePercent > 20) {

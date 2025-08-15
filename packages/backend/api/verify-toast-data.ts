@@ -1,6 +1,6 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@venuesync/shared';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Auth check
@@ -38,8 +38,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // 4. Calculate totals
     let totalRevenue = 0;
-    let orderCount = orders?.length || 0;
-    let paymentCount = payments?.length || 0;
+    const orderCount = orders?.length || 0;
+    const paymentCount = payments?.length || 0;
 
     payments?.forEach(p => {
       totalRevenue += (p.amount + (p.tip_amount || 0)); // Already in dollars

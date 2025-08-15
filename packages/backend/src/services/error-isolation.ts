@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import { supabase } from '../lib/supabase';
 
 export const ErrorSeverity = z.enum(['critical', 'high', 'medium', 'low']);

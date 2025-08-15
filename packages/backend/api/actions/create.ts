@@ -1,9 +1,9 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { ActionConfirmationService } from '../../src/services/action-confirmation';
-import type { Database } from '@venuesync/shared';
-import type { VenueSyncAction } from '@venuesync/shared';
+import type { Database , VenueSyncAction } from '@venuesync/shared';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { v4 as uuidv4 } from 'uuid';
+
+import { ActionConfirmationService } from '../../src/services/action-confirmation';
 
 /**
  * Create action endpoint

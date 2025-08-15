@@ -1,7 +1,9 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { ActionConfirmationService } from '../../src/services/action-confirmation';
 import type { Database } from '@venuesync/shared';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+import { ActionConfirmationService } from '../../src/services/action-confirmation';
+
 
 /**
  * Get pending actions endpoint

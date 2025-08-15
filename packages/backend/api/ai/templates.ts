@@ -1,8 +1,10 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { AIPromptTemplates } from '../../src/services/ai-prompt-templates';
-import { AIContextAggregator } from '../../src/services/ai-context-aggregator';
 import type { Database } from '@venuesync/shared';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+import { AIContextAggregator } from '../../src/services/ai-context-aggregator';
+import { AIPromptTemplates } from '../../src/services/ai-prompt-templates';
+
 
 /**
  * AI Templates endpoint

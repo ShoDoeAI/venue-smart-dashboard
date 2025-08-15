@@ -1,7 +1,9 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { AIContextAggregator } from '../src/services/ai-context-aggregator';
 import type { Database } from '@venuesync/shared';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+import { AIContextAggregator } from '../src/services/ai-context-aggregator';
+
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Simple auth check

@@ -1,7 +1,8 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@venuesync/shared';
-import { KPICalculator } from './kpi-calculator';
+
 import type { AIContext } from './claude-ai';
+import { KPICalculator } from './kpi-calculator';
 
 export class AIContextAggregatorFixed {
   private kpiCalculator: KPICalculator;

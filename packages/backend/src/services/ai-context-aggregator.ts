@@ -1,7 +1,8 @@
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@venuesync/shared';
-import { KPICalculator } from './kpi-calculator';
+
 import type { AIContext } from './claude-ai';
+import { KPICalculator } from './kpi-calculator';
 import { ToastAnalytics } from './toast-analytics';
 
 export interface AlertRule {
@@ -601,7 +602,7 @@ export class AIContextAggregator {
     const defaultStart = startDate || new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const defaultEnd = endDate || now;
     
-    let toastAnalytics: any = {};
+    const toastAnalytics: any = {};
     
     switch (queryType) {
       case 'revenue':

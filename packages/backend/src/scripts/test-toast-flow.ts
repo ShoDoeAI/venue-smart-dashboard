@@ -9,11 +9,12 @@
  * 4. Validates the entire flow
  */
 
-import { createClient } from '@supabase/supabase-js';
-import { config } from 'dotenv';
 import { resolve } from 'path';
+
+import { createClient } from '@supabase/supabase-js';
 import { ToastConnector } from '@venuesync/shared';
 import type { Database } from '@venuesync/shared';
+import { config } from 'dotenv';
 
 // Load environment variables
 config({ path: resolve(process.cwd(), '.env.local') });

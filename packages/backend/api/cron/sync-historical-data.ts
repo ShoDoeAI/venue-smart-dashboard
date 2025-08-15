@@ -1,7 +1,7 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import { ToastConnector } from '@venuesync/shared';
 import type { Database, ConnectorCredentials, ConnectorConfig } from '@venuesync/shared';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 /**
  * Vercel endpoint to sync historical data from Toast API going back 2 years

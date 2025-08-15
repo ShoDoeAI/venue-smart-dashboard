@@ -1,9 +1,11 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { ClaudeAI } from '../../src/services/claude-ai';
+import type { Database } from '@venuesync/shared';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
 import { AIContextAggregator } from '../../src/services/ai-context-aggregator';
 import { AIPromptTemplates } from '../../src/services/ai-prompt-templates';
-import type { Database } from '@venuesync/shared';
+import { ClaudeAI } from '../../src/services/claude-ai';
+
 
 /**
  * AI Analysis endpoint - uses predefined templates

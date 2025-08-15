@@ -1,8 +1,10 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { KPICalculator } from '../src/services/kpi-calculator';
-import { AlertGenerator } from '../src/services/alert-generator';
 import type { Database } from '@venuesync/shared';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+import { AlertGenerator } from '../src/services/alert-generator';
+import { KPICalculator } from '../src/services/kpi-calculator';
+
 
 export default async function handler(
   req: VercelRequest,

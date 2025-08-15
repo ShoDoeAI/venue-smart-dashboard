@@ -1,7 +1,9 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { DataOrchestrator } from '../../src/services/data-orchestrator';
 import type { Database } from '@venuesync/shared';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+import { DataOrchestrator } from '../../src/services/data-orchestrator';
+
 
 /**
  * Vercel Cron job to fetch data from all integrated APIs

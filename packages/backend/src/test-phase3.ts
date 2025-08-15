@@ -4,12 +4,14 @@
  * Tests: Alert Generation, Error Isolation, KPI Calculator enhancements
  */
 
-import { config } from 'dotenv';
 import { createClient } from '@supabase/supabase-js';
+import type { Database } from '@venuesync/shared';
+import { config } from 'dotenv';
+
 import { AlertGenerator } from './services/alert-generator';
 import { ErrorIsolationService } from './services/error-isolation';
 import { KPICalculator } from './services/kpi-calculator';
-import type { Database } from '@venuesync/shared';
+
 
 // Load environment variables
 config({ path: '../../.env' });

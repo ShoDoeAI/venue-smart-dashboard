@@ -1,5 +1,6 @@
-import { DataOrchestrator } from '../../src/services/data-orchestrator';
 import type { SupabaseClient } from '@supabase/supabase-js';
+
+import { DataOrchestrator } from '../../src/services/data-orchestrator';
 
 /**
  * Test script for Data Orchestrator with MVP APIs

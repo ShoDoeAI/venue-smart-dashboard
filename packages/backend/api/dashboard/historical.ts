@@ -1,6 +1,6 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@venuesync/shared';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 /**
  * API endpoint for historical dashboard data queries
@@ -67,7 +67,7 @@ export default async function handler(
     // Choose the appropriate view based on granularity
     let viewName = 'daily_revenue_summary';
     let dateColumn = 'date';
-    let groupByClause = '';
+    const groupByClause = '';
 
     switch (granularity) {
       case 'weekly':

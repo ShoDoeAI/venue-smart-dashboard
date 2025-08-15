@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+
 import { ErrorIsolationService } from '../src/services/error-isolation';
 
 export default async function handler(

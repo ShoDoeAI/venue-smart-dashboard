@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+
 import { AlertGenerator } from '../src/services/alert-generator';
 
 export default async function handler(

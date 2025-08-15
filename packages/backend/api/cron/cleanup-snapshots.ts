@@ -1,7 +1,9 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { SnapshotService } from '../../src/services/snapshot-service';
 import type { Database } from '@venuesync/shared';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+import { SnapshotService } from '../../src/services/snapshot-service';
+
 
 /**
  * Vercel Cron job to cleanup old snapshots

@@ -1,11 +1,10 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { ToastConnector } from '@venuesync/shared';
-import { EventbriteConnector } from '@venuesync/shared';
-import { OpenDateConnector } from '@venuesync/shared';
+import { ToastConnector , EventbriteConnector , OpenDateConnector } from '@venuesync/shared';
 // import { AudienceRepublicConnector } from '@venuesync/shared';
 import type { Database } from '@venuesync/shared';
-import { SnapshotService } from './snapshot-service';
+
 import { ErrorIsolationService } from './error-isolation';
+import { SnapshotService } from './snapshot-service';
 
 export interface OrchestratorConfig {
   venueId: string;

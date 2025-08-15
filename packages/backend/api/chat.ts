@@ -1,8 +1,10 @@
-import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { createClient } from '@supabase/supabase-js';
-import { ClaudeAI } from '../src/services/claude-ai';
-import { AIContextAggregator } from '../src/services/ai-context-aggregator';
 import type { Database } from '@venuesync/shared';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+import { AIContextAggregator } from '../src/services/ai-context-aggregator';
+import { ClaudeAI } from '../src/services/claude-ai';
+
 
 // Date parsing utilities for natural language date queries
 function parseDateQuery(message: string): { startDate?: Date; endDate?: Date; timeRange?: string } | null {
@@ -106,7 +108,7 @@ export default async function handler(
     const contextAggregator = new AIContextAggregator(supabase);
     const aiService = new ClaudeAI(
       supabase,
-      process.env.ANTHROPIC_API_KEY!
+      process.env.ANTHROPIC_API_KEY
     );
 
     // Get venue ID from query params or use Jack's on Water Street

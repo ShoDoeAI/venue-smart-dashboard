@@ -1,9 +1,6 @@
 import { SupabaseClient } from '@supabase/supabase-js';
-import { ToastConnector } from '@venuesync/shared';
-import { EventbriteConnector } from '@venuesync/shared';
-import { OpenDateConnector } from '@venuesync/shared';
-import type { Database } from '@venuesync/shared';
-import type {
+import { ToastConnector , EventbriteConnector , OpenDateConnector } from '@venuesync/shared';
+import type { Database ,
   VenueSyncAction,
   ActionExecutionResult,
   ActionValidation,
