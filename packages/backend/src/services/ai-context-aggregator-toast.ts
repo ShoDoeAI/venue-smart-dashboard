@@ -120,11 +120,28 @@ export class AIContextAggregatorToast {
     const defaultStart = startDate || todayStart;
     const defaultEnd = endDate || now;
     
+    // Debug logging
+    console.log('[AIContextAggregatorToast] buildEnhancedContext called with:', {
+      venueId,
+      queryType,
+      startDate: startDate?.toISOString(),
+      endDate: endDate?.toISOString(),
+      defaultStart: defaultStart.toISOString(),
+      defaultEnd: defaultEnd.toISOString()
+    });
+    
     // Get base context with Toast data
     const baseContext = await this.buildBasicContext(venueId);
     
     // Get Toast analytics for the period
     const toastAnalytics = await this.getToastAnalytics(defaultStart, defaultEnd, queryType);
+    
+    console.log('[AIContextAggregatorToast] Toast analytics result:', {
+      hasData: !!toastAnalytics,
+      totalRevenue: toastAnalytics?.totalRevenue,
+      dayCount: toastAnalytics?.dailyBreakdown?.length,
+      noDataFound: toastAnalytics?.noDataFound
+    });
     
     return {
       ...baseContext,
@@ -136,6 +153,13 @@ export class AIContextAggregatorToast {
    * Get Toast analytics from database
    */
   private async getToastAnalytics(startDate: Date, endDate: Date, queryType: string): Promise<ToastAnalytics> {
+    console.log('[DEBUG 1] getToastAnalytics called:', {
+      startDate: startDate.toISOString(),
+      endDate: endDate.toISOString(),
+      queryType,
+      timestamp: new Date().toISOString()
+    });
+
     const analytics: ToastAnalytics = {
       queryPeriod: {
         startDate: startDate.toISOString().split('T')[0],
@@ -143,13 +167,31 @@ export class AIContextAggregatorToast {
       }
     };
     
-    // IMPORTANT: Use revenue_overrides table for accurate data (same as dashboard)
-    const { data: overrides } = await this.supabase
-      .from('revenue_overrides')
-      .select('*')
-      .gte('date', startDate.toISOString().split('T')[0])
-      .lte('date', endDate.toISOString().split('T')[0])
-      .order('date', { ascending: true });
+    try {
+      // Log before database query
+      console.log('[DEBUG 2] Preparing revenue_overrides query:', {
+        startDateStr: startDate.toISOString().split('T')[0],
+        endDateStr: endDate.toISOString().split('T')[0],
+        queryType
+      });
+      
+      // IMPORTANT: Use revenue_overrides table for accurate data (same as dashboard)
+      const { data: overrides, error: overridesError } = await this.supabase
+        .from('revenue_overrides')
+        .select('*')
+        .gte('date', startDate.toISOString().split('T')[0])
+        .lte('date', endDate.toISOString().split('T')[0])
+        .order('date', { ascending: true });
+        
+      // Log database response
+      console.log('[DEBUG 3] Revenue overrides response:', {
+        status: overridesError ? 'error' : 'success',
+        error: overridesError,
+        dataCount: overrides?.length || 0,
+        firstRow: overrides?.[0],
+        lastRow: overrides?.[overrides.length - 1],
+        allDates: overrides?.map(o => o.date)
+      });
     
     const overrideMap = new Map<string, { revenue: number; checkCount: number }>();
     overrides?.forEach(override => {
@@ -160,11 +202,17 @@ export class AIContextAggregatorToast {
     });
     
     // Get simple transactions for dates without overrides
-    const { data: transactions } = await this.supabase
+    console.log('[DEBUG 3.1] Querying simple_transactions...');
+    const { data: transactions, error: transError } = await this.supabase
       .from('simple_transactions')
       .select('*')
       .gte('transaction_date', startDate.toISOString())
       .lte('transaction_date', endDate.toISOString());
+      
+    console.log('[DEBUG 3.2] Simple transactions result:', {
+      error: transError,
+      count: transactions?.length || 0
+    });
     
     // Convert dates to business date format (YYYYMMDD)
     const startBusinessDate = parseInt(startDate.toISOString().split('T')[0].replace(/-/g, ''));
@@ -184,9 +232,22 @@ export class AIContextAggregatorToast {
       query.lte('business_date', endBusinessDate);
     }
     
-    const { data: orders } = await query.order('business_date', { ascending: true });
+    console.log('[DEBUG 3.3] Querying toast_orders with business dates:', {
+      startBusinessDate,
+      endBusinessDate,
+      isSingleDay
+    });
+    
+    const { data: orders, error: ordersError } = await query.order('business_date', { ascending: true });
+    
+    console.log('[DEBUG 3.4] Toast orders result:', {
+      error: ordersError,
+      count: orders?.length || 0,
+      sampleBusinessDates: orders?.slice(0, 3).map(o => o.business_date)
+    });
     
     if (!orders || orders.length === 0) {
+      console.log('[DEBUG 3.5] No orders found, returning empty analytics');
       analytics.noDataFound = true;
       analytics.totalRevenue = 0;
       analytics.totalOrders = 0;
@@ -255,6 +316,13 @@ export class AIContextAggregatorToast {
       }
     });
     
+    // Log daily map state before totals
+    console.log('[DEBUG 4] Daily map state:', {
+      mapSize: dailyMap.size,
+      dates: Array.from(dailyMap.keys()),
+      sampleData: Array.from(dailyMap.entries()).slice(0, 3)
+    });
+
     // Calculate totals and build daily breakdown
     let totalRevenue = 0;
     let totalOrders = 0;
@@ -450,7 +518,37 @@ export class AIContextAggregatorToast {
       };
     }
     
+    // Log final analytics before returning
+    console.log('[DEBUG 5] Final analytics result:', {
+      totalRevenue: analytics.totalRevenue,
+      totalOrders: analytics.totalOrders,
+      totalChecks: analytics.totalChecks,
+      dayCount: analytics.dailyBreakdown?.length,
+      noDataFound: analytics.noDataFound,
+      queryPeriod: analytics.queryPeriod,
+      hasHourlyPattern: !!analytics.hourlyPattern,
+      hasDayOfWeekAnalysis: !!analytics.dayOfWeekAnalysis,
+      sampleDailyData: analytics.dailyBreakdown?.slice(0, 2)
+    });
+    
     return analytics;
+    
+    } catch (error) {
+      console.error('[DEBUG ERROR] getToastAnalytics error:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        startDate: startDate.toISOString(),
+        endDate: endDate.toISOString(),
+        queryType
+      });
+      
+      // Return empty analytics on error
+      analytics.noDataFound = true;
+      analytics.totalRevenue = 0;
+      analytics.totalOrders = 0;
+      analytics.totalChecks = 0;
+      return analytics;
+    }
   }
 
   /**
