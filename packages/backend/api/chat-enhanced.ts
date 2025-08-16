@@ -185,10 +185,10 @@ function parseDateQuery(
       },
     },
 
-    // Specific date like "August 1st" or "Aug 8th" - MUST come before month-only pattern
+    // Month with year pattern (e.g., "July 2025", "June 2024") - MUST come before specific date pattern
     {
       regex:
-        /(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s*,?\s*(\d{4}))?/i,
+        /(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{4})/i,
       handler: (match: RegExpMatchArray) => {
         const monthMap: Record<string, number> = {
           jan: 0,
@@ -235,10 +235,10 @@ function parseDateQuery(
       },
     },
 
-    // Month with year pattern (e.g., "July 2025", "June 2024")
+    // Specific date like "August 1st" or "Aug 8th"
     {
       regex:
-        /(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{4})/i,
+        /(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s*,?\s*(\d{4}))?/i,
       handler: (match: RegExpMatchArray) => {
         const monthNames = [
           'january',
