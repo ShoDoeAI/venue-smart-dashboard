@@ -340,6 +340,12 @@ function parseDateQuery(
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+  
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -390,6 +396,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       queryEndDate?: string;
     };
 
+    console.log('[CONTEXT 1] Building AI context...', {
+      hasDateInfo: !!dateInfo,
+      dateRange: dateInfo ? { start: dateInfo.startDate?.toISOString(), end: dateInfo.endDate?.toISOString() } : null,
+      queryType,
+      venueId: actualVenueId
+    });
+
     if (dateInfo?.startDate && dateInfo?.endDate) {
       // If specific dates mentioned, get historical context
       context = await contextAggregator.buildEnhancedContext(
@@ -408,6 +421,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       // Get current/recent context
       context = await contextAggregator.buildEnhancedContext(actualVenueId, queryType);
     }
+    
+    console.log('[CONTEXT 2] Context received from aggregator:', {
+      hasContext: !!context,
+      contextKeys: Object.keys(context),
+      hasToastAnalytics: !!context.toastAnalytics,
+      toastAnalyticsKeys: context.toastAnalytics ? Object.keys(context.toastAnalytics) : null,
+      toastAnalyticsSnapshot: context.toastAnalytics ? JSON.stringify(context.toastAnalytics).substring(0, 300) : null
+    });
 
     // Create or use conversation
     let activeConversationId = conversationId;
@@ -419,19 +440,28 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Query Claude with enhanced context
-    // console.log('Querying Claude with context:', {
-    //   venueId: actualVenueId,
-    //   queryType,
-    //   dateRange: dateInfo?.timeRange,
-    //   hasToastData: !!context.toastAnalytics,
-    //   contextKeys: Object.keys(context),
-    //   version: '2.0' // Force new deployment
-    // });
+    console.log('[CONTEXT 3] Final AI context before Claude query:', {
+      venueId: actualVenueId,
+      queryType,
+      dateRange: dateInfo?.timeRange,
+      hasToastData: !!context.toastAnalytics,
+      contextKeys: Object.keys(context),
+      toastTotalRevenue: (context.toastAnalytics as any)?.totalRevenue,
+      toastDailyBreakdownCount: (context.toastAnalytics as any)?.dailyBreakdown?.length,
+      contextSize: JSON.stringify(context).length,
+      version: '2.1' // Force new deployment
+    });
 
     const response = await claudeAI.query({
       message,
       context,
       conversationId: activeConversationId,
+    });
+    
+    console.log('[CONTEXT 4] Claude response received:', {
+      hasResponse: !!response,
+      hasMessage: !!response?.message,
+      messagePreview: response?.message?.substring(0, 100)
     });
 
     // console.log('Claude response:', {

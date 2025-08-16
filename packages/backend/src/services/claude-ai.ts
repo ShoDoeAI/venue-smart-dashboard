@@ -125,6 +125,14 @@ export class ClaudeAI {
    * Process a query with Claude
    */
   async query(query: AIQuery): Promise<AIResponse> {
+    console.log('[CLAUDE 1] Query received:', {
+      messageLength: query.message.length,
+      hasContext: !!query.context,
+      contextKeys: Object.keys(query.context),
+      hasToastAnalytics: !!(query.context as any).toastAnalytics,
+      toastAnalyticsKeys: (query.context as any).toastAnalytics ? Object.keys((query.context as any).toastAnalytics) : null
+    });
+    
     try {
       // Get conversation history if conversationId provided
       let conversationHistory: Anthropic.MessageParam[] = [];
@@ -134,6 +142,11 @@ export class ClaudeAI {
 
       // Build context message
       const contextMessage = this.buildContextMessage(query.context);
+      
+      console.log('[CLAUDE 2] Context message built:', {
+        contextMessageLength: contextMessage.length,
+        contextMessagePreview: contextMessage.substring(0, 500)
+      });
 
       // Create messages array
       const messages: Anthropic.MessageParam[] = [
@@ -442,6 +455,14 @@ ${context.activeAlerts.length > 0 ? `Active Alerts (${context.activeAlerts.lengt
 ${context.activeAlerts.map(a => `- ${a.type}: ${a.message}`).join('\n')}` : 'No active alerts'}`;
 
     // Add Toast Analytics data if available
+    console.log('[CLAUDE 3] Checking toastAnalytics:', {
+      hasToastAnalytics: !!context.toastAnalytics,
+      toastAnalyticsType: typeof context.toastAnalytics,
+      toastAnalyticsKeys: context.toastAnalytics ? Object.keys(context.toastAnalytics) : null,
+      totalRevenue: (context.toastAnalytics as any)?.totalRevenue,
+      queryPeriod: (context.toastAnalytics as any)?.queryPeriod
+    });
+    
     if (context.toastAnalytics) {
       const ta = context.toastAnalytics;
       contextMessage += '\n\n🎯 TOAST POS ANALYTICS (USE ONLY THESE NUMBERS):';

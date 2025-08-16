@@ -116,7 +116,7 @@ export const chatApi = {
       conversationId: string;
       messageId: string;
       actions?: any[];
-    }>('/api/chat', { message, conversationId }),
+    }>('/api/chat-enhanced', { message, conversationId }),
   
   getConversations: () =>
     api.get<{
