@@ -345,6 +345,8 @@ function parseDateQuery(
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  console.log('[HANDLER] Request received:', { method: req.method, body: req.body });
+  
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -376,11 +378,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const claudeAI = new ClaudeAI(supabase);
 
     // Parse date from query
+    console.log('[DATE PARSING] About to parse message:', message);
     const dateInfo = parseDateQuery(message);
     const queryType = detectQueryType(message);
     
     console.log('[DATE PARSING] Input message:', message);
     console.log('[DATE PARSING] Parsed result:', dateInfo);
+    console.log('[DATE PARSING] Query type:', queryType);
 
     // Determine venue ID
     let actualVenueId: string | undefined = venueId;
