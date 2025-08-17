@@ -373,6 +373,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Parse date from query
     const dateInfo = parseDateQuery(message);
     const queryType = detectQueryType(message);
+    
+    console.log('[DATE PARSING] Input message:', message);
+    console.log('[DATE PARSING] Parsed result:', dateInfo);
 
     // Determine venue ID
     let actualVenueId: string | undefined = venueId;
