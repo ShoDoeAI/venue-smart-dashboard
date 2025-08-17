@@ -235,10 +235,10 @@ function parseDateQuery(
       },
     },
 
-    // Specific date like "August 1st" or "Aug 8th"
+    // Specific date like "August 1st" or "Aug 8th" - must be 1-31, not part of year
     {
       regex:
-        /(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s*,?\s*(\d{4}))?/i,
+        /(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(0?[1-9]|[12][0-9]|3[01])(?:st|nd|rd|th)?(?:\s*,?\s*(\d{4}))?/i,
       handler: (match: RegExpMatchArray) => {
         const monthNames = [
           'january',
@@ -328,11 +328,16 @@ function parseDateQuery(
     },
   ];
 
-  for (const pattern of patterns) {
+  for (let i = 0; i < patterns.length; i++) {
+    const pattern = patterns[i];
     const match = message.match(pattern.regex);
     if (match) {
+      console.log(`[DATE PARSING] Pattern ${i} matched:`, pattern.regex.toString());
       const result = pattern.handler(match);
-      if (result) return result;
+      if (result) {
+        console.log('[DATE PARSING] Result:', result);
+        return result;
+      }
     }
   }
 
