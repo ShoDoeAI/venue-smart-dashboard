@@ -379,6 +379,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     // Parse date from query
     console.log('[DATE PARSING] About to parse message:', message);
+    
+    // Force test for July 2025
+    if (message.toLowerCase().includes('july 2025')) {
+      console.log('[DATE PARSING] Detected July 2025 in message');
+      const testMatch = message.match(/(july)\s+(2025)/i);
+      console.log('[DATE PARSING] Test regex match:', testMatch);
+    }
+    
     const dateInfo = parseDateQuery(message);
     const queryType = detectQueryType(message);
     
