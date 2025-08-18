@@ -112,7 +112,7 @@ export const chatApi = {
   sendMessage: (message: string, conversationId?: string) => {
     // Use environment variable or URL parameter to switch endpoints
     const useToolsChat = new URLSearchParams(window.location.search).get('tools') === 'true';
-    const endpoint = useToolsChat ? '/api/chat-tools' : '/api/chat-enhanced';
+    const endpoint = useToolsChat ? '/api/chat-simple' : '/api/chat-enhanced';
     
     return api.post<{
       success: boolean;
