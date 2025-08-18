@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        button { margin: 10px; padding: 10px 20px; font-size: 16px; cursor: pointer; }
+        pre { background: #f4f4f4; padding: 15px; border-radius: 5px; overflow: auto; }
+        .loading { color: blue; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Revenue Data API Test</h1>
+    
+    <button onclick="testCheckYears()">Test Check Data Years</button>
+    <button onclick="testFindRevenue()">Test Find Revenue Data</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        function showResult(data, title) {
+            document.getElementById('result').innerHTML = `
+                <h2>${title}</h2>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+        }
+        
+        function showLoading() {
+            document.getElementById('result').innerHTML = '<p class="loading">Loading...</p>';
+        }
+        
+        function showError(error) {
+            document.getElementById('result').innerHTML = `<p class="error">Error: ${error.message}</p>`;
+        }
+        
+        async function testCheckYears() {
+            showLoading();
+            try {
+                const response = await fetch('/api/check-data-years');
+                const text = await response.text();
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                console.log('Response text:', text);
+                
+                try {
+                    const data = JSON.parse(text);
+                    showResult(data, 'Check Data Years Result');
+                } catch (e) {
+                    document.getElementById('result').innerHTML = `
+                        <h2>Response (Status: ${response.status})</h2>
+                        <pre>Raw response:\n${text}</pre>
+                        <p class="error">Failed to parse as JSON: ${e.message}</p>
+                    `;
+                }
+            } catch (error) {
+                showError(error);
+            }
+        }
+        
+        async function testFindRevenue() {
+            showLoading();
+            try {
+                const response = await fetch('/api/find-revenue-data');
+                const text = await response.text();
+                console.log('Response status:', response.status);
+                console.log('Response headers:', response.headers);
+                console.log('Response text:', text);
+                
+                try {
+                    const data = JSON.parse(text);
+                    showResult(data, 'Find Revenue Data Result');
+                } catch (e) {
+                    document.getElementById('result').innerHTML = `
+                        <h2>Response (Status: ${response.status})</h2>
+                        <pre>Raw response:\n${text}</pre>
+                        <p class="error">Failed to parse as JSON: ${e.message}</p>
+                    `;
+                }
+            } catch (error) {
+                showError(error);
+            }
+        }
+    </script>
+</body>
+</html>
