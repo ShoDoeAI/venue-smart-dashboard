@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@venuesync/shared';
+import { ClaudeRevenueTool } from './claude-revenue-tool';
 
 export interface AIContext {
   venue: {
@@ -102,6 +103,7 @@ export interface ConversationMessage {
 export class ClaudeAI {
   private anthropic: Anthropic;
   private systemPrompt: string;
+  private revenueTool: ClaudeRevenueTool;
 
   constructor(
     private supabase: SupabaseClient<Database>,
@@ -119,6 +121,128 @@ export class ClaudeAI {
     });
 
     this.systemPrompt = this.buildSystemPrompt();
+    this.revenueTool = new ClaudeRevenueTool(this.supabase);
+  }
+
+  /**
+   * Process a message with tools enabled
+   */
+  async processMessageWithTools(
+    message: string,
+    venueId?: string,
+    conversationId?: string
+  ): Promise<AIResponse> {
+    try {
+      console.log('[CLAUDE TOOLS] Processing message with tools:', { 
+        messageLength: message.length,
+        hasVenueId: !!venueId,
+        hasConversationId: !!conversationId
+      });
+
+      // Get conversation history if provided
+      let conversationHistory: Anthropic.MessageParam[] = [];
+      if (conversationId) {
+        conversationHistory = await this.getConversationHistory(conversationId);
+      }
+
+      // Build messages with user query
+      const messages: Anthropic.MessageParam[] = [
+        ...conversationHistory,
+        {
+          role: 'user',
+          content: message
+        }
+      ];
+
+      // Call Claude with tools
+      const response = await this.anthropic.messages.create({
+        model: 'claude-3-5-sonnet-20241022',
+        max_tokens: 4096,
+        temperature: 0.7,
+        system: this.systemPrompt,
+        messages,
+        tools: [ClaudeRevenueTool.getToolDefinition()]
+      });
+
+      console.log('[CLAUDE TOOLS] Initial response:', {
+        stopReason: response.stop_reason,
+        hasToolUse: response.content.some(c => c.type === 'tool_use')
+      });
+
+      // Handle tool use if requested
+      if (response.stop_reason === 'tool_use') {
+        const toolUseBlock = response.content.find(c => c.type === 'tool_use') as any;
+        
+        if (toolUseBlock && toolUseBlock.name === 'query_venue_revenue') {
+          console.log('[CLAUDE TOOLS] Executing revenue query tool:', toolUseBlock.input);
+          
+          // Execute the tool
+          const toolResult = await this.revenueTool.queryRevenue({
+            query: toolUseBlock.input.query,
+            venueId: toolUseBlock.input.venueId || venueId
+          });
+
+          console.log('[CLAUDE TOOLS] Tool result:', {
+            success: toolResult.success,
+            totalRevenue: toolResult.data?.totalRevenue,
+            daysCount: toolResult.data?.dailyBreakdown?.length
+          });
+
+          // Send tool result back to Claude
+          const followUpMessages: Anthropic.MessageParam[] = [
+            ...messages,
+            {
+              role: 'assistant',
+              content: response.content
+            },
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'tool_result',
+                  tool_use_id: toolUseBlock.id,
+                  content: JSON.stringify(toolResult)
+                }
+              ]
+            }
+          ];
+
+          // Get final response with tool results
+          const finalResponse = await this.anthropic.messages.create({
+            model: 'claude-3-5-sonnet-20241022',
+            max_tokens: 4096,
+            temperature: 0.7,
+            system: this.systemPrompt,
+            messages: followUpMessages
+          });
+
+          console.log('[CLAUDE TOOLS] Final response after tool use');
+          
+          // Parse and return the final response
+          const aiResponse = this.parseResponse(finalResponse.content[0]);
+
+          // Store conversation if needed
+          if (conversationId) {
+            await this.storeConversation(conversationId, message, aiResponse, {} as AIContext);
+          }
+
+          return aiResponse;
+        }
+      }
+
+      // No tool use, return direct response
+      const aiResponse = this.parseResponse(response.content[0]);
+      
+      if (conversationId) {
+        await this.storeConversation(conversationId, message, aiResponse, {} as AIContext);
+      }
+
+      return aiResponse;
+
+    } catch (error) {
+      console.error('Claude tools query error:', error);
+      throw error;
+    }
   }
 
   /**

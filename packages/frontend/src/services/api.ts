@@ -109,14 +109,19 @@ export const alertsApi = {
 
 // Chat/AI API
 export const chatApi = {
-  sendMessage: (message: string, conversationId?: string) =>
-    api.post<{
+  sendMessage: (message: string, conversationId?: string) => {
+    // Use environment variable or URL parameter to switch endpoints
+    const useToolsChat = new URLSearchParams(window.location.search).get('tools') === 'true';
+    const endpoint = useToolsChat ? '/api/chat-tools' : '/api/chat-enhanced';
+    
+    return api.post<{
       success: boolean;
       response: string;
       conversationId: string;
       messageId: string;
       actions?: any[];
-    }>('/api/chat-enhanced', { message, conversationId }),
+    }>(endpoint, { message, conversationId });
+  },
   
   getConversations: () =>
     api.get<{
