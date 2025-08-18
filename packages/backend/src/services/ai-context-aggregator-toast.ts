@@ -247,7 +247,41 @@ export class AIContextAggregatorToast {
     });
     
     if (!orders || orders.length === 0) {
-      console.log('[DEBUG 3.5] No orders found, returning empty analytics');
+      console.log('[DEBUG 3.5] No orders found, checking if we have revenue_overrides data');
+      
+      // If we have revenue overrides data, use that instead
+      if (overrides && overrides.length > 0) {
+        console.log('[DEBUG 3.6] Using revenue_overrides data instead of toast_orders');
+        
+        // Build daily breakdown from overrides
+        analytics.dailyBreakdown = overrides.map(override => {
+          const dayDate = new Date(override.date);
+          return {
+            date: override.date,
+            dayOfWeek: dayDate.toLocaleDateString('en-US', { weekday: 'long' }),
+            revenue: override.actual_revenue,
+            orders: 0, // We don't have order count from overrides
+            checks: override.check_count,
+            avgCheckSize: override.check_count > 0 ? override.actual_revenue / override.check_count : 0,
+            topItems: [],
+            hasOverride: true
+          };
+        });
+        
+        // Calculate totals
+        analytics.totalRevenue = overrides.reduce((sum, o) => sum + o.actual_revenue, 0);
+        analytics.totalChecks = overrides.reduce((sum, o) => sum + o.check_count, 0);
+        analytics.avgCheckSize = analytics.totalChecks > 0 ? analytics.totalRevenue / analytics.totalChecks : 0;
+        
+        console.log('[DEBUG 3.7] Revenue from overrides:', {
+          totalRevenue: analytics.totalRevenue,
+          days: analytics.dailyBreakdown.length,
+          dates: analytics.dailyBreakdown.map(d => d.date)
+        });
+        
+        return analytics;
+      }
+      
       analytics.noDataFound = true;
       analytics.totalRevenue = 0;
       analytics.totalOrders = 0;
