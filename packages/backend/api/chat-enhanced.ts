@@ -276,7 +276,10 @@ function parseDateQuery(
           'december',
         ];
         const monthIndex = monthNames.indexOf(match[1].toLowerCase());
-        const year = monthIndex <= today.getMonth() ? today.getFullYear() : today.getFullYear() - 1;
+        
+        // CRITICAL FIX: Always use the requested month in current year
+        // Don't change July to August based on current month!
+        const year = today.getFullYear();
         const startDate = new Date(year, monthIndex, 1);
         const endDate = new Date(year, monthIndex + 1, 0);
         return { startDate, endDate, timeRange: `${match[1]} ${year}` };

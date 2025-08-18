@@ -297,25 +297,52 @@ export class AIContextAggregatorToast {
       .in('order_guid', orderGuids)
       .eq('voided', false);
     
-    // Calculate daily breakdown
-    const dailyMap = new Map<string, { revenue: number; orders: number; checks: number }>();
-    
-    // Initialize map with all days in range
-    const current = new Date(startDate);
-    while (current <= endDate) {
-      const dateStr = current.toISOString().split('T')[0];
-      dailyMap.set(dateStr, { revenue: 0, orders: 0, checks: 0 });
-      current.setDate(current.getDate() + 1);
+    // CRITICAL: Only use revenue_overrides data for 100% accuracy
+    // If we have revenue overrides, use ONLY that data
+    if (overrideMap.size > 0) {
+      console.log('[DEBUG 4] Using ONLY revenue_overrides for accuracy');
+      
+      const dailyBreakdown: Array<{
+        date: string;
+        revenue: number;
+        orders: number;
+        checks: number;
+        dayOfWeek: string;
+      }> = [];
+      
+      // Use ONLY the dates that have revenue_overrides entries
+      overrideMap.forEach((data, date) => {
+        dailyBreakdown.push({
+          date,
+          revenue: data.revenue,
+          orders: 0, // We don't track orders in overrides
+          checks: data.checkCount,
+          dayOfWeek: new Date(date).toLocaleDateString('en-US', { weekday: 'short' })
+        });
+      });
+      
+      // Sort by date
+      dailyBreakdown.sort((a, b) => a.date.localeCompare(b.date));
+      
+      // Calculate totals from overrides ONLY
+      analytics.totalRevenue = Array.from(overrideMap.values()).reduce((sum, data) => sum + data.revenue, 0);
+      analytics.totalChecks = Array.from(overrideMap.values()).reduce((sum, data) => sum + data.checkCount, 0);
+      analytics.totalOrders = 0;
+      analytics.averageCheckSize = analytics.totalChecks > 0 ? analytics.totalRevenue / analytics.totalChecks : 0;
+      analytics.dailyBreakdown = dailyBreakdown;
+      
+      console.log('[DEBUG 4.1] Revenue from overrides ONLY:', {
+        totalRevenue: analytics.totalRevenue,
+        dayCount: dailyBreakdown.length,
+        dates: dailyBreakdown.map(d => ({ date: d.date, revenue: d.revenue }))
+      });
+      
+      return analytics;
     }
     
-    // Apply revenue overrides first (these are verified accurate)
-    overrideMap.forEach((data, date) => {
-      if (dailyMap.has(date)) {
-        const day = dailyMap.get(date)!;
-        day.revenue = data.revenue;
-        day.checks = data.checkCount;
-      }
-    });
+    // If no overrides, calculate from other sources
+    console.log('[DEBUG 4.2] No revenue_overrides found, using fallback calculation');
+    const dailyMap = new Map<string, { revenue: number; orders: number; checks: number }>();
     
     // Add transaction data for dates without overrides
     transactions?.forEach(transaction => {
