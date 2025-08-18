@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Database Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 1200px; margin: 0 auto; }
+        button { margin: 10px; padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px; }
+        button:hover { background: #0056b3; }
+        pre { background: #f4f4f4; padding: 15px; border-radius: 5px; overflow: auto; white-space: pre-wrap; }
+        .loading { color: blue; }
+        .error { color: red; background: #ffe6e6; padding: 10px; border-radius: 4px; }
+        .success { color: green; background: #e6ffe6; padding: 10px; border-radius: 4px; }
+        .info { background: #e6f3ff; padding: 10px; border-radius: 4px; margin: 10px 0; }
+        h2 { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Database API Test</h1>
+    
+    <div class="info">
+        <p><strong>Instructions:</strong></p>
+        <ol>
+            <li>Open Developer Tools (F12) and go to the Console tab</li>
+            <li>Click the buttons below to test each endpoint</li>
+            <li>Check both this page and the console for results</li>
+        </ol>
+    </div>
+    
+    <button onclick="testEndpoint('check-data-years')">Test Check Data Years</button>
+    <button onclick="testEndpoint('find-revenue-data')">Test Find Revenue Data</button>
+    <button onclick="testEndpoint('health')">Test Health Check</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        async function testEndpoint(endpoint) {
+            const resultDiv = document.getElementById('result');
+            const url = `/api/${endpoint}`;
+            
+            resultDiv.innerHTML = `<p class="loading">Testing ${url}...</p>`;
+            console.log(`Testing ${url}...`);
+            
+            try {
+                console.log(`Fetching: ${window.location.origin}${url}`);
+                const response = await fetch(url);
+                
+                console.log('Response:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: Object.fromEntries(response.headers.entries()),
+                    url: response.url
+                });
+                
+                const contentType = response.headers.get('content-type');
+                const text = await response.text();
+                
+                console.log('Response text:', text);
+                
+                let html = `
+                    <h2>Response from ${url}</h2>
+                    <p><strong>Status:</strong> ${response.status} ${response.statusText}</p>
+                    <p><strong>Content-Type:</strong> ${contentType || 'not specified'}</p>
+                `;
+                
+                if (response.ok) {
+                    if (contentType && contentType.includes('application/json')) {
+                        try {
+                            const data = JSON.parse(text);
+                            html += `<p class="success">✓ Valid JSON response</p>`;
+                            html += `<pre>${JSON.stringify(data, null, 2)}</pre>`;
+                            
+                            // Special handling for our endpoints
+                            if (endpoint === 'check-data-years' && data.summary) {
+                                html += `<h3>Summary:</h3>`;
+                                html += `<ul>`;
+                                html += `<li>Total Records: ${data.summary.totalRecords}</li>`;
+                                html += `<li>Date Range: ${data.summary.dateRange?.first} to ${data.summary.dateRange?.last}</li>`;
+                                html += `<li>July 2025 exists: ${data.summary.july2025?.exists ? 'YES' : 'NO'}</li>`;
+                                if (data.summary.july2025?.exists) {
+                                    html += `<li>July 2025 revenue: $${data.summary.july2025.totalRevenue}</li>`;
+                                }
+                                html += `</ul>`;
+                            }
+                            
+                            if (endpoint === 'find-revenue-data' && data.results) {
+                                html += `<h3>Tables with July 2025 data:</h3>`;
+                                html += `<ul>`;
+                                Object.entries(data.results).forEach(([table, info]) => {
+                                    if (info.count > 0) {
+                                        html += `<li><strong>${table}:</strong> ${info.count} records`;
+                                        if (info.total) html += ` (Total: $${info.total})`;
+                                        html += `</li>`;
+                                    }
+                                });
+                                html += `</ul>`;
+                            }
+                        } catch (e) {
+                            html += `<p class="error">Response is not valid JSON: ${e.message}</p>`;
+                            html += `<pre>Raw response:\n${text}</pre>`;
+                        }
+                    } else {
+                        html += `<p class="error">Response is not JSON (content-type: ${contentType})</p>`;
+                        html += `<pre>Raw response:\n${text.substring(0, 1000)}${text.length > 1000 ? '...' : ''}</pre>`;
+                    }
+                } else {
+                    html += `<p class="error">HTTP Error ${response.status}</p>`;
+                    html += `<pre>Response:\n${text}</pre>`;
+                }
+                
+                resultDiv.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error:', error);
+                resultDiv.innerHTML = `
+                    <h2>Error testing ${url}</h2>
+                    <p class="error">Network or JavaScript error: ${error.message}</p>
+                    <p>Check the browser console for more details.</p>
+                `;
+            }
+        }
+        
+        // Also test with full URL
+        window.testFullUrl = async function(fullUrl) {
+            console.log('Testing full URL:', fullUrl);
+            try {
+                const response = await fetch(fullUrl);
+                const text = await response.text();
+                console.log('Response:', { status: response.status, text });
+                return text;
+            } catch (error) {
+                console.error('Error:', error);
+                return error.message;
+            }
+        };
+    </script>
+</body>
+</html>
