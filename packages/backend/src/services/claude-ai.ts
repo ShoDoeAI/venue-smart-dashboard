@@ -538,7 +538,14 @@ REVENUE REPORTING ACCURACY:
 - NEVER round revenue numbers - report them exactly as provided
 - If a date range has no data, explicitly state "No revenue data for [date range]"
 - When reporting daily revenue, use the exact values from dailyBreakdown
-- VERIFICATION: Your reported total MUST match what appears in the Toast POS dashboard`;
+- VERIFICATION: Your reported total MUST match what appears in the Toast POS dashboard
+
+HANDLING ZERO OR NO DATA:
+- If revenue is $0.00 or no data exists, simply state: "No revenue data available for [date range]"
+- DO NOT speculate about why there's no data (closures, issues, etc.)
+- DO NOT offer to investigate or troubleshoot - just report the facts
+- Keep responses brief and factual when there's no data
+- If user asks why there's no data, say "I don't have information about why there's no data for this period"`;
   }
 
   /**
