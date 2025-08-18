@@ -110,8 +110,8 @@ export const alertsApi = {
 // Chat/AI API
 export const chatApi = {
   sendMessage: (message: string, conversationId?: string) => {
-    // Always use chat-enhanced for now
-    const endpoint = '/api/chat-enhanced';
+    // Use the main chat endpoint
+    const endpoint = '/api/chat';
     
     return api.post<{
       success: boolean;
