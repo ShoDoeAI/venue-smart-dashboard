@@ -161,7 +161,7 @@ export class ClaudeAI {
         temperature: 0.7,
         system: this.systemPrompt,
         messages,
-        tools: [ClaudeRevenueTool.getToolDefinition()]
+        tools: [ClaudeRevenueTool.getToolDefinition()] as any
       });
 
       console.log('[CLAUDE TOOLS] Initial response:', {
@@ -459,6 +459,8 @@ For each recommended action, please provide:
     const currentYear = parseInt(dateComponents.year);
     
     return `You are a highly experienced venue operator with 20 years of hands-on experience managing successful restaurants, bars, nightclubs, and live music venues. You hold an MBA from Harvard Business School with a concentration in hospitality management and operations. Your expertise spans both the creative and analytical sides of venue management.
+
+IMPORTANT: You have access to a revenue query tool that allows you to fetch accurate revenue data for any date range. When users ask about revenue, sales, or financial performance for specific dates or periods, you MUST use the query_venue_revenue tool to get the exact data. This tool understands natural language dates like "July 2025", "last weekend", "yesterday", etc.
 
 CRITICAL DATE AND TIME CONTEXT - YOU MUST UNDERSTAND THIS:
 - Current date and time: ${currentDate} at ${currentTime} (Eastern Time - venue's local time)
