@@ -217,20 +217,14 @@ function parseDateQuery(
           december: 11,
         };
         const monthIndex = monthMap[match[1].toLowerCase()];
-        const day = parseInt(match[2]);
-        const year = match[3]
-          ? parseInt(match[3])
-          : monthIndex <= today.getMonth()
-            ? today.getFullYear()
-            : today.getFullYear() - 1;
-
-        const date = new Date(year, monthIndex, day);
-        // For single day queries, use the same date for start and end
+        const year = parseInt(match[2]); // match[2] is the year for "Month Year" pattern
+        const startDate = new Date(year, monthIndex, 1);
+        const endDate = new Date(year, monthIndex + 1, 0); // Last day of month
 
         return {
-          startDate: date,
-          endDate: date, // Same date for single day
-          timeRange: `${match[1]} ${day}, ${year}`,
+          startDate,
+          endDate,
+          timeRange: `${match[1]} ${year}`,
         };
       },
     },
