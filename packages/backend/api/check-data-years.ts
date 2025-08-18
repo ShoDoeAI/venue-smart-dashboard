@@ -83,7 +83,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         },
         yearSummary,
         july2025: {
-          exists: july2025Count > 0,
+          exists: (july2025Count ?? 0) > 0,
           count: july2025Count,
           totalRevenue: july2025?.reduce((sum, r: any) => sum + (r.actual_revenue || 0), 0) || 0,
           sample: july2025?.slice(0, 5),

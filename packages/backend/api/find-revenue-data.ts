@@ -73,7 +73,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .limit(5);
     results.toast_orders = {
       count: toastOrders?.length || 0,
-      sample: toastOrders,
+      sample: toastOrders || undefined,
     };
 
     // 5. Check simple_transactions
@@ -85,7 +85,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .limit(5);
     results.simple_transactions = {
       count: simpleTrans?.length || 0,
-      sample: simpleTrans,
+      sample: simpleTrans || undefined,
     };
 
     // 6. Check kpis table
@@ -97,7 +97,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       .limit(5);
     results.kpis = {
       count: kpis?.length || 0,
-      sample: kpis,
+      sample: kpis || undefined,
     };
 
     // 7. Try to query venue_snapshots if it exists
@@ -110,10 +110,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         .limit(5);
       results.venue_snapshots = {
         count: venueSnapshots?.length || 0,
-        sample: venueSnapshots,
+        sample: venueSnapshots || undefined,
       };
     } catch (e) {
-      results.venue_snapshots = { error: 'Table may not exist' };
+      results.venue_snapshots = { count: 0, error: 'Table may not exist' };
     }
 
     // 8. Check if there's any June/August data in surrounding months
@@ -146,7 +146,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       results,
       summary: {
         hasJulyData: Object.values(results).some((r) => r.count > 0),
-        totalJulyRevenue: results.revenue_overrides.total + results.toast_checks.total,
+        totalJulyRevenue: (results.revenue_overrides.total || 0) + (results.toast_checks.total || 0),
       },
     });
   } catch (error) {

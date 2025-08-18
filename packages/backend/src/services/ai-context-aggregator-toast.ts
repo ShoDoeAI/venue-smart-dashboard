@@ -271,7 +271,7 @@ export class AIContextAggregatorToast {
         // Calculate totals
         analytics.totalRevenue = overrides.reduce((sum, o) => sum + o.actual_revenue, 0);
         analytics.totalChecks = overrides.reduce((sum, o) => sum + o.check_count, 0);
-        analytics.avgCheckSize = analytics.totalChecks > 0 ? analytics.totalRevenue / analytics.totalChecks : 0;
+        analytics.averageCheckSize = analytics.totalChecks > 0 ? analytics.totalRevenue / analytics.totalChecks : 0;
         
         console.log('[DEBUG 3.7] Revenue from overrides:', {
           totalRevenue: analytics.totalRevenue,
