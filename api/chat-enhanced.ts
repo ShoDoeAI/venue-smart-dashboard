@@ -2,9 +2,9 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@venuesync/shared';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-import { AIContextAggregatorToast } from '../src/services/ai-context-aggregator-toast';
-import { ClaudeAI } from '../src/services/claude-ai';
-import type { AIContext } from '../src/services/claude-ai';
+import { AIContextAggregatorToast } from '../packages/backend/src/services/ai-context-aggregator-toast';
+import { ClaudeAI } from '../packages/backend/src/services/claude-ai';
+import type { AIContext } from '../packages/backend/src/services/claude-ai';
 
 // Query type detection
 function detectQueryType(message: string): 'revenue' | 'menu' | 'customers' | 'labor' | 'general' {
