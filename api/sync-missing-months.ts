@@ -77,7 +77,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth() + 1;
 
-    const { months, year = currentYear.toString(), quick } = req.query;
+    const { months, year = '2024', quick } = req.query;
     const syncYear = parseInt(year as string);
     const isQuickMode = quick === 'true';
 
@@ -120,7 +120,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Process each month
     for (const month of monthsToSync) {
       try {
-        console.log(`[SYNC] Processing ${year}-${month.toString().padStart(2, '0')}...`);
+        console.log(`[SYNC] Processing ${syncYear}-${month.toString().padStart(2, '0')}...`);
 
         // Calculate date range for the month
         const startDate = new Date(syncYear, month - 1, 1);
@@ -227,7 +227,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         const orders = allOrders;
 
         console.log(
-          `[SYNC] Found ${orders.length} orders for ${year}-${month.toString().padStart(2, '0')}`,
+          `[SYNC] Found ${orders.length} orders for ${syncYear}-${month.toString().padStart(2, '0')}`,
         );
 
         // Process daily revenue
@@ -289,7 +289,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         }
 
         results.push({
-          month: `${year}-${month.toString().padStart(2, '0')}`,
+          month: `${syncYear}-${month.toString().padStart(2, '0')}`,
           ordersFound: orders.length,
           daysWithRevenue: Object.keys(dailyRevenue).length,
           totalRevenue: Object.values(dailyRevenue).reduce((sum, day) => sum + day.revenue, 0),
@@ -298,9 +298,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           dailyBreakdown: dailyRevenue,
         });
       } catch (monthError) {
-        console.error(`[SYNC] Error processing ${year}-${month}:`, monthError);
+        console.error(`[SYNC] Error processing ${syncYear}-${month}:`, monthError);
         errors.push({
-          month: `${year}-${month.toString().padStart(2, '0')}`,
+          month: `${syncYear}-${month.toString().padStart(2, '0')}`,
           error: monthError instanceof Error ? monthError.message : 'Unknown error',
         });
       }
