@@ -77,15 +77,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth() + 1;
 
-    const { months, year = currentYear.toString() } = req.query;
+    const { months, year = currentYear.toString(), quick } = req.query;
     const syncYear = parseInt(year as string);
+    const isQuickMode = quick === 'true';
 
     let monthsToSync: number[];
     if (months) {
       monthsToSync = (months as string).split(',').map((m) => parseInt(m));
     } else {
       // Default: sync all months up to current month if current year, otherwise all 12 months
-      if (syncYear === currentYear) {
+      if (isQuickMode) {
+        // In quick mode, only sync current month
+        monthsToSync = [currentMonth];
+      } else if (syncYear === currentYear) {
         monthsToSync = Array.from({ length: currentMonth }, (_, i) => i + 1);
       } else if (syncYear < currentYear) {
         monthsToSync = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -131,53 +135,94 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         console.log(`[SYNC] Fetching orders from ${startDateISO} to ${endDateISO}`);
 
-        // Fetch orders from Toast API with pagination
+        // Fetch orders from Toast API - Process day by day, hour by hour due to API limits
         let allOrders: ToastOrder[] = [];
-        let pageToken: string | null = null;
-        let pageCount = 0;
 
-        do {
-          const ordersUrl = pageToken
-            ? `${TOAST_API_BASE}/orders/v2/orders?restaurantGuid=${LOCATION_ID}&startDate=${startDateISO}&endDate=${endDateISO}&pageToken=${pageToken}`
-            : `${TOAST_API_BASE}/orders/v2/orders?restaurantGuid=${LOCATION_ID}&startDate=${startDateISO}&endDate=${endDateISO}&pageSize=100`;
+        // Process each day of the month
+        const currentDate = new Date(startDate);
+        let daysProcessed = 0;
+        const maxDaysInQuickMode = 3; // Only process first 3 days in quick mode
 
-          const ordersResponse = await fetch(ordersUrl, {
-            headers: {
-              Authorization: `Bearer ${toastToken}`,
-              'Toast-Restaurant-External-ID': LOCATION_ID,
-            },
-          });
-
-          if (!ordersResponse.ok) {
-            const errorText = await ordersResponse.text();
-            console.error(`[SYNC] Toast API error for ${year}-${month}:`, {
-              status: ordersResponse.status,
-              statusText: ordersResponse.statusText,
-              body: errorText,
-              url: ordersUrl,
-            });
-            throw new Error(
-              `Toast API error: ${ordersResponse.status} ${ordersResponse.statusText} - ${errorText}`,
-            );
-          }
-
-          const ordersData = await ordersResponse.json();
-          const orders = ordersData.orders || [];
-          allOrders = allOrders.concat(orders);
-
-          pageToken = ordersData.pageToken || null;
-          pageCount++;
-
-          console.log(
-            `[SYNC] Page ${pageCount}: fetched ${orders.length} orders (total: ${allOrders.length})`,
-          );
-
-          // Prevent infinite loops
-          if (pageCount > 100) {
-            console.warn('[SYNC] Breaking pagination loop after 100 pages');
+        while (currentDate <= endDate) {
+          // In quick mode, only process first few days
+          if (isQuickMode && daysProcessed >= maxDaysInQuickMode) {
+            console.log(`[SYNC] Quick mode: Stopping after ${maxDaysInQuickMode} days`);
             break;
           }
-        } while (pageToken);
+          const dayStart = new Date(currentDate);
+          dayStart.setHours(0, 0, 0, 0);
+
+          // Process each hour of the day
+          for (let hour = 0; hour < 24; hour++) {
+            const hourStart = new Date(dayStart);
+            hourStart.setHours(hour, 0, 0, 0);
+
+            const hourEnd = new Date(dayStart);
+            hourEnd.setHours(hour, 59, 59, 999);
+
+            // Skip if hour is in the future
+            if (hourStart > new Date()) {
+              continue;
+            }
+
+            const hourStartISO = hourStart.toISOString();
+            const hourEndISO = hourEnd.toISOString();
+
+            // Fetch this hour's orders with pagination
+            let pageToken: string | null = null;
+            let pageCount = 0;
+
+            do {
+              const ordersUrl = pageToken
+                ? `${TOAST_API_BASE}/orders/v2/orders?restaurantGuid=${LOCATION_ID}&startDate=${hourStartISO}&endDate=${hourEndISO}&pageToken=${pageToken}`
+                : `${TOAST_API_BASE}/orders/v2/orders?restaurantGuid=${LOCATION_ID}&startDate=${hourStartISO}&endDate=${hourEndISO}&pageSize=100`;
+
+              const ordersResponse = await fetch(ordersUrl, {
+                headers: {
+                  Authorization: `Bearer ${toastToken}`,
+                  'Toast-Restaurant-External-ID': LOCATION_ID,
+                },
+              });
+
+              if (!ordersResponse.ok) {
+                const errorText = await ordersResponse.text();
+                console.error(
+                  `[SYNC] Toast API error for ${currentDate.toISOString().split('T')[0]} hour ${hour}:`,
+                  {
+                    status: ordersResponse.status,
+                    statusText: ordersResponse.statusText,
+                    body: errorText.substring(0, 200), // Truncate for logs
+                  },
+                );
+
+                // Skip this hour on error
+                break;
+              }
+
+              const ordersData = await ordersResponse.json();
+              const orders = ordersData.orders || [];
+              allOrders = allOrders.concat(orders);
+
+              pageToken = ordersData.pageToken || null;
+              pageCount++;
+
+              // Prevent infinite loops
+              if (pageCount > 50) {
+                console.warn('[SYNC] Breaking pagination loop after 50 pages for single hour');
+                break;
+              }
+            } while (pageToken);
+          }
+
+          // Move to next day
+          currentDate.setDate(currentDate.getDate() + 1);
+          daysProcessed++;
+
+          // Log progress
+          console.log(
+            `[SYNC] Processed day ${daysProcessed}, total orders so far: ${allOrders.length}`,
+          );
+        }
 
         const orders = allOrders;
 
