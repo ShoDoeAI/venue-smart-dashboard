@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@venuesync/shared';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-const TOAST_API_BASE = 'https://api.toasttab.com';
+const TOAST_API_BASE = 'https://ws-api.toasttab.com';
 const LOCATION_ID = 'bfb355cb-55e4-4f57-af16-d0d18c11ad3c';
 
 interface ToastCheck {
@@ -36,10 +36,41 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       process.env.SUPABASE_SERVICE_KEY!,
     );
 
-    const toastToken = process.env.TOAST_API_TOKEN;
-    if (!toastToken) {
-      throw new Error('TOAST_API_TOKEN not configured');
+    // Get Toast credentials
+    const toastClientId = process.env.TOAST_CLIENT_ID;
+    const toastClientSecret = process.env.TOAST_CLIENT_SECRET;
+
+    if (!toastClientId || !toastClientSecret) {
+      throw new Error('TOAST_CLIENT_ID and TOAST_CLIENT_SECRET must be configured');
     }
+
+    // Authenticate with Toast to get access token
+    console.log('[SYNC] Authenticating with Toast...');
+    const authResponse = await fetch(
+      'https://ws-api.toasttab.com/authentication/v1/authentication/login',
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          clientId: toastClientId,
+          clientSecret: toastClientSecret,
+          userAccessType: 'TOAST_MACHINE_CLIENT',
+        }),
+      },
+    );
+
+    if (!authResponse.ok) {
+      throw new Error(
+        `Toast authentication failed: ${authResponse.status} ${authResponse.statusText}`,
+      );
+    }
+
+    const authData = await authResponse.json();
+    const toastToken = authData.token.accessToken;
+
+    console.log('[SYNC] Toast authentication successful');
 
     // Determine which months to sync based on query params or default to all missing
     const { months, year = '2025' } = req.query;
