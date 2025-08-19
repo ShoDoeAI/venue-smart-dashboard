@@ -73,14 +73,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('[SYNC] Toast authentication successful');
 
     // Determine which months to sync based on query params or default to all missing
-    const { months, year = '2025' } = req.query;
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1;
+
+    const { months, year = currentYear.toString() } = req.query;
+    const syncYear = parseInt(year as string);
 
     let monthsToSync: number[];
     if (months) {
       monthsToSync = (months as string).split(',').map((m) => parseInt(m));
     } else {
-      // Default: sync missing months (Jan-Apr, Sep-Dec)
-      monthsToSync = [1, 2, 3, 4, 9, 10, 11, 12];
+      // Default: sync all months up to current month if current year, otherwise all 12 months
+      if (syncYear === currentYear) {
+        monthsToSync = Array.from({ length: currentMonth }, (_, i) => i + 1);
+      } else if (syncYear < currentYear) {
+        monthsToSync = Array.from({ length: 12 }, (_, i) => i + 1);
+      } else {
+        // Future year - no data yet
+        monthsToSync = [];
+      }
     }
 
     interface SyncResult {
@@ -107,13 +119,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         console.log(`[SYNC] Processing ${year}-${month.toString().padStart(2, '0')}...`);
 
         // Calculate date range for the month
-        const startDate = new Date(parseInt(year as string), month - 1, 1);
-        const endDate = new Date(parseInt(year as string), month, 0); // Last day of month
+        const startDate = new Date(syncYear, month - 1, 1);
+        startDate.setHours(0, 0, 0, 0);
 
-        const startBusinessDate = parseInt(startDate.toISOString().split('T')[0].replace(/-/g, ''));
-        const endBusinessDate = parseInt(endDate.toISOString().split('T')[0].replace(/-/g, ''));
+        const endDate = new Date(syncYear, month, 0); // Last day of month
+        endDate.setHours(23, 59, 59, 999);
 
-        console.log(`[SYNC] Fetching orders from ${startBusinessDate} to ${endBusinessDate}`);
+        // Convert dates to ISO strings for Toast API
+        const startDateISO = startDate.toISOString();
+        const endDateISO = endDate.toISOString();
+
+        console.log(`[SYNC] Fetching orders from ${startDateISO} to ${endDateISO}`);
 
         // Fetch orders from Toast API with pagination
         let allOrders: ToastOrder[] = [];
@@ -122,8 +138,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         do {
           const ordersUrl = pageToken
-            ? `${TOAST_API_BASE}/orders/v2/orders?locationId=${LOCATION_ID}&businessDate=${startBusinessDate},${endBusinessDate}&pageToken=${pageToken}`
-            : `${TOAST_API_BASE}/orders/v2/orders?locationId=${LOCATION_ID}&businessDate=${startBusinessDate},${endBusinessDate}&pageSize=100`;
+            ? `${TOAST_API_BASE}/orders/v2/orders?restaurantGuid=${LOCATION_ID}&startDate=${startDateISO}&endDate=${endDateISO}&pageToken=${pageToken}`
+            : `${TOAST_API_BASE}/orders/v2/orders?restaurantGuid=${LOCATION_ID}&startDate=${startDateISO}&endDate=${endDateISO}&pageSize=100`;
 
           const ordersResponse = await fetch(ordersUrl, {
             headers: {
@@ -133,8 +149,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           });
 
           if (!ordersResponse.ok) {
+            const errorText = await ordersResponse.text();
+            console.error(`[SYNC] Toast API error for ${year}-${month}:`, {
+              status: ordersResponse.status,
+              statusText: ordersResponse.statusText,
+              body: errorText,
+              url: ordersUrl,
+            });
             throw new Error(
-              `Toast API error: ${ordersResponse.status} ${ordersResponse.statusText}`,
+              `Toast API error: ${ordersResponse.status} ${ordersResponse.statusText} - ${errorText}`,
             );
           }
 
