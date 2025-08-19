@@ -77,11 +77,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth() + 1;
 
-    // Default to current year minus 1 (since we're likely syncing historical data)
-    const defaultYear = currentYear === 2025 ? '2024' : String(currentYear - 1);
-    const { months, year = defaultYear, quick } = req.query;
+    // For now, default to 2024 since that's where the Toast data exists
+    const { months, year = '2024', quick } = req.query;
     const syncYear = parseInt(year as string);
     const isQuickMode = quick === 'true';
+    
+    console.log(`[SYNC] System thinks current year is ${currentYear}, but we're defaulting to sync year ${syncYear}`);
 
     let monthsToSync: number[];
     if (months) {
