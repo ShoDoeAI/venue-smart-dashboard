@@ -565,14 +565,7 @@ HANDLING ZERO OR NO DATA:
       timeZoneName: 'short'
     });
     
-    // Calculate days since common recent dates for clarity
-    const aug1 = new Date(2025, 7, 1); // August 1, 2025
-    const daysSinceAug1 = Math.floor((now.getTime() - aug1.getTime()) / (1000 * 60 * 60 * 24));
-    
     let contextMessage = `CURRENT DATE AND TIME: ${currentDateTime} (Venue's Local Time)
-${daysSinceAug1 > 0 ? `(August 1, 2025 was ${daysSinceAug1} days ago - THIS IS PAST DATA YOU HAVE)` : ''}
-
-Remember: You have data for all dates before today. August 1, 2025 through August 10, 2025 are ALL IN THE PAST.
 Business Context: 9 PM on Sunday is PEAK business hours, not "early in the day".
 
 Current Venue Context:

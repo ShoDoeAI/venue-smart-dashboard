@@ -35,7 +35,8 @@ export function SyncButton() {
     setResult(null);
 
     try {
-      const response = await fetch('/api/sync-missing-months', {
+      // Explicitly pass year=2024 to sync 2024 data
+      const response = await fetch('/api/sync-missing-months?year=2024', {
         method: 'GET',
       });
 
