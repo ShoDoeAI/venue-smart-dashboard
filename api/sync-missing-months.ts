@@ -162,37 +162,53 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           console.log(`[SYNC] Fetching orders for business date ${businessDate}...`);
 
           try {
-            // Use ordersBulk endpoint which returns orders with checks included
-            const ordersUrl = `${TOAST_API_BASE}/orders/v2/ordersBulk?restaurantGuid=${LOCATION_ID}&businessDate=${businessDate}`;
+            // Use ordersBulk endpoint with pagination
+            let page = 1;
+            let hasMorePages = true;
+            let dayOrderCount = 0;
 
-            const ordersResponse = await fetch(ordersUrl, {
-              headers: {
-                Authorization: `Bearer ${toastToken}`,
-                'Toast-Restaurant-External-ID': LOCATION_ID,
-              },
-            });
+            while (hasMorePages) {
+              const ordersUrl = `${TOAST_API_BASE}/orders/v2/ordersBulk?businessDate=${businessDate}&page=${page}&pageSize=100`;
 
-            if (!ordersResponse.ok) {
-              const errorText = await ordersResponse.text();
-              console.error(
-                `[SYNC] Toast API error for business date ${businessDate}:`,
-                {
-                  status: ordersResponse.status,
-                  statusText: ordersResponse.statusText,
-                  body: errorText.substring(0, 200),
+              const ordersResponse = await fetch(ordersUrl, {
+                headers: {
+                  Authorization: `Bearer ${toastToken}`,
+                  'Toast-Restaurant-External-ID': LOCATION_ID,
                 },
-              );
-              // Continue to next day on error
-              currentDate.setDate(currentDate.getDate() + 1);
-              daysProcessed++;
-              continue;
+              });
+
+              if (!ordersResponse.ok) {
+                const errorText = await ordersResponse.text();
+                console.error(
+                  `[SYNC] Toast API error for business date ${businessDate}:`,
+                  {
+                    status: ordersResponse.status,
+                    statusText: ordersResponse.statusText,
+                    body: errorText.substring(0, 200),
+                  },
+                );
+                break; // Exit pagination loop on error
+              }
+
+              const ordersData = await ordersResponse.json();
+              const pageOrders = Array.isArray(ordersData) ? ordersData : ordersData.orders || [];
+              
+              if (pageOrders.length === 0) {
+                hasMorePages = false;
+              } else {
+                allOrders = allOrders.concat(pageOrders);
+                dayOrderCount += pageOrders.length;
+                
+                // If we got less than pageSize, we're on the last page
+                if (pageOrders.length < 100) {
+                  hasMorePages = false;
+                } else {
+                  page++;
+                }
+              }
             }
 
-            const ordersData = await ordersResponse.json();
-            const dayOrders = Array.isArray(ordersData) ? ordersData : ordersData.orders || [];
-            allOrders = allOrders.concat(dayOrders);
-
-            console.log(`[SYNC] Found ${dayOrders.length} orders for ${businessDate}`);
+            console.log(`[SYNC] Found ${dayOrderCount} orders for ${businessDate}`);
           } catch (error) {
             console.error(`[SYNC] Error fetching orders for ${businessDate}:`, error);
           }
