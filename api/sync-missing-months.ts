@@ -138,7 +138,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
         console.log(`[SYNC] Fetching orders from ${startDateISO} to ${endDateISO}`);
 
-        // Fetch orders from Toast API - Process day by day, hour by hour due to API limits
+        // Fetch orders from Toast API using businessDate
         let allOrders: ToastOrder[] = [];
 
         // Process each day of the month
@@ -152,69 +152,49 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             console.log(`[SYNC] Quick mode: Stopping after ${maxDaysInQuickMode} days`);
             break;
           }
-          const dayStart = new Date(currentDate);
-          dayStart.setHours(0, 0, 0, 0);
 
-          // Process each hour of the day
-          for (let hour = 0; hour < 24; hour++) {
-            const hourStart = new Date(dayStart);
-            hourStart.setHours(hour, 0, 0, 0);
+          // Format date as YYYYMMDD for businessDate parameter
+          const year = currentDate.getFullYear();
+          const month = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+          const day = currentDate.getDate().toString().padStart(2, '0');
+          const businessDate = parseInt(`${year}${month}${day}`);
 
-            const hourEnd = new Date(dayStart);
-            hourEnd.setHours(hour, 59, 59, 999);
+          console.log(`[SYNC] Fetching orders for business date ${businessDate}...`);
 
-            // Skip if hour is in the future
-            if (hourStart > new Date()) {
+          try {
+            // Use ordersBulk endpoint which returns orders with checks included
+            const ordersUrl = `${TOAST_API_BASE}/orders/v2/ordersBulk?restaurantGuid=${LOCATION_ID}&businessDate=${businessDate}`;
+
+            const ordersResponse = await fetch(ordersUrl, {
+              headers: {
+                Authorization: `Bearer ${toastToken}`,
+                'Toast-Restaurant-External-ID': LOCATION_ID,
+              },
+            });
+
+            if (!ordersResponse.ok) {
+              const errorText = await ordersResponse.text();
+              console.error(
+                `[SYNC] Toast API error for business date ${businessDate}:`,
+                {
+                  status: ordersResponse.status,
+                  statusText: ordersResponse.statusText,
+                  body: errorText.substring(0, 200),
+                },
+              );
+              // Continue to next day on error
+              currentDate.setDate(currentDate.getDate() + 1);
+              daysProcessed++;
               continue;
             }
 
-            const hourStartISO = hourStart.toISOString();
-            const hourEndISO = hourEnd.toISOString();
+            const ordersData = await ordersResponse.json();
+            const dayOrders = Array.isArray(ordersData) ? ordersData : ordersData.orders || [];
+            allOrders = allOrders.concat(dayOrders);
 
-            // Fetch this hour's orders with pagination
-            let pageToken: string | null = null;
-            let pageCount = 0;
-
-            do {
-              const ordersUrl = pageToken
-                ? `${TOAST_API_BASE}/orders/v2/orders?restaurantGuid=${LOCATION_ID}&startDate=${hourStartISO}&endDate=${hourEndISO}&pageToken=${pageToken}`
-                : `${TOAST_API_BASE}/orders/v2/orders?restaurantGuid=${LOCATION_ID}&startDate=${hourStartISO}&endDate=${hourEndISO}&pageSize=100`;
-
-              const ordersResponse = await fetch(ordersUrl, {
-                headers: {
-                  Authorization: `Bearer ${toastToken}`,
-                  'Toast-Restaurant-External-ID': LOCATION_ID,
-                },
-              });
-
-              if (!ordersResponse.ok) {
-                const errorText = await ordersResponse.text();
-                console.error(
-                  `[SYNC] Toast API error for ${currentDate.toISOString().split('T')[0]} hour ${hour}:`,
-                  {
-                    status: ordersResponse.status,
-                    statusText: ordersResponse.statusText,
-                    body: errorText.substring(0, 200), // Truncate for logs
-                  },
-                );
-
-                // Skip this hour on error
-                break;
-              }
-
-              const ordersData = await ordersResponse.json();
-              const orders = ordersData.orders || [];
-              allOrders = allOrders.concat(orders);
-
-              pageToken = ordersData.pageToken || null;
-              pageCount++;
-
-              // Prevent infinite loops
-              if (pageCount > 50) {
-                console.warn('[SYNC] Breaking pagination loop after 50 pages for single hour');
-                break;
-              }
-            } while (pageToken);
+            console.log(`[SYNC] Found ${dayOrders.length} orders for ${businessDate}`);
+          } catch (error) {
+            console.error(`[SYNC] Error fetching orders for ${businessDate}:`, error);
           }
 
           // Move to next day
