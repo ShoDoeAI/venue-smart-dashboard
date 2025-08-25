@@ -600,21 +600,36 @@ ${context.activeAlerts.map(a => `- ${a.type}: ${a.message}`).join('\n')}` : 'No 
       const ta = context.toastAnalytics;
       contextMessage += '\n\n🎯 TOAST POS ANALYTICS (USE ONLY THESE NUMBERS):';
       
-      // Show total revenue FIRST and PROMINENTLY
-      if (ta.totalRevenue !== undefined) {
-        contextMessage += `\n\n** TOTAL REVENUE: $${ta.totalRevenue.toFixed(2)} **`;
-        if (ta.queryPeriod) {
-          contextMessage += ` (for ${ta.queryPeriod.startDate} to ${ta.queryPeriod.endDate})`;
+      // Check if this is a "no data" response
+      if (ta.noDataFound) {
+        contextMessage += `\n\n** NO DATA FOUND for the requested period ${ta.queryPeriod?.startDate} to ${ta.queryPeriod?.endDate} **`;
+        contextMessage += '\nThe venue was likely closed on these dates, or no transactions were recorded.';
+      } else {
+        // Show total revenue FIRST and PROMINENTLY
+        if (ta.totalRevenue !== undefined) {
+          contextMessage += `\n\n** TOTAL REVENUE: $${ta.totalRevenue.toFixed(2)} **`;
+          if (ta.queryPeriod) {
+            contextMessage += ` (for ${ta.queryPeriod.startDate} to ${ta.queryPeriod.endDate})`;
+          }
+          contextMessage += '\n';
         }
-        contextMessage += '\n';
       }
       
       // Daily breakdown if available
       if (ta.dailyBreakdown && ta.dailyBreakdown.length > 0) {
         contextMessage += '\nDaily Revenue Breakdown:';
-        ta.dailyBreakdown.forEach((day: any) => {
-          contextMessage += `\n- ${day.date} (${day.dayOfWeek}): $${day.revenue.toFixed(2)}`;
-        });
+        contextMessage += '\n[IMPORTANT: These are the ACTUAL revenue numbers from Toast POS. Use ONLY these numbers when answering questions about specific dates.]';
+        
+        // For single-day queries, make it VERY clear
+        if (ta.dailyBreakdown.length === 1) {
+          const day = ta.dailyBreakdown[0];
+          contextMessage += `\n\n>>> ${day.date}: $${day.revenue.toFixed(2)} (${day.checks || 0} checks) <<<\n`;
+          contextMessage += `This is the ONLY data available for the requested date.`;
+        } else {
+          ta.dailyBreakdown.forEach((day: any) => {
+            contextMessage += `\n- ${day.date} (${day.dayOfWeek}): $${day.revenue.toFixed(2)} with ${day.checks || 0} checks`;
+          });
+        }
         contextMessage += '\n';
       }
       

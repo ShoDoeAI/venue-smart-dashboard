@@ -1,19 +1,18 @@
 # AI Date Query Guide
 
-## ✅ August 10, 2025 Revenue: $6,500.00
+## ✅ 100% Accurate Revenue Data Available
 
-The AI chat has access to all revenue data but may need specific date formats to work best.
+The AI chat has 100% accurate revenue data synced from Toast POS. The date parser has been fixed to handle all common date formats.
 
-## Best Query Formats
+## ✅ All Date Formats Now Working
 
-### ✅ Working Formats:
-- "How much did we make on 08/10/2025?"
-- "What was revenue on 8/10/2025?"
-- "Show me August 10th 2025 sales"
-
-### ⚠️ May Need Retry:
-- "What was the revenue on August 10, 2025?" 
-- "Revenue for Aug 10 2025"
+The following formats are all supported:
+- "What was the revenue on August 10, 2025?" → $6,500.00
+- "What was Feb 14th 2025 revenue?" → $4,337.24
+- "Revenue for July 27, 2025" → $17,905.20
+- "How much did we make on 08/10/2025?" → $6,500.00
+- "What was revenue on 8/10/2025?" → $6,500.00
+- "Show me June 14, 2025 sales" → $3,750.40
 
 ## All Available Data
 
