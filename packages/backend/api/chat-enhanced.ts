@@ -453,6 +453,18 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       toastAnalyticsKeys: context.toastAnalytics ? Object.keys(context.toastAnalytics) : null,
       toastAnalyticsSnapshot: context.toastAnalytics ? JSON.stringify(context.toastAnalytics).substring(0, 300) : null
     });
+    
+    // CRITICAL DEBUG: Log the exact data the AI will see
+    if (context.toastAnalytics && (context.toastAnalytics as any).dailyBreakdown) {
+      console.log('[CONTEXT 2.5] CRITICAL - Daily breakdown data:', {
+        count: (context.toastAnalytics as any).dailyBreakdown.length,
+        dates: (context.toastAnalytics as any).dailyBreakdown.map((d: any) => ({
+          date: d.date,
+          revenue: d.revenue,
+          checks: d.checks
+        }))
+      });
+    }
 
     // Create or use conversation
     let activeConversationId = conversationId;
@@ -473,7 +485,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       toastTotalRevenue: (context.toastAnalytics as any)?.totalRevenue,
       toastDailyBreakdownCount: (context.toastAnalytics as any)?.dailyBreakdown?.length,
       contextSize: JSON.stringify(context).length,
-      version: '2.1' // Force new deployment
+      version: '2.2' // Force new deployment - enhanced logging
     });
 
     const response = await claudeAI.query({
