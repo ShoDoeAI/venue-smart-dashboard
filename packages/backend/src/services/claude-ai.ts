@@ -271,6 +271,14 @@ export class ClaudeAI {
         contextMessageLength: contextMessage.length,
         contextMessagePreview: contextMessage.substring(0, 500)
       });
+      
+      // CRITICAL: Log Toast analytics portion of context
+      const toastSection = contextMessage.split('🎯 TOAST POS ANALYTICS')[1];
+      if (toastSection) {
+        console.log('[CLAUDE 2.5] TOAST ANALYTICS SECTION:', toastSection.substring(0, 1000));
+      } else {
+        console.log('[CLAUDE 2.5] NO TOAST ANALYTICS SECTION FOUND IN CONTEXT');
+      }
 
       // Create messages array
       const messages: Anthropic.MessageParam[] = [
