@@ -110,8 +110,8 @@ export const alertsApi = {
 // Chat/AI API
 export const chatApi = {
   sendMessage: (message: string, conversationId?: string) => {
-    // Use the main chat endpoint
-    const endpoint = '/api/chat';
+    // Use the tools-enabled chat endpoint for better accuracy
+    const endpoint = '/api/chat-tools';
     
     return api.post<{
       success: boolean;

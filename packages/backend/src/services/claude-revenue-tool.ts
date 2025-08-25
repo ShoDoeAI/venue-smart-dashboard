@@ -80,7 +80,34 @@ export class ClaudeRevenueTool {
       return { startDate, endDate };
     }
     
-    // Specific date patterns
+    // Specific date like "February 14, 2025" or "Feb 14th 2025"
+    const monthDayYearMatch = query.match(
+      /(jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|jun(?:e)?|jul(?:y)?|aug(?:ust)?|sep(?:t|tember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)\s+(0?[1-9]|[12][0-9]|3[01])(?:st|nd|rd|th)?(?:\s*,?\s*(\d{4}))?/i
+    );
+    if (monthDayYearMatch) {
+      const monthMap: Record<string, number> = {
+        jan: 0, january: 0,
+        feb: 1, february: 1,
+        mar: 2, march: 2,
+        apr: 3, april: 3,
+        may: 4,
+        jun: 5, june: 5,
+        jul: 6, july: 6,
+        aug: 7, august: 7,
+        sep: 8, sept: 8, september: 8,
+        oct: 9, october: 9,
+        nov: 10, november: 10,
+        dec: 11, december: 11
+      };
+      const monthIndex = monthMap[monthDayYearMatch[1].toLowerCase()];
+      const day = parseInt(monthDayYearMatch[2]);
+      const year = monthDayYearMatch[3] ? parseInt(monthDayYearMatch[3]) : new Date().getFullYear();
+      
+      const date = new Date(year, monthIndex, day);
+      return { startDate: date, endDate: date };
+    }
+    
+    // Specific date patterns MM/DD/YYYY
     const specificDateMatch = query.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
     if (specificDateMatch) {
       const date = new Date(
