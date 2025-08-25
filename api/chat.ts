@@ -1,2 +1,2 @@
-// Re-export the enhanced chat API from packages/backend
-export { default } from '../packages/backend/api/chat-enhanced';
+// Re-export the tools-based chat API for accurate revenue queries
+export { default } from '../packages/backend/api/chat-tools';
