@@ -263,14 +263,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             .eq('date', date)
             .single();
 
+          // Try with revenue_total first, fall back without it if column doesn't exist
+          let upsertData: any = {
+            date,
+            actual_revenue: data.revenue,
+            check_count: data.checkCount,
+            notes: `Synced from Toast API on ${new Date().toISOString()}`,
+          };
+          
+          // Add revenue_total if supported
+          upsertData.revenue_total = data.revenue;
+          
           const { error } = await supabase.from('revenue_overrides').upsert(
-            {
-              date,
-              actual_revenue: data.revenue,
-              revenue_total: data.revenue,
-              check_count: data.checkCount,
-              notes: `Synced from Toast API on ${new Date().toISOString()}`,
-            },
+            upsertData,
             {
               onConflict: 'date',
             },

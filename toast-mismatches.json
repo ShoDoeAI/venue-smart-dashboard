@@ -1,0 +1,34 @@
+[
+  {
+    "date": "2023-09-23",
+    "dbRevenue": 2101,
+    "toastRevenue": 20995,
+    "difference": 18894,
+    "dbChecks": 100,
+    "toastChecks": 798
+  },
+  {
+    "date": "2024-01-01",
+    "dbRevenue": 1000,
+    "toastRevenue": 0,
+    "difference": 1000,
+    "dbChecks": 50,
+    "toastChecks": 0
+  },
+  {
+    "date": "2025-06-14",
+    "dbRevenue": 3750.4,
+    "toastRevenue": 2144.4,
+    "difference": 1606,
+    "dbChecks": 198,
+    "toastChecks": 99
+  },
+  {
+    "date": "2025-07-18",
+    "dbRevenue": 1639.69,
+    "toastRevenue": 24378.61,
+    "difference": 22738.920000000002,
+    "dbChecks": 98,
+    "toastChecks": 1094
+  }
+]

@@ -1,0 +1,25 @@
+{
+  "verificationDate": "2025-08-21T22:39:40.243Z",
+  "totalRecords": 116,
+  "recordsVerified": 116,
+  "perfectMatches": 114,
+  "mismatches": [
+    {
+      "date": "2025-02-14",
+      "dbRevenue": 1864,
+      "toastRevenue": 4337.24,
+      "difference": 2473.24,
+      "dbChecks": 100,
+      "toastChecks": 226
+    },
+    {
+      "date": "2025-06-14",
+      "dbRevenue": 2144.4,
+      "toastRevenue": 3750.4,
+      "difference": 1606,
+      "dbChecks": 99,
+      "toastChecks": 198
+    }
+  ],
+  "accuracy": 98.28
+}

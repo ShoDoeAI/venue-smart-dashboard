@@ -1,0 +1,55 @@
+🚀 Syncing ALL 24 months of Toast data...
+This will sync from September 2023 to August 2025.
+Note: The venue operates primarily on Fridays and Saturdays
+Expected time: 15-30 minutes depending on server response
+
+Starting comprehensive sync...
+
+=== 2023 (September - December) ===
+📅 Syncing 2023-9... ✅ $140.8 (1 days, 0 new, 0 updated)
+📅 Syncing 2023-10... ✅ $24174 (6 days, 0 new, 0 updated)
+📅 Syncing 2023-11... ✅ No revenue (likely closed)
+📅 Syncing 2023-12... ✅ $5656.7 (3 days, 0 new, 0 updated)
+
+=== 2024 (January - December) ===
+📅 Syncing 2024-1... ✅ $2546.7 (2 days, 0 new, 0 updated)
+📅 Syncing 2024-2... ✅ No revenue (likely closed)
+📅 Syncing 2024-3... ✅ $3670 (2 days, 0 new, 0 updated)
+📅 Syncing 2024-4... ❌ Failed
+  Error: An error occurred with your deployment
+📅 Syncing 2024-5... ❌ Failed
+  Error: An error occurred with your deployment
+📅 Syncing 2024-6... ✅ No revenue (likely closed)
+📅 Syncing 2024-7... ✅ No revenue (likely closed)
+📅 Syncing 2024-8... ✅ $10127 (1 days, 0 new, 0 updated)
+📅 Syncing 2024-9... ✅ $11418 (4 days, 0 new, 0 updated)
+📅 Syncing 2024-10... ✅ $24807.36 (7 days, 0 new, 0 updated)
+📅 Syncing 2024-11... ❌ Failed
+  Error: An error occurred with your deployment
+📅 Syncing 2024-12... ✅ No revenue (likely closed)
+
+=== 2025 (January - August) ===
+📅 Syncing 2025-1... ✅ No revenue (likely closed)
+📅 Syncing 2025-2... ✅ $13907.8 (3 days, 0 new, 0 updated)
+📅 Syncing 2025-3... ✅ $28233.19 (5 days, 0 new, 0 updated)
+📅 Syncing 2025-4... ✅ $32475.850000000002 (3 days, 0 new, 0 updated)
+📅 Syncing 2025-5... ✅ $7327.25 (2 days, 0 new, 0 updated)
+📅 Syncing 2025-6... ✅ $11870.029999999999 (6 days, 0 new, 0 updated)
+📅 Syncing 2025-7... ✅ $28191.95 (4 days, 0 new, 0 updated)
+📅 Syncing 2025-8... ✅ $3671.56 (2 days, 0 new, 0 updated)
+
+======================================
+🎉 Sync complete!
+
+Summary:
+  - Months processed: 21
+  - Total revenue synced: $208218.190000000001
+  - Total records: 0
+
+You can now query any month from September 2023 to August 2025 in the AI chat.
+Examples:
+  - 'What was revenue in January 2024?'
+  - 'Show me February 2024 vs February 2025'
+  - 'What's the total revenue for all of 2024?'
+
+Note: Months with $0 revenue likely indicate the venue was closed.

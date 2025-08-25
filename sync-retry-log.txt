@@ -1,0 +1,60 @@
+🚀 Syncing ALL 24 months of Toast data...
+This will sync from September 2023 to August 2025.
+Note: The venue operates primarily on Fridays and Saturdays
+Expected time: 15-30 minutes depending on server response
+
+Starting comprehensive sync...
+
+=== 2023 (September - December) ===
+📅 Syncing 2023-9... ✅ $31620.5 (5 days, 0 new, 0 updated)
+📅 Syncing 2023-10... ✅ $33650.54 (8 days, 0 new, 0 updated)
+📅 Syncing 2023-11... ✅ No revenue (likely closed)
+📅 Syncing 2023-12... ✅ $2890 (1 days, 0 new, 0 updated)
+
+=== 2024 (January - December) ===
+📅 Syncing 2024-1... ✅ No revenue (likely closed)
+📅 Syncing 2024-2... ✅ No revenue (likely closed)
+📅 Syncing 2024-3... ✅ $19703.199999999997 (4 days, 0 new, 0 updated)
+📅 Syncing 2024-4... ❌ Failed
+  Error: An error occurred with your deployment
+📅 Syncing 2024-5... ❌ Failed
+  Error: An error occurred with your deployment
+📅 Syncing 2024-6... ✅ $6188.3 (6 days, 0 new, 0 updated)
+📅 Syncing 2024-7... ✅ No revenue (likely closed)
+📅 Syncing 2024-8... ✅ $10127 (1 days, 0 new, 0 updated)
+📅 Syncing 2024-9... ❌ Failed
+  Error: An error occurred with your deployment
+📅 Syncing 2024-10... ✅ $26899.36 (9 days, 0 new, 0 updated)
+📅 Syncing 2024-11... ❌ Failed
+  Error: An error occurred with your deployment
+📅 Syncing 2024-12... ✅ $12103.95 (6 days, 0 new, 0 updated)
+
+=== 2025 (January - August) ===
+📅 Syncing 2025-1... ❌ Failed
+  Error: An error occurred with your deployment
+📅 Syncing 2025-2... ✅ No revenue (likely closed)
+📅 Syncing 2025-3... ❌ Failed
+  Error: An error occurred with your deployment
+📅 Syncing 2025-4... ✅ $32304.670000000002 (4 days, 0 new, 0 updated)
+📅 Syncing 2025-5... ❌ Failed
+  Error: An error occurred with your deployment
+📅 Syncing 2025-6... ✅ $1450 (2 days, 0 new, 0 updated)
+📅 Syncing 2025-7... ❌ Failed
+  Error: An error occurred with your deployment
+📅 Syncing 2025-8... ✅ $4559.16 (4 days, 0 new, 0 updated)
+
+======================================
+🎉 Sync complete!
+
+Summary:
+  - Months processed: 16
+  - Total revenue synced: $181496.679999999999
+  - Total records: 0
+
+You can now query any month from September 2023 to August 2025 in the AI chat.
+Examples:
+  - 'What was revenue in January 2024?'
+  - 'Show me February 2024 vs February 2025'
+  - 'What's the total revenue for all of 2024?'
+
+Note: Months with $0 revenue likely indicate the venue was closed.
