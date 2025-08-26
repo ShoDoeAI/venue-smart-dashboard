@@ -83,16 +83,39 @@ export class ClaudeMenuTool {
       }
     }
     
-    // Month + Year pattern
+    // Month abbreviation mapping
+    const monthMap: Record<string, number> = {
+      january: 0, jan: 0,
+      february: 1, feb: 1,
+      march: 2, mar: 2,
+      april: 3, apr: 3,
+      may: 4,
+      june: 5, jun: 5,
+      july: 6, jul: 6,
+      august: 7, aug: 7,
+      september: 8, sep: 8, sept: 8,
+      october: 9, oct: 9,
+      november: 10, nov: 10,
+      december: 11, dec: 11
+    };
+
+    // Specific date pattern: "aug 10th", "August 10", "aug 10 2025", etc.
+    const specificDateMatch = query.match(
+      /(jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|sept|september|oct|october|nov|november|dec|december)\s+(\d{1,2})(?:st|nd|rd|th)?(?:\s+(\d{4}))?/i
+    );
+    if (specificDateMatch) {
+      const monthIndex = monthMap[specificDateMatch[1].toLowerCase()];
+      const day = parseInt(specificDateMatch[2]);
+      const year = specificDateMatch[3] ? parseInt(specificDateMatch[3]) : now.getFullYear();
+      const specificDate = new Date(year, monthIndex, day);
+      return { startDate: specificDate, endDate: specificDate };
+    }
+
+    // Month + Year pattern (for entire month)
     const monthYearMatch = query.match(
-      /(january|february|march|april|may|june|july|august|september|october|november|december)\s+(\d{4})/i
+      /(jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|sept|september|oct|october|nov|november|dec|december)\s+(\d{4})/i
     );
     if (monthYearMatch) {
-      const monthMap: Record<string, number> = {
-        january: 0, february: 1, march: 2, april: 3,
-        may: 4, june: 5, july: 6, august: 7,
-        september: 8, october: 9, november: 10, december: 11
-      };
       const monthIndex = monthMap[monthYearMatch[1].toLowerCase()];
       const year = parseInt(monthYearMatch[2]);
       const startDate = new Date(year, monthIndex, 1);
