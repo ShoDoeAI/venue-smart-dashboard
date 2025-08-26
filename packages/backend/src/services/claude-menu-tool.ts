@@ -192,7 +192,15 @@ export class ClaudeMenuTool {
         .lte('created_date', endDateStr + 'T23:59:59')
         .eq('voided', false);
 
-      if (checksError || !checks || checks.length === 0) {
+      if (checksError) {
+        console.error('Error fetching checks:', checksError);
+        return {
+          success: false,
+          error: `Database error: ${checksError.message}`
+        };
+      }
+      
+      if (!checks || checks.length === 0) {
         return {
           success: true,
           data: {
@@ -208,8 +216,9 @@ export class ClaudeMenuTool {
         };
       }
 
-      // Get check GUIDs
-      const checkGuids = checks.map(c => c.check_guid);
+      // Get check GUIDs - limit to prevent query issues
+      const checkGuids = checks.slice(0, 100).map(c => c.check_guid);
+      console.log(`Found ${checks.length} checks, querying selections for first ${checkGuids.length}`);
 
       // Query selections for these checks
       const { data: selections, error: selectionsError } = await this.supabase
