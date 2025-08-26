@@ -74,7 +74,7 @@ export interface AIResponse {
   suggestedActions?: Array<{
     service: string;
     actionType: string;
-    parameters: Record<string, any>;
+    parameters: Record<string, unknown>;
     reason: string;
     impact: string;
     confidence: number;
@@ -177,36 +177,40 @@ export class ClaudeAI {
 
       // Handle tool use if requested
       if (response.stop_reason === 'tool_use') {
-        const toolUseBlock = response.content.find(c => c.type === 'tool_use') as any;
+        const toolUseBlock = response.content.find(c => c.type === 'tool_use') as Anthropic.ToolUseBlock;
         
         if (toolUseBlock) {
           console.log('[CLAUDE TOOLS] Executing tool:', toolUseBlock.name, toolUseBlock.input);
           
-          let toolResult: any;
+          let toolResult: unknown;
           
           // Execute the appropriate tool
           switch (toolUseBlock.name) {
             case 'query_venue_revenue':
+              const revenueInput = toolUseBlock.input as { query: string; venueId?: string };
               toolResult = await this.revenueTool.queryRevenue({
-                query: toolUseBlock.input.query,
-                venueId: toolUseBlock.input.venueId || venueId
+                query: revenueInput.query,
+                venueId: revenueInput.venueId || venueId
               });
+              const revenueResult = toolResult as { success: boolean; data?: { totalRevenue?: number; dailyBreakdown?: unknown[] } };
               console.log('[CLAUDE TOOLS] Revenue tool result:', {
-                success: toolResult.success,
-                totalRevenue: toolResult.data?.totalRevenue,
-                daysCount: toolResult.data?.dailyBreakdown?.length
+                success: revenueResult.success,
+                totalRevenue: revenueResult.data?.totalRevenue,
+                daysCount: revenueResult.data?.dailyBreakdown?.length
               });
               break;
               
             case 'query_menu_items':
+              const menuInput = toolUseBlock.input as { query: string; venueId?: string };
               toolResult = await this.menuTool.queryMenu({
-                query: toolUseBlock.input.query,
-                venueId: toolUseBlock.input.venueId || venueId
+                query: menuInput.query,
+                venueId: menuInput.venueId || venueId
               });
+              const menuResult = toolResult as { success: boolean; data?: { totalItems?: number; topSellingItems?: unknown[] } };
               console.log('[CLAUDE TOOLS] Menu tool result:', {
-                success: toolResult.success,
-                totalItems: toolResult.data?.totalItems,
-                topItemsCount: toolResult.data?.topSellingItems?.length
+                success: menuResult.success,
+                totalItems: menuResult.data?.totalItems,
+                topItemsCount: menuResult.data?.topSellingItems?.length
               });
               break;
               

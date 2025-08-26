@@ -240,12 +240,20 @@ export class ClaudeMenuTool {
     }
   }
 
-  private processSelections(selections: any[], startDate: string, endDate: string, intent: any): MenuQueryResult {
+  private processSelections(selections: unknown[], startDate: string, endDate: string, intent: { wantsBestSellers: boolean; wantsCategories: boolean; specificCategory?: string; limit?: number }): MenuQueryResult {
     // Group by item
     const itemMap = new Map<string, MenuItemData>();
     const categoryMap = new Map<string, { quantity: number; revenue: number; items: Set<string> }>();
 
-    for (const selection of selections) {
+    for (const sel of selections) {
+      const selection = sel as {
+        item_guid: string;
+        item_name: string;
+        sales_category_name?: string;
+        quantity: number;
+        price: number;
+        check_guid: string;
+      };
       const itemKey = selection.item_guid;
       const revenue = (selection.price || 0) / 100; // Convert cents to dollars
       
@@ -322,15 +330,23 @@ export class ClaudeMenuTool {
     };
   }
 
-  private processRpcResults(results: any[], startDate: string, endDate: string, intent: any): MenuQueryResult {
+  private processRpcResults(results: Array<{
+    item_guid: string;
+    item_name: string;
+    sales_category_name: string | null;
+    total_quantity: string;
+    total_revenue: string;
+    transaction_count: string;
+    avg_price: string;
+  }>, startDate: string, endDate: string, intent: { wantsBestSellers: boolean; wantsCategories: boolean; specificCategory?: string; limit?: number }): MenuQueryResult {
     // RPC results are already aggregated
     const items: MenuItemData[] = results.map(row => ({
       itemName: row.item_name,
       itemGuid: row.item_guid,
       category: row.sales_category_name || 'Uncategorized',
-      quantitySold: parseFloat(row.total_quantity || 0),
-      revenue: parseFloat(row.total_revenue || 0),
-      averagePrice: parseFloat(row.avg_price || 0)
+      quantitySold: parseFloat(row.total_quantity || '0'),
+      revenue: parseFloat(row.total_revenue || '0'),
+      averagePrice: parseFloat(row.avg_price || '0')
     }));
 
     const sortedItems = items.sort((a, b) => b.quantitySold - a.quantitySold);
@@ -397,7 +413,7 @@ export class ClaudeMenuTool {
     };
   }
 
-  private buildInterpretation(startDate: string, endDate: string, intent: any): string {
+  private buildInterpretation(startDate: string, endDate: string, intent: { wantsBestSellers: boolean; wantsCategories: boolean; specificCategory?: string; limit?: number }): string {
     let interpretation = `Menu item data from ${startDate} to ${endDate}`;
     
     if (intent.wantsBestSellers) {
