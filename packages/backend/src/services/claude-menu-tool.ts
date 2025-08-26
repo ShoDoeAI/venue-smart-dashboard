@@ -433,7 +433,7 @@ export class ClaudeMenuTool {
   static getToolDefinition() {
     return {
       name: 'query_menu_items',
-      description: 'Query menu item sales data, best sellers, and category performance',
+      description: 'ALWAYS use this to answer questions about: menu items, food, drinks, beverages, dishes, products, best sellers, top sellers, popular items, what sold, sales by item, item performance, menu performance, product mix. Returns detailed item-level sales data.',
       input_schema: {
         type: 'object',
         properties: {

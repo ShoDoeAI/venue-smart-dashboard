@@ -142,8 +142,19 @@ export default async function handler(
       context = await contextAggregator.buildContext(venueId);
     }
 
+    // Check if this is a menu-related query
+    const menuKeywords = /\b(menu|item|food|drink|beverage|dish|product|seller|selling|sold|popular|top\s+\d+|best)\b/i;
+    const isMenuQuery = menuKeywords.test(message);
+    
     // Enhance the message with context about available historical data
     let enhancedMessage = message;
+    
+    // If it's a menu query, add explicit instruction to use the menu tool
+    if (isMenuQuery) {
+      enhancedMessage = `${message}
+
+IMPORTANT: This appears to be a menu-related query. Please use the query_menu_items tool to get accurate menu item sales data.`;
+    }
     if (dateQuery) {
       enhancedMessage = `${message}
 
