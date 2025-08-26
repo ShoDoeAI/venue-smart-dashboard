@@ -237,9 +237,6 @@ export class ClaudeMenuTool {
       // Process the selections
       return this.processSelections(selections || [], startDateStr, endDateStr, intent);
 
-      // Process RPC results
-      return this.processRpcResults(selections || [], startDateStr, endDateStr, intent);
-
     } catch (error) {
       console.error('Menu tool error:', error);
       return {
