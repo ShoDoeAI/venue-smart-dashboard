@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@venuesync/shared';
 import { ClaudeRevenueTool } from './claude-revenue-tool';
+import { ClaudeMenuTool } from './claude-menu-tool';
 
 export interface AIContext {
   venue: {
@@ -104,6 +105,7 @@ export class ClaudeAI {
   private anthropic: Anthropic;
   private systemPrompt: string;
   private revenueTool: ClaudeRevenueTool;
+  private menuTool: ClaudeMenuTool;
 
   constructor(
     private supabase: SupabaseClient<Database>,
@@ -122,6 +124,7 @@ export class ClaudeAI {
 
     this.systemPrompt = this.buildSystemPrompt();
     this.revenueTool = new ClaudeRevenueTool(this.supabase);
+    this.menuTool = new ClaudeMenuTool(this.supabase);
   }
 
   /**
@@ -161,7 +164,10 @@ export class ClaudeAI {
         temperature: 0.7,
         system: this.systemPrompt,
         messages,
-        tools: [ClaudeRevenueTool.getToolDefinition()] as any
+        tools: [
+          ClaudeRevenueTool.getToolDefinition(),
+          ClaudeMenuTool.getToolDefinition()
+        ] as any
       });
 
       console.log('[CLAUDE TOOLS] Initial response:', {
@@ -173,20 +179,41 @@ export class ClaudeAI {
       if (response.stop_reason === 'tool_use') {
         const toolUseBlock = response.content.find(c => c.type === 'tool_use') as any;
         
-        if (toolUseBlock && toolUseBlock.name === 'query_venue_revenue') {
-          console.log('[CLAUDE TOOLS] Executing revenue query tool:', toolUseBlock.input);
+        if (toolUseBlock) {
+          console.log('[CLAUDE TOOLS] Executing tool:', toolUseBlock.name, toolUseBlock.input);
           
-          // Execute the tool
-          const toolResult = await this.revenueTool.queryRevenue({
-            query: toolUseBlock.input.query,
-            venueId: toolUseBlock.input.venueId || venueId
-          });
-
-          console.log('[CLAUDE TOOLS] Tool result:', {
-            success: toolResult.success,
-            totalRevenue: toolResult.data?.totalRevenue,
-            daysCount: toolResult.data?.dailyBreakdown?.length
-          });
+          let toolResult: any;
+          
+          // Execute the appropriate tool
+          switch (toolUseBlock.name) {
+            case 'query_venue_revenue':
+              toolResult = await this.revenueTool.queryRevenue({
+                query: toolUseBlock.input.query,
+                venueId: toolUseBlock.input.venueId || venueId
+              });
+              console.log('[CLAUDE TOOLS] Revenue tool result:', {
+                success: toolResult.success,
+                totalRevenue: toolResult.data?.totalRevenue,
+                daysCount: toolResult.data?.dailyBreakdown?.length
+              });
+              break;
+              
+            case 'query_menu_items':
+              toolResult = await this.menuTool.queryMenu({
+                query: toolUseBlock.input.query,
+                venueId: toolUseBlock.input.venueId || venueId
+              });
+              console.log('[CLAUDE TOOLS] Menu tool result:', {
+                success: toolResult.success,
+                totalItems: toolResult.data?.totalItems,
+                topItemsCount: toolResult.data?.topSellingItems?.length
+              });
+              break;
+              
+            default:
+              console.warn('[CLAUDE TOOLS] Unknown tool:', toolUseBlock.name);
+              toolResult = { success: false, error: 'Unknown tool' };
+          }
 
           // Send tool result back to Claude
           const followUpMessages: Anthropic.MessageParam[] = [
@@ -529,6 +556,23 @@ Available data sources you're expertly familiar with:
 - Guest feedback: You know how to read between the lines of reviews
 
 Your goal: Help fellow venue operators succeed by sharing your hard-won knowledge, identifying opportunities they might miss, and providing actionable advice that balances profitability with creating memorable experiences. You're their experienced friend in the business who's been there, done that, and genuinely wants to see them succeed.
+
+MENU ANALYTICS CAPABILITIES:
+You have access to detailed menu item sales data through the Toast POS integration:
+- Query best-selling items by quantity or revenue
+- Analyze menu category performance (appetizers, entrees, desserts, beverages, etc.)
+- Review item-level metrics: quantity sold, revenue generated, average price
+- Track menu performance over any date range
+- Identify underperforming items that may need repricing or removal
+- Spot opportunities for upselling and menu engineering
+- Understand which items drive the most profit
+
+When users ask about menu performance:
+- Use specific item names and exact sales figures from the data
+- Highlight both winners and items that need attention
+- Consider both popularity (quantity) and profitability (revenue)
+- Think about menu mix and how items work together
+- Remember seasonality affects menu performance
 
 CRITICAL DATA ACCURACY RULES - 100% ACCURACY REQUIRED:
 - ONLY use the exact revenue and metrics data provided in the context

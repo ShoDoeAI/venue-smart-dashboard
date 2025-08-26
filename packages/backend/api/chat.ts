@@ -163,12 +163,12 @@ AVAILABLE DATA CONTEXT:
 - Example queries: "What was last week's revenue?", "How did we do in December?", "Show me yesterday's performance"`;
     }
 
-    // Send message to Claude
-    const response = await aiService.query({
-      message: enhancedMessage,
-      context,
+    // Send message to Claude using tools-based approach
+    const response = await aiService.processMessageWithTools(
+      enhancedMessage,
+      venueId,
       conversationId
-    });
+    );
 
     return res.status(200).json({
       success: true,
