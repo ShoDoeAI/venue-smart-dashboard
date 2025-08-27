@@ -141,6 +141,10 @@ export class ClaudeRevenueTool {
       // Format dates for SQL
       const startDateStr = startDate.toISOString().split('T')[0];
       const endDateStr = endDate.toISOString().split('T')[0];
+      
+      // Convert dates to integer format for toast_checks (YYYYMMDD)
+      const startDateInt = parseInt(startDateStr.replace(/-/g, ''));
+      const endDateInt = parseInt(endDateStr.replace(/-/g, ''));
 
       // Query revenue_overrides first (source of truth)
       const { data: overrides, error: overridesError } = await this.supabase
@@ -154,13 +158,13 @@ export class ClaudeRevenueTool {
         console.error('Revenue overrides query error:', overridesError);
       }
 
-      // Query toast_checks for additional data
+      // Query toast_checks for additional data (using integer dates)
       const { data: toastData, error: toastError } = await this.supabase
         .from('toast_checks')
-        .select('businessDate, revenue, checkCount')
-        .gte('businessDate', startDateStr)
-        .lte('businessDate', endDateStr)
-        .order('businessDate', { ascending: true });
+        .select('business_date, revenue, check_count')
+        .gte('business_date', startDateInt)
+        .lte('business_date', endDateInt)
+        .order('business_date', { ascending: true });
 
       if (toastError) {
         console.error('Toast checks query error:', toastError);
@@ -171,10 +175,14 @@ export class ClaudeRevenueTool {
       
       // Add toast data first
       toastData?.forEach(check => {
-        if (check.businessDate && check.revenue) {
-          revenueByDate.set(check.businessDate, {
+        if (check.business_date && check.revenue) {
+          // Convert integer date (YYYYMMDD) to string date (YYYY-MM-DD)
+          const dateStr = check.business_date.toString();
+          const formattedDate = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
+          
+          revenueByDate.set(formattedDate, {
             revenue: check.revenue,
-            transactions: check.checkCount || 0,
+            transactions: check.check_count || 0,
             hasOverride: false
           });
         }
