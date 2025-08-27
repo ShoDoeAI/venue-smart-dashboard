@@ -204,26 +204,29 @@ export class ClaudeMenuTool {
         return this.processRpcResults(rpcData, startDateStr, endDateStr, intent);
       }
 
-      // Fallback: Query selections and checks separately
+      // Fallback: Query using business_date from orders table
       console.log('RPC not available, using fallback query method');
       
-      // First get checks within date range
-      const { data: checks, error: checksError } = await this.supabase
-        .from('toast_checks')
-        .select('check_guid, created_date')
-        .gte('created_date', startDateStr + 'T00:00:00')
-        .lte('created_date', endDateStr + 'T23:59:59')
-        .eq('voided', false);
+      // Convert dates to integer format for toast_orders (YYYYMMDD)
+      const startDateInt = parseInt(startDateStr.replace(/-/g, ''));
+      const endDateInt = parseInt(endDateStr.replace(/-/g, ''));
+      
+      // First get orders for the date range
+      const { data: orders, error: ordersError } = await this.supabase
+        .from('toast_orders')
+        .select('order_guid')
+        .gte('business_date', startDateInt)
+        .lte('business_date', endDateInt);
 
-      if (checksError) {
-        console.error('Error fetching checks:', checksError);
+      if (ordersError) {
+        console.error('Error fetching orders:', ordersError);
         return {
           success: false,
-          error: `Database error: ${checksError.message}`
+          error: `Database error: ${ordersError.message}`
         };
       }
       
-      if (!checks || checks.length === 0) {
+      if (!orders || orders.length === 0) {
         return {
           success: true,
           data: {
@@ -239,26 +242,57 @@ export class ClaudeMenuTool {
         };
       }
 
-      // Get check GUIDs - limit to prevent query issues
-      const checkGuids = checks.slice(0, 100).map(c => c.check_guid);
-      console.log(`Found ${checks.length} checks, querying selections for first ${checkGuids.length}`);
+      // Get order GUIDs
+      const orderGuids = orders.map(o => o.order_guid);
+      console.log(`Found ${orders.length} orders for the period`);
+      
+      // Get checks for these orders
+      const allCheckGuids: string[] = [];
+      
+      // Process in chunks to avoid query limits
+      const chunkSize = 100;
+      for (let i = 0; i < orderGuids.length; i += chunkSize) {
+        const chunk = orderGuids.slice(i, i + chunkSize);
+        
+        const { data: checks, error: checksError } = await this.supabase
+          .from('toast_checks')
+          .select('check_guid')
+          .in('order_guid', chunk)
+          .eq('voided', false);
+          
+        if (!checksError && checks) {
+          allCheckGuids.push(...checks.map(c => c.check_guid));
+        }
+      }
+      
+      console.log(`Found ${allCheckGuids.length} non-voided checks`);
 
-      // Query selections for these checks
-      const { data: selections, error: selectionsError } = await this.supabase
-        .from('toast_selections')
-        .select('*')
-        .in('check_guid', checkGuids)
-        .eq('voided', false);
+      // Query selections for these checks in chunks
+      const allSelections: any[] = [];
+      
+      for (let i = 0; i < allCheckGuids.length; i += chunkSize) {
+        const checkChunk = allCheckGuids.slice(i, i + chunkSize);
+        
+        const { data: selections, error: selectionsError } = await this.supabase
+          .from('toast_selections')
+          .select('*')
+          .in('check_guid', checkChunk)
+          .eq('voided', false);
 
-      if (selectionsError) {
-        return {
-          success: false,
-          error: `Failed to query menu items: ${selectionsError.message}`
-        };
+        if (selectionsError) {
+          console.error('Error fetching selections:', selectionsError);
+          continue;
+        }
+        
+        if (selections) {
+          allSelections.push(...selections);
+        }
       }
 
+      console.log(`Found ${allSelections.length} menu item selections`);
+
       // Process the selections
-      return this.processSelections(selections || [], startDateStr, endDateStr, intent);
+      return this.processSelections(allSelections, startDateStr, endDateStr, intent);
 
     } catch (error) {
       console.error('Menu tool error:', error);
