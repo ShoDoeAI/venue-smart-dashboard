@@ -158,13 +158,63 @@ export class ClaudeRevenueTool {
         console.error('Revenue overrides query error:', overridesError);
       }
 
-      // Query toast_checks for additional data (using integer dates)
-      const { data: toastData, error: toastError } = await this.supabase
-        .from('toast_checks')
-        .select('business_date, revenue, check_count')
+      // Query business dates and revenue in two steps since there's no foreign key relationship
+      // First, get all orders for the date range
+      const { data: orders, error: ordersError } = await this.supabase
+        .from('toast_orders')
+        .select('order_guid, business_date')
         .gte('business_date', startDateInt)
-        .lte('business_date', endDateInt)
-        .order('business_date', { ascending: true });
+        .lte('business_date', endDateInt);
+
+      if (ordersError) {
+        console.error('Toast orders query error:', ordersError);
+      }
+
+      // Group orders by business_date
+      const ordersByDate = new Map<number, string[]>();
+      orders?.forEach(order => {
+        if (!ordersByDate.has(order.business_date)) {
+          ordersByDate.set(order.business_date, []);
+        }
+        ordersByDate.get(order.business_date)?.push(order.order_guid);
+      });
+
+      // For each date, get the checks and sum revenue
+      const toastData: Array<{ business_date: number; revenue: number; check_count: number }> = [];
+      
+      for (const [businessDate, orderGuids] of ordersByDate.entries()) {
+        if (orderGuids.length > 0) {
+          let totalRevenue = 0;
+          let totalChecks = 0;
+          
+          // Process in chunks of 100 to avoid Supabase IN clause limits
+          const chunkSize = 100;
+          for (let i = 0; i < orderGuids.length; i += chunkSize) {
+            const chunk = orderGuids.slice(i, i + chunkSize);
+            
+            const { data: checks, error: checksError } = await this.supabase
+              .from('toast_checks')
+              .select('total_amount')
+              .in('order_guid', chunk)
+              .eq('voided', false);
+
+            if (!checksError && checks) {
+              totalRevenue += checks.reduce((sum, check) => sum + (check.total_amount || 0), 0);
+              totalChecks += checks.length;
+            }
+          }
+          
+          if (totalRevenue > 0) {
+            toastData.push({
+              business_date: businessDate,
+              revenue: totalRevenue,
+              check_count: totalChecks
+            });
+          }
+        }
+      }
+
+      const toastError = null; // We handle errors above
 
       if (toastError) {
         console.error('Toast checks query error:', toastError);
@@ -174,15 +224,15 @@ export class ClaudeRevenueTool {
       const revenueByDate = new Map<string, { revenue: number; transactions: number; hasOverride: boolean }>();
       
       // Add toast data first
-      toastData?.forEach(check => {
-        if (check.business_date && check.revenue) {
+      toastData?.forEach(dayData => {
+        if (dayData.business_date && dayData.revenue > 0) {
           // Convert integer date (YYYYMMDD) to string date (YYYY-MM-DD)
-          const dateStr = check.business_date.toString();
+          const dateStr = dayData.business_date.toString();
           const formattedDate = `${dateStr.slice(0, 4)}-${dateStr.slice(4, 6)}-${dateStr.slice(6, 8)}`;
           
           revenueByDate.set(formattedDate, {
-            revenue: check.revenue,
-            transactions: check.check_count || 0,
+            revenue: dayData.revenue,
+            transactions: dayData.check_count,
             hasOverride: false
           });
         }
