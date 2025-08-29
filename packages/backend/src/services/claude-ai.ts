@@ -206,11 +206,12 @@ export class ClaudeAI {
                 query: menuInput.query,
                 venueId: menuInput.venueId || venueId
               });
-              const menuResult = toolResult as { success: boolean; data?: { totalItems?: number; topSellingItems?: unknown[] } };
+              const menuResult = toolResult as { success: boolean; data?: { totalItems?: number; items?: unknown[]; totalRevenue?: number } };
               console.log('[CLAUDE TOOLS] Menu tool result:', {
                 success: menuResult.success,
                 totalItems: menuResult.data?.totalItems,
-                topItemsCount: menuResult.data?.topSellingItems?.length
+                topItemsCount: menuResult.data?.items?.length,
+                totalRevenue: menuResult.data?.totalRevenue
               });
               break;
               

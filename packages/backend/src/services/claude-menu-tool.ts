@@ -123,6 +123,21 @@ export class ClaudeMenuTool {
       return { startDate, endDate };
     }
     
+    // Just month pattern (no year) - assumes current year
+    const monthOnlyMatch = query.match(
+      /\b(in|for|during)?\s*(jan|january|feb|february|mar|march|apr|april|may|jun|june|jul|july|aug|august|sep|sept|september|oct|october|nov|november|dec|december)\b/i
+    );
+    if (monthOnlyMatch) {
+      const monthIndex = monthMap[monthOnlyMatch[2].toLowerCase()];
+      const year = now.getFullYear();
+      const startDate = new Date(year, monthIndex, 1);
+      // If it's the current month, use today as end date; otherwise use last day of month
+      const endDate = monthIndex === now.getMonth() && year === now.getFullYear() 
+        ? now 
+        : new Date(year, monthIndex + 1, 0);
+      return { startDate, endDate };
+    }
+    
     // Default to this month if no pattern matches
     const startDate = new Date(today.getFullYear(), today.getMonth(), 1);
     return { startDate, endDate: today };
