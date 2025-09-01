@@ -32,24 +32,24 @@
     "setup:toast": "tsx scripts/setup-toast-credentials.ts"
   },
   "devDependencies": {
-    "@types/node": "^20.11.0",
-    "@typescript-eslint/eslint-plugin": "^6.19.0",
-    "@typescript-eslint/parser": "^6.19.0",
-    "dotenv": "^17.2.0",
-    "eslint": "^8.56.0",
-    "eslint-config-prettier": "^9.1.0",
+    "@types/node": "^24.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.41.0",
+    "@typescript-eslint/parser": "^8.41.0",
+    "dotenv": "^17.2.1",
+    "eslint": "^9.34.0",
+    "eslint-config-prettier": "^10.1.8",
     "eslint-import-resolver-typescript": "^4.4.4",
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-react": "^7.33.2",
-    "eslint-plugin-react-hooks": "^4.6.0",
-    "husky": "^8.0.3",
-    "lint-staged": "^15.2.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.5",
     "prettier": "^3.2.4",
-    "supabase": "^2.30.4",
-    "tsx": "^4.20.3",
-    "typescript": "^5.3.3",
-    "vercel": "^33.7.1",
-    "vitest": "^1.2.1"
+    "supabase": "^2.39.2",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vercel": "^46.1.1",
+    "vitest": "^3.2.4"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
