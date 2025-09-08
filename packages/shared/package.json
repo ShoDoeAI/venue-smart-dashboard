@@ -16,9 +16,9 @@
     "test:watch": "vitest watch"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.50.5",
-    "axios": "^1.10.0",
-    "zod": "^3.22.4"
+    "@supabase/supabase-js": "^2.57.2",
+    "axios": "^1.11.0",
+    "zod": "^4.1.5"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
