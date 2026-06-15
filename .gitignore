@@ -44,3 +44,4 @@ temp/
 **/supabase/.branches
 **/supabase/.temp
 .vercel
+.env.txt
